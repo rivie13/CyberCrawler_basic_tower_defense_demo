@@ -61,7 +61,21 @@ func _physics_process(delta):
 	if not is_alive or path_points.size() == 0:
 		return
 	
+	# Check if game is over (get from MainController)
+	var main_controller = get_main_controller()
+	if main_controller and main_controller.game_manager and main_controller.game_manager.is_game_over():
+		return
+	
 	move_along_path(delta)
+
+func get_main_controller():
+	# Navigate up the tree to find MainController
+	var current_node = self
+	while current_node:
+		if current_node is MainController:
+			return current_node
+		current_node = current_node.get_parent()
+	return null
 
 func move_along_path(_delta):
 	var direction = (target_position - global_position).normalized()

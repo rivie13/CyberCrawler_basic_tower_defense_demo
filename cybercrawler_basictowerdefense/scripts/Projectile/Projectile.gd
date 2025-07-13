@@ -30,6 +30,12 @@ func _process(delta):
 		queue_free()
 		return
 	
+	# Check if game is over (projectiles should stop when game ends)
+	var grid_system = get_parent()
+	if grid_system and grid_system.has_method("is_game_over") and grid_system.is_game_over():
+		queue_free()
+		return
+	
 	# Move towards target
 	var direction = (target.global_position - global_position).normalized()
 	global_position += direction * speed * delta

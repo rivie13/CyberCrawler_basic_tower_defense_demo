@@ -45,6 +45,40 @@ This repository is **EXCLUSIVELY** for the basic tower defense demo that serves 
 - **UI polish** - Functional over beautiful
 - **Save/Load systems** - Not needed for prototype
 
+## Current Development Focus (From Trello Board)
+
+### Active Development Priorities (July 2025)
+1. **Code Organization & Structure**
+   - Reorganize files into logical directories (scripts/, scenes/, etc.)
+   - Improve class separation and modularity
+   - Better project structure for expansion
+
+2. **Basic Currency System** 
+   - Tower defense scope only (no complex economics)
+   - Simple resource earning from enemy kills
+   - Currency display in UI
+
+3. **Basic Timer Functionality**
+   - Wave countdown timers
+   - Game session timing
+   - Time-based events
+
+4. **Tower Purchase System**
+   - Enable buying towers with currency
+   - Replace free placement with purchase mechanics
+   - Basic cost balancing
+
+5. **Tower Selection UI**
+   - Simple interface for tower types
+   - Purchase confirmation
+   - Currency status display
+
+### Implementation Notes
+- All features must maintain "basic" prototype level
+- No feature creep beyond core tower defense mechanics
+- Each addition should enhance the core loop: build → defend → survive
+- UI should remain functional over beautiful
+
 ## Trello Board Integration
 
 All feature additions must be approved through the [CyberCrawler_VerticalSlice](https://trello.com/b/ZH9jpFH7/cybercrawlerverticalslice) Trello board.
