@@ -52,6 +52,17 @@ Every development decision must serve these three pillars:
 2. **Asymmetrical Warfare** - Underdog fighting through cunning, not brute force
 3. **A Living, Breathing Dystopia** - Technology oppression narrative
 
-## 🚀 Next Steps
+## 🚀 Next Steps (From Trello Board)
 
+### Immediate Priorities (To Do)
+1. **Code Organization** - Restructure files into logical directories and improve class separation
+2. **Basic Currency System** - Add simple money/resources for tower purchases (tower defense scope only)
+3. **Basic Timer Functionality** - Implement wave countdown timers and game session timing
+4. **Tower Purchase System** - Enable players to buy towers using currency
+5. **Tower Selection UI** - Create simple interface for selecting and purchasing different tower types
+
+### Development Path
+These features will enhance the basic tower defense prototype while maintaining Phase 1 scope constraints. Each addition builds toward a more complete tower defense experience before moving to Phase 2 (stealth mechanics).
+
+### Future Phases
 This prototype will eventually connect to the stealth sections and hub systems in later phases, forming the complete CyberCrawler vertical slice.

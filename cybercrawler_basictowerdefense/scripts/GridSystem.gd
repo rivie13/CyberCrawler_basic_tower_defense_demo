@@ -22,8 +22,8 @@ const PATH_COLOR = Color(0.9, 0.7, 0.3, 0.8)  # Orange/yellow for enemy path
 var hover_grid_pos: Vector2i = Vector2i(-1, -1)
 
 # Enemy spawning
-const ENEMY_SCENE = preload("res://Enemy.tscn")
-const TOWER_SCENE = preload("res://Tower.tscn")
+const ENEMY_SCENE = preload("res://scenes/Enemy.tscn")
+const TOWER_SCENE = preload("res://scenes/Tower.tscn")
 var enemy_spawn_timer: Timer
 var wave_timer: Timer
 var enemies_alive: Array[Enemy] = []
@@ -39,9 +39,17 @@ var time_between_enemies: float = 1.0
 var time_between_waves: float = 3.0
 var max_waves: int = 10  # Win condition: survive 10 waves
 
+# Timer system
+var game_session_start_time: int = 0
+var wave_countdown_time: float = 0.0
+var wave_countdown_active: bool = false
+
 # Game state
 var player_health: int = 10
 var enemies_killed: int = 0
+var player_currency: int = 100  # Starting money for towers
+var currency_per_kill: int = 10  # Money earned per enemy killed
+var tower_cost: int = 50  # Cost to purchase a tower
 var game_over: bool = false
 var game_won: bool = false
 
@@ -52,7 +60,51 @@ func _ready():
 	setup_enemy_spawning()
 	create_enemy_path()
 	draw_enemy_path()
+	
+	# Initialize timer system
+	game_session_start_time = Time.get_ticks_msec()
+	
+	# Initialize tower selection UI
+	setup_tower_selection_ui()
+	
 	start_wave()
+
+func setup_tower_selection_ui():
+	# Connect to tower selection button
+	var tower_button = $UI/TowerSelectionPanel/BasicTowerButton
+	if tower_button:
+		tower_button.pressed.connect(_on_tower_selected)
+	
+	# Update tower selection UI
+	update_tower_selection_ui()
+
+func _on_tower_selected():
+	# For now, just provide feedback that tower is selected
+	# In future versions, this could switch between different tower types
+	print("Basic Tower selected - Click on grid to place (Cost: %d)" % [tower_cost])
+
+func update_tower_selection_ui():
+	# Update cost label
+	var cost_label = $UI/TowerSelectionPanel/CostLabel
+	if cost_label:
+		cost_label.text = "Cost: %d" % [tower_cost]
+	
+	# Update currency label
+	var currency_label = $UI/TowerSelectionPanel/CurrencyLabel  
+	if currency_label:
+		currency_label.text = "Currency: %d" % [player_currency]
+		
+		# Change color based on affordability
+		if player_currency >= tower_cost:
+			currency_label.modulate = Color.WHITE
+		else:
+			currency_label.modulate = Color.RED
+
+func _process(_delta):
+	# Update wave countdown if active
+	if wave_countdown_active:
+		wave_countdown_time = wave_timer.time_left
+		update_info_label()
 
 func initialize_grid():
 	# Initialize grid data array
@@ -158,6 +210,14 @@ func place_tower(grid_pos: Vector2i):
 		print("Cannot place tower on enemy path at position: ", grid_pos)
 		return false
 	
+	# Check if player has enough currency
+	if player_currency < tower_cost:
+		print("Insufficient funds! Need %d currency, have %d" % [tower_cost, player_currency])
+		return false
+	
+	# Deduct currency for tower purchase
+	player_currency -= tower_cost
+	
 	# Mark grid as occupied
 	grid_data[grid_pos.y][grid_pos.x] = true
 	
@@ -171,7 +231,11 @@ func place_tower(grid_pos: Vector2i):
 	towers_placed.append(tower)
 	grid_container.add_child(tower)
 	
-	print("Tower placed at grid position: ", grid_pos)
+	# Update UI immediately after purchase
+	update_info_label()
+	update_tower_selection_ui()
+	
+	print("Tower purchased at grid position: ", grid_pos, " | Cost: ", tower_cost, " | Remaining currency: ", player_currency)
 	return true
 
 func get_enemies() -> Array[Enemy]:
@@ -279,14 +343,21 @@ func _on_enemy_spawn_timer_timeout():
 		enemy_spawn_timer.stop()
 		wave_active = false
 		
-		# Start timer for next wave
+		# Start countdown for next wave
+		wave_countdown_active = true
+		wave_countdown_time = time_between_waves
 		wave_timer.start()
+		update_info_label()
 		return
 	
 	spawn_enemy()
 	enemies_spawned_this_wave += 1
 
 func _on_wave_timer_timeout():
+	# Stop countdown and start next wave
+	wave_countdown_active = false
+	wave_countdown_time = 0.0
+	
 	# Start next wave (victory check moved to _on_enemy_died)
 	current_wave += 1
 	enemies_per_wave += 2  # Increase difficulty
@@ -307,8 +378,13 @@ func spawn_enemy():
 func _on_enemy_died(enemy: Enemy):
 	enemies_alive.erase(enemy)
 	enemies_killed += 1
+	
+	# Add currency for killing enemy
+	player_currency += currency_per_kill
+	
 	update_info_label()
-	print("Enemy killed! Total killed: ", enemies_killed)
+	update_tower_selection_ui()
+	print("Enemy killed! Total killed: ", enemies_killed, " | Currency: ", player_currency)
 	
 	# Check victory condition: final wave completed and all enemies dead
 	if current_wave >= max_waves and enemies_alive.is_empty() and not wave_active:
@@ -330,7 +406,27 @@ func _on_enemy_reached_end(enemy: Enemy):
 func update_info_label():
 	var info_label = $UI/InfoLabel
 	if info_label:
-		info_label.text = "Wave: %d | Health: %d | Enemies Killed: %d\nClick on grid to place towers" % [current_wave, player_health, enemies_killed]
+		var timer_text = ""
+		
+		# Add wave countdown if active
+		if wave_countdown_active and wave_countdown_time > 0:
+			timer_text = " | Next Wave: %ds" % [int(wave_countdown_time)]
+		
+		# Add session time
+		var session_time = get_session_time()
+		timer_text += " | Time: %s" % [format_time(session_time)]
+		
+		info_label.text = "Wave: %d | Health: %d | Currency: %d | Enemies Killed: %d%s\nClick on grid to place towers (Cost: %d)" % [current_wave, player_health, player_currency, enemies_killed, timer_text, tower_cost]
+
+func get_session_time() -> float:
+	var current_time = Time.get_ticks_msec()
+	return (current_time - game_session_start_time) / 1000.0  # Convert milliseconds to seconds
+
+func format_time(seconds: float) -> String:
+	var total_seconds = int(seconds)
+	var minutes = total_seconds / 60
+	var secs = total_seconds % 60
+	return "%d:%02d" % [minutes, secs]
 
 func trigger_game_over():
 	if game_over:
@@ -370,7 +466,8 @@ func trigger_game_over():
 	# Update UI
 	var info_label = $UI/InfoLabel
 	if info_label:
-		info_label.text = "GAME OVER! Waves survived: %d | Enemies killed: %d" % [current_wave, enemies_killed]
+		var final_time = format_time(get_session_time())
+		info_label.text = "GAME OVER! Waves survived: %d | Enemies killed: %d | Currency earned: %d | Time played: %s" % [current_wave, enemies_killed, player_currency, final_time]
 
 func trigger_game_won():
 	if game_won or game_over:
@@ -385,4 +482,5 @@ func trigger_game_won():
 	# Update UI
 	var info_label = $UI/InfoLabel
 	if info_label:
-		info_label.text = "VICTORY! You survived all %d waves! Enemies killed: %d" % [max_waves, enemies_killed] 
+		var final_time = format_time(get_session_time())
+		info_label.text = "VICTORY! You survived all %d waves! Enemies killed: %d | Total currency: %d | Time played: %s" % [max_waves, enemies_killed, player_currency, final_time] 

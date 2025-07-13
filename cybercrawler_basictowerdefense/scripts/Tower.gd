@@ -18,7 +18,7 @@ var range_circle: Node2D
 var tower_body: ColorRect
 
 # Projectile scene
-const PROJECTILE_SCENE = preload("res://Projectile.tscn")
+const PROJECTILE_SCENE = preload("res://scenes/Projectile.tscn")
 
 func _ready():
 	create_tower_visual()
