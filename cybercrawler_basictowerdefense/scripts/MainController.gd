@@ -52,6 +52,10 @@ func initialize_systems():
 	# Connect tower manager signals
 	tower_manager.tower_placed.connect(_on_tower_placed)
 	tower_manager.tower_placement_failed.connect(_on_tower_placement_failed)
+	
+	# Connect game manager signals
+	game_manager.game_over_triggered.connect(_on_game_over)
+	game_manager.game_won_triggered.connect(_on_game_won)
 
 func setup_ui():
 	# Setup tower selection UI
@@ -130,4 +134,33 @@ func update_tower_selection_ui():
 func update_info_label():
 	var info_label = $UI/InfoLabel
 	if info_label and game_manager:
-		info_label.text = game_manager.get_info_label_text() 
+		info_label.text = game_manager.get_info_label_text()
+
+func _on_game_over():
+	print("Game Over - UI handling not yet implemented")
+	# TODO: Implement game over screen
+
+func _on_game_won():
+	print("Victory! - Displaying victory screen")
+	show_victory_screen()
+
+func show_victory_screen():
+	# Stop the UI update timer
+	if ui_update_timer:
+		ui_update_timer.stop()
+	
+	# Get victory data from game manager
+	var victory_data = game_manager.get_victory_data()
+	
+	# Update info label to show victory message
+	var info_label = $UI/InfoLabel
+	if info_label:
+		var victory_text = "VICTORY!\n"
+		victory_text += "Survived all %d waves!\n" % [victory_data.max_waves]
+		victory_text += "Enemies killed: %d\n" % [victory_data.enemies_killed]
+		victory_text += "Final currency: %d\n" % [victory_data.currency]
+		victory_text += "Time played: %s\n" % [victory_data.time_played]
+		victory_text += "\nCongratulations on completing the tower defense demo!"
+		
+		info_label.text = victory_text
+		info_label.modulate = Color.GREEN  # Make it green to indicate victory 

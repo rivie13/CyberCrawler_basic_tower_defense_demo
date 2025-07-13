@@ -1,6 +1,10 @@
 extends Node2D
 class_name GameManager
 
+# Signals for game state changes
+signal game_over_triggered()
+signal game_won_triggered()
+
 # Game state
 var player_health: int = 10
 var enemies_killed: int = 0
@@ -90,7 +94,8 @@ func trigger_game_over():
 	# Clean up projectiles
 	cleanup_projectiles()
 	
-	# Game over UI will be handled by MainController
+	# Emit signal for UI handling
+	game_over_triggered.emit()
 
 func trigger_game_won():
 	if game_won or game_over:
@@ -104,9 +109,8 @@ func trigger_game_won():
 	if wave_manager:
 		wave_manager.stop_all_timers()
 	
-	# Victory screen will be handled by MainController
-	
-	# Victory UI will be handled by MainController
+	# Emit signal for UI handling
+	game_won_triggered.emit()
 
 func get_victory_data() -> Dictionary:
 	var max_waves = wave_manager.get_max_waves() if wave_manager else 10

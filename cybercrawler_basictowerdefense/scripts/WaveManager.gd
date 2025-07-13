@@ -107,14 +107,15 @@ func _on_enemy_spawn_timer_timeout():
 	enemies_spawned_this_wave += 1
 
 func _on_wave_timer_timeout():
+	# Check if we've completed all waves
+	if current_wave >= max_waves:
+		all_waves_completed.emit()
+		return
+	
 	# Start next wave
 	current_wave += 1
 	enemies_per_wave += 2  # Increase difficulty
-	
-	if current_wave > max_waves:
-		all_waves_completed.emit()
-	else:
-		start_wave()
+	start_wave()
 
 func spawn_enemy():
 	var enemy = ENEMY_SCENE.instantiate()
