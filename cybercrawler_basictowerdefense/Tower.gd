@@ -44,6 +44,11 @@ func setup_attack_timer():
 	attack_timer.start()
 
 func _on_attack_timer_timeout():
+	# Check if game is over (get from GridSystem)
+	var grid_system = get_parent().get_parent()  # Tower -> GridContainer -> GridSystem
+	if grid_system and grid_system.has_method("is_game_over") and grid_system.is_game_over():
+		return
+		
 	find_target()
 	if current_target and is_instance_valid(current_target):
 		attack_target()
@@ -151,3 +156,8 @@ func show_range_debug():
 		hide_range()
 	else:
 		show_range()
+
+func stop_attacking():
+	# Stop all tower activity for game over
+	attack_timer.stop()
+	current_target = null

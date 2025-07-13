@@ -61,6 +61,11 @@ func _physics_process(delta):
 	if not is_alive or path_points.size() == 0:
 		return
 	
+	# Check if game is over (get from GridSystem)
+	var grid_system = get_parent()
+	if grid_system and grid_system.has_method("is_game_over") and grid_system.is_game_over():
+		return
+	
 	move_along_path(delta)
 
 func move_along_path(_delta):
