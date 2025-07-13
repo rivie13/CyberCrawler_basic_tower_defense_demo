@@ -1,0 +1,144 @@
+---
+alwaysApply: true
+---
+
+# Tower Defense Repository Scope Rule
+
+## Repository Purpose - STRICTLY ENFORCED
+
+This repository is **EXCLUSIVELY** for the basic tower defense demo that serves as Phase 1 of the CyberCrawler vertical slice. 
+
+### What This Repository IS For:
+- **Basic tower defense gameplay mechanics**
+- **Grid-based map system**  
+- **Player tower placement and management**
+- **Enemy creep movement and pathfinding**
+- **Basic resource management**
+- **Simple combat system (towers vs enemies)**
+- **Core game loop: build → defend → survive**
+
+### What This Repository IS NOT For:
+- ❌ **Stealth gameplay mechanics**
+- ❌ **Hub/Safehouse systems**
+- ❌ **Character dialogue or story elements**
+- ❌ **Complex 3D assets or animations**
+- ❌ **Multiple game modes or sections**
+- ❌ **Advanced AI systems beyond basic tower defense**
+- ❌ **Networking or multiplayer features**
+- ❌ **Complete art pipelines or final assets**
+
+## Phase 1 Implementation Guidelines
+
+### Core Requirements (Must Have)
+- **Single grid map** - Simple, functional layout
+- **One type of player tower** - Basic attack functionality
+- **One type of enemy creep** - Follows path from A to B
+- **Tower placement system** - Click to place, basic validation
+- **Enemy spawning system** - Simple wave-based spawning
+- **Basic win/lose conditions** - Clear objectives
+
+### Phase 1 Constraints (Must NOT Have)
+- **Multiple tower types** - Keep it simple initially
+- **Complex enemy varieties** - One basic enemy type only
+- **Advanced graphics** - Use colored squares/circles for prototyping
+- **Sound/Music integration** - Focus on mechanics first
+- **UI polish** - Functional over beautiful
+- **Save/Load systems** - Not needed for prototype
+
+## Trello Board Integration
+
+All feature additions must be approved through the [CyberCrawler_VerticalSlice](https://trello.com/b/ZH9jpFH7/cybercrawlerverticalslice) Trello board.
+
+### Development Workflow:
+1. **Backlog** - Features must be added here first
+2. **To Do** - Ready for implementation
+3. **Doing (prototyping)** - Currently being worked on
+4. **Done** - Completed and tested
+
+### Expansion Rules:
+- **Only add features listed in Trello backlog**
+- **No feature creep beyond tower defense scope**
+- **All additions must maintain "basic" implementation level**
+- **Complex features require breaking down into basic components**
+
+## Implementation Standards
+
+### Code Structure:
+- **Modular design** - Separate systems for towers, enemies, grid, etc.
+- **Simple architecture** - No over-engineering for basic prototype
+- **Clear separation** - Tower logic ≠ Enemy logic ≠ Grid logic
+- **Godot best practices** - Use appropriate nodes and scenes
+
+### Asset Requirements:
+- **Placeholder art only** - Focus on functionality
+- **Consistent style** - Simple geometric shapes or basic sprites
+- **No final assets** - This is a prototype, not a finished game
+- **Blender workflow** - If 3D models needed, use Blender → 2D pipeline
+
+### Testing Criteria:
+- **Can player place towers?** - Basic interaction works
+- **Do enemies follow paths?** - Movement system functional
+- **Do towers attack enemies?** - Combat system operational
+- **Are win/lose conditions clear?** - Game loop complete
+
+## Scope Violation Prevention
+
+### Red Flags - STOP IMMEDIATELY:
+- **Adding stealth mechanics** - Wrong repository
+- **Creating story elements** - Wrong repository  
+- **Building hub systems** - Wrong repository
+- **Complex AI beyond basic pathfinding** - Too advanced for Phase 1
+- **Multiple game modes** - Scope creep
+- **Advanced graphics rendering** - Premature optimization
+
+### Yellow Flags - Review Before Proceeding:
+- **Adding second tower type** - Check Trello board first
+- **Enemy variety** - Ensure it's in approved backlog
+- **UI improvements** - Functional > Beautiful at this stage
+- **Performance optimization** - May be premature
+
+## Quality Gates
+
+### Before ANY Implementation:
+- [ ] Is this feature on the Trello board?
+- [ ] Does this serve the basic tower defense prototype?
+- [ ] Am I staying within Phase 1 constraints?
+- [ ] Will this help answer "Is the basic TD concept fun?"
+
+### Before ANY Commit:
+- [ ] Does the game still focus on tower defense only?
+- [ ] Are the core mechanics (place tower, enemy moves, tower shoots) working?
+- [ ] Have I avoided adding stealth/hub/story elements?
+- [ ] Is this still a "basic" implementation?
+
+## Success Metrics
+
+### Phase 1 Complete When:
+- **Player can place towers on grid**
+- **Enemies spawn and follow path**
+- **Towers automatically attack enemies in range**
+- **Win condition: All enemies defeated**
+- **Lose condition: Too many enemies reach end**
+- **Core loop is fun and engaging**
+
+### Ready for Phase 2 When:
+- **Basic tower defense mechanics proven fun**
+- **Code structure supports expansion**
+- **All Phase 1 requirements met**
+- **Trello board shows Phase 1 tasks complete**
+
+## Rule Enforcement
+
+### Automatic Checks:
+- **No stealth-related code** - Keywords: "stealth", "hide", "sneak"
+- **No hub-related code** - Keywords: "safehouse", "base", "hub"
+- **No story-related code** - Keywords: "dialogue", "cutscene", "narrative"
+
+### Manual Reviews:
+- **Weekly scope review** - Are we staying focused?
+- **Feature addition review** - Trello board alignment
+- **Complexity assessment** - Are we keeping it basic?
+
+**Remember**: This is a prototype to test if the basic tower defense concept is fun. Everything else is scope creep that will delay the vertical slice and violate the phased development approach.
+
+**Focus**: Build the minimum viable tower defense game. Make it fun. Then move to Phase 2. 

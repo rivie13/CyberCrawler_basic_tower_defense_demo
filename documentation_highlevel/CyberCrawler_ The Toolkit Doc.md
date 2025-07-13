@@ -15,14 +15,6 @@ Your game engine is the most important choice you'll make. It's the workbench wh
   * **Lightweight:** The engine itself is a small download and runs well on most hardware.  
   * **Active Community:** While not as large as Unity's, the Godot community is passionate, growing rapidly, and incredibly helpful.
 
-#### Alternative: Unity
-
-* **Cost:** Free for personal use (as long as your revenue/funding is below a certain threshold, which is very generous for a solo dev).  
-* **Why you might consider it:**  
-  * **Massive Community & Asset Store:** Unity has been an indie standard for years. There are endless tutorials for any problem you can imagine, and its Asset Store is full of tools, art, and code that can save you time.  
-  * **Industry Standard:** If your goal is to eventually work in the game industry, having Unity on your resume is a plus.  
-* **The Caveat:** Unity is more complex than Godot, and its C\# scripting has a steeper learning curve than GDScript. For the specific 2.5D style of *CyberCrawler*, Godot is arguably a more direct and efficient tool for the job.
-
 **Verdict:** Start with **Godot**. It aligns perfectly with the project's technical needs and the solo dev philosophy of keeping things streamlined and cost-free.
 
 ## **2\. Art & Asset Creation**
@@ -31,9 +23,8 @@ You'll need tools for character sprites, environment tiles, UI elements, and vis
 
 #### 2D Art (Sprites, Textures, UI)
 
-* **Krita (Free):** A professional-grade, open-source digital painting program. It's more than powerful enough for creating high-quality concept art, textures, and final "Hi-Bit" style sprites. If you're using a drawing tablet or your 2-in-1 laptop, this is your best starting point.  
-* **Aseprite (\~$20, one-time purchase):** This is the undisputed king of pixel art software. If you decide on the "Hi-Bit Pixel Art" style, Aseprite is one of the few paid tools that is **absolutely worth the money**. Its timeline, onion-skinning, and pixel-perfect tools are designed specifically for this workflow and will save you countless hours.  
-* **Inkscape (Free):** If you lean towards the "Vector Noir" art style, Inkscape is the open-source equivalent of Adobe Illustrator. It's perfect for creating clean, scalable vector graphics for your UI and characters.
+* **Adobe Fresco:** I already have Adobe Fresco on my laptop since it is free... I will have to manually create some ideas in here this will probably be where concept art and rough sketches are created
+* **Microsoft Paint:** I have Microsoft Paint and access to some AI models to help me create some ideas out and edit the rough ideas into more concrete ideas 
 
 #### 2.5D Isometric Assets
 
@@ -41,10 +32,10 @@ You'll need tools for character sprites, environment tiles, UI elements, and vis
 
 **Your Art Workflow:**
 
-1. **Concept:** Sketch ideas in Adobe Fresco or Krita.  
+1. **Concept:** Sketch ideas in Adobe Fresco or Paint.  
 2. **Model:** Create simple 3D models of your environment assets in Blender.  
 3. **Render:** Render the models from Blender as 2D PNG sprites.  
-4. **Animate/Polish:** Import the sprites into Krita or Aseprite to add details, create character animations, and ensure a consistent pixel art look.
+4. **Animate/Polish:** Import the sprites into Krita or Aseprite (probably Blender) to add details, create character animations, and ensure a consistent pixel art look.
 
 ## **3\. Audio: Sound & Music**
 
@@ -53,7 +44,6 @@ Don't neglect audio\! Good sound design is critical for stealth gameplay and set
 #### Sound Effects (SFX)
 
 * **Audacity (Free):** An essential tool. It's a powerful audio editor you can use to record, cut, mix, and apply effects to any sound.  
-* **jfxr / bfxr (Free, Web-based):** Fantastic for generating retro, computer-like sound effects. Perfect for UI sounds, hacking noises, and simple weapon effects. Just click a few buttons, and you have a unique sound.  
 * **Freesound.org (Free):** A massive library of user-submitted sounds with various licenses (be sure to check them). Great for finding ambient sounds like rain, city noise, or footsteps.
 
 #### Music

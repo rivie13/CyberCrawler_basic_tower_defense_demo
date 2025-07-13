@@ -1,0 +1,109 @@
+---
+alwaysApply: true
+---
+
+# CyberCrawler Design & Toolkit Adherence Rule
+
+## Core Design Principles - MUST BE FOLLOWED
+
+### 1. The Three Pillars (Non-Negotiable)
+Every design decision MUST serve these core pillars from the Game Design Doc:
+- **Pillar 1: The Ghost & The Machine** - Player feels powerful yet vulnerable
+- **Pillar 2: Asymmetrical Warfare** - Underdog fighting a behemoth through cunning
+- **Pillar 3: A Living, Breathing Dystopia** - World tells story of technological oppression
+
+### 2. Technical Architecture Requirements
+Based on The Toolkit Doc, all development MUST use:
+- **Game Engine:** Godot Engine (free, open-source)
+- **Art Style:** Stylized 2.5D Isometric (as specified in Game Design Doc)
+- **Primary Art Tools:** Adobe Fresco, Microsoft Paint, Blender for 3D-to-2D rendering
+- **Audio:** Audacity for SFX, LMMS/Bosca Ceoil for music
+- **Version Control:** Git + GitHub (mandatory)
+- **Project Management:** Trello for roadmap tracking
+
+### 3. Development Roadmap Compliance
+Follow the 5-phase development approach EXACTLY as outlined:
+1. **Phase 1:** Core Tower Defense Prototype (1-2 weeks)
+2. **Phase 2:** "Hunter" Prototype (1 week)
+3. **Phase 3:** Stealth Prototype (1-2 weeks)
+4. **Phase 4:** Connection/Vertical Slice (1 week)
+5. **Phase 5:** Build Out & Polish
+
+**CRITICAL:** Do NOT skip phases or attempt to build the whole game at once.
+
+## Mandatory Documentation Updates
+
+## NOTE: YOU MUST HAVE APPROVAL BEFORE MAKING ANY CHANGES TO DESIGN OR TOOLKIT
+
+### When Documentation MUST Be Updated
+1. **Game Design Changes:** Any modification to core pillars, gameplay loops, or story elements - YOU MUST GET APPROVAL BEFORE CHANGING
+2. **Technical Architecture Changes:** Any switch in tools, engines, or development approach - YOU MUST GET APPROVAL BEFORE CHANGING
+3. **Art Style Changes:** Any deviation from the 2.5D isometric approach - YOU MUST GET APPROVAL BEFORE CHANGING
+4. **Scope Changes:** Any additions or removals to the 5-phase roadmap
+5. **New Features:** Any gameplay mechanics not covered in current documentation
+
+### Documentation Update Process
+1. **BEFORE implementing any change:** Update the relevant documentation first
+2. **Document the reasoning:** Include why the change was necessary
+3. **Update dependencies:** Ensure all related sections are consistent
+4. **Version the change:** Use git commits to track documentation evolution
+
+## Implementation Guidelines
+
+### Code Structure Requirements
+- All stealth mechanics must support the "Ghost & Machine" pillar
+- Tower defense must implement the "Hunter" AI system as specified
+- Hub/Safehouse systems must support the episodic narrative structure
+- No photorealistic or complex 3D assets (violates solo dev constraints)
+
+### Asset Creation Rules
+- All art must follow the Hi-Bit Pixel Art or Vector Noir style guide
+- Use Blender → 2D sprite workflow for isometric assets
+- No complex 3D models that exceed solo dev capabilities
+- Maintain consistent isometric perspective across all assets
+
+### Testing & Quality Assurance
+- Each phase must have a working prototype before proceeding
+- Core mechanics must be "fun" before adding polish
+- Vertical slice must demonstrate complete game loop
+- All changes must be version controlled via Git
+
+## Enforcement Mechanisms
+
+### Pre-Implementation Checklist
+Before ANY code or asset creation, verify:
+- [ ] Does this align with the three core pillars?
+- [ ] Is this covered in the current documentation?
+- [ ] Does this follow the recommended toolkit?
+- [ ] Are we in the correct development phase?
+- [ ] Have I updated docs if this is a change?
+
+### Documentation Consistency Checks
+- Game Design Doc and Toolkit Doc must reference each other correctly
+- All tool recommendations must be justified and current
+- All gameplay mechanics must map to the core pillars
+- Development phases must be clearly defined and sequential
+
+## Violation Consequences
+
+### Minor Violations (Warning)
+- Using different tools without documentation update
+- Small scope creep within current phase
+- Inconsistent naming conventions
+
+### Major Violations (STOP WORK)
+- Changing tools/design/workflow without explicit approval
+- Skipping development phases
+- Implementing features that violate core pillars
+- Making architecture changes without documentation updates
+- Using photorealistic art or complex 3D against design doc
+
+## Rule Maintenance
+
+This rule must be updated whenever:
+- Game Design Doc is modified
+- Toolkit Doc is changed
+- New tools are adopted
+- Development approach evolves
+
+**Remember:** These documents are the foundation of CyberCrawler. Deviation without proper documentation updates leads to scope creep, technical debt, and project failure. Stay disciplined, stay documented, stay successful. 
