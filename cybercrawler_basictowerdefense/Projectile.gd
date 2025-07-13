@@ -1,6 +1,9 @@
 extends Node2D
 class_name Projectile
 
+# Constants
+const HIT_THRESHOLD: float = 10.0  # Distance threshold for projectile hits
+
 # Projectile properties
 var target: Enemy
 var damage: int
@@ -32,7 +35,7 @@ func _process(delta):
 	global_position += direction * speed * delta
 	
 	# Check if we hit the target
-	if global_position.distance_to(target.global_position) < 10.0:
+	if global_position.distance_to(target.global_position) < HIT_THRESHOLD:
 		hit_target()
 
 func hit_target():

@@ -11,6 +11,7 @@ class_name Tower
 var attack_timer: Timer
 var current_target: Enemy = null
 var grid_position: Vector2i
+var show_range_indicator: bool = false
 
 # Visual components
 var range_circle: Node2D
@@ -123,15 +124,18 @@ func set_grid_position(grid_pos: Vector2i):
 	grid_position = grid_pos
 
 func show_range():
-	range_circle.queue_redraw()
+	show_range_indicator = true
+	queue_redraw()
 
 func hide_range():
-	range_circle.queue_redraw()
+	show_range_indicator = false
+	queue_redraw()
 
 func _draw():
 	# Draw range circle when selected
-	if range_circle:
-		range_circle.queue_redraw()
+	if show_range_indicator:
+		var range_color = Color(0.8, 0.2, 0.2, 0.3)  # Semi-transparent red
+		draw_circle(Vector2.ZERO, tower_range, range_color)
 
 # For debugging
 func _input(event):
@@ -141,4 +145,9 @@ func _input(event):
 			show_range_debug()
 
 func show_range_debug():
-	print("Tower at ", grid_position, " - Range: ", tower_range, " - Current Target: ", current_target) 
+	print("Tower at ", grid_position, " - Range: ", tower_range, " - Current Target: ", current_target)
+	# Toggle range visualization for debugging
+	if show_range_indicator:
+		hide_range()
+	else:
+		show_range()

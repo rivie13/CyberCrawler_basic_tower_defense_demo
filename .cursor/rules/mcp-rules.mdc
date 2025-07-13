@@ -6,6 +6,8 @@ Always try to look for tools with the retrieve_tools call first before using the
 make sure to use correct project path and project name when using the tools.
 example: for godot, the project path is C:/Users/rivie/CursorProjects/CyberCrawler_basic_tower_defense_demo/cybercrawler_basictowerdefense and the project name is cybercrawler_basictowerdefense
 
+GoDot logs: C:/Users/rivie/CursorProjects/CyberCrawler_basic_tower_defense_demo/cybercrawler_basictowerdefense/logs/godot.log
+
 use mcp tools and reading of code first before writing new code to figure out what exists and what doesn't exist. this is to try to prevent hallucinations.
 
 after you figure out the tool you want to use, use call_tool to call the tool.
