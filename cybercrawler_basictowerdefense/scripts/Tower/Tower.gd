@@ -44,9 +44,9 @@ func setup_attack_timer():
 	attack_timer.start()
 
 func _on_attack_timer_timeout():
-	# Check if game is over (get from GridSystem)
-	var grid_system = get_parent().get_parent()  # Tower -> GridContainer -> GridSystem
-	if grid_system and grid_system.has_method("is_game_over") and grid_system.is_game_over():
+	# Check if game is over (get from MainController)
+	var main_controller = get_main_controller()
+	if main_controller and main_controller.game_manager and main_controller.game_manager.is_game_over():
 		return
 		
 	find_target()
@@ -78,33 +78,35 @@ func find_target():
 			current_target = enemy
 			closest_distance = distance
 
+func get_main_controller():
+	# Navigate up the tree to find MainController
+	var current_node = self
+	while current_node:
+		if current_node is MainController:
+			return current_node
+		current_node = current_node.get_parent()
+	return null
+
 func get_enemies_from_parent() -> Array[Enemy]:
 	var enemies: Array[Enemy] = []
 	
-	# First try to get the GridSystem node (grandparent)
-	# Towers are children of grid_container, which is a child of GridSystem
-	var grid_system = get_parent().get_parent()
+	# Get enemies from the WaveManager via MainController
+	var main_controller = get_main_controller()
+	if main_controller and main_controller.wave_manager:
+		return main_controller.wave_manager.get_enemies()
 	
-	if grid_system and grid_system.has_method("get_enemies"):
-		return grid_system.get_enemies()
-	
-	# Fallback 1: Try direct parent
-	var parent = get_parent()
-	if parent.has_method("get_enemies"):
-		return parent.get_enemies()
-	
-	# Fallback 2: Search through GridSystem children for enemies
-	if grid_system:
-		for child in grid_system.get_children():
-			if child is Enemy:
-				enemies.append(child)
-	
-	# Fallback 3: Search through direct parent children
-	for child in parent.get_children():
-		if child is Enemy:
-			enemies.append(child)
+	# Fallback: Search through scene for enemies
+	var root = get_tree().get_current_scene()
+	if root:
+		_search_for_enemies_recursive(root, enemies)
 	
 	return enemies
+
+func _search_for_enemies_recursive(node: Node, enemies: Array[Enemy]):
+	if node is Enemy:
+		enemies.append(node)
+	for child in node.get_children():
+		_search_for_enemies_recursive(child, enemies)
 
 func is_target_in_range(target: Enemy) -> bool:
 	if not is_instance_valid(target):
