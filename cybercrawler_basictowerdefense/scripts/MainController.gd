@@ -8,6 +8,9 @@ var tower_manager: TowerManager
 var currency_manager: CurrencyManager
 var game_manager: GameManager
 
+# UI update timer
+var ui_update_timer: Timer
+
 func _ready():
 	setup_managers()
 	initialize_systems()
@@ -56,8 +59,16 @@ func setup_ui():
 	if tower_button:
 		tower_button.pressed.connect(_on_tower_selected)
 	
+	# Setup UI update timer to refresh every second
+	ui_update_timer = Timer.new()
+	ui_update_timer.wait_time = 1.0  # Update every second
+	ui_update_timer.timeout.connect(_on_ui_update_timer_timeout)
+	ui_update_timer.autostart = true
+	add_child(ui_update_timer)
+	
 	# Update initial UI state
 	update_tower_selection_ui()
+	update_info_label()
 
 func start_game():
 	# Start the first wave
@@ -94,6 +105,10 @@ func _on_tower_placed(_grid_pos: Vector2i):
 
 func _on_tower_placement_failed(reason: String):
 	print("Tower placement failed: ", reason)
+
+func _on_ui_update_timer_timeout():
+	# Update info label every second to refresh timer display
+	update_info_label()
 
 func update_tower_selection_ui():
 	# Update cost label
