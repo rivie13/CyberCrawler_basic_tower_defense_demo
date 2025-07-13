@@ -1,0 +1,26 @@
+---
+alwaysApply: true
+---
+Always try to look for tools with the retrieve_tools call first before using the tools directly. You need to look for the proper tool for the job. You need to look by mcp server which I have a few of. We are using a mcp proxy to run the tools.
+
+make sure to use correct project path and project name when using the tools.
+example: for godot, the project path is C:/Users/rivie/CursorProjects/CyberCrawler_basic_tower_defense_demo/cybercrawler_basictowerdefense and the project name is cybercrawler_basictowerdefense
+
+GoDot logs: user://logs/godot.log (this is the default location for godot logs) which is: C:\Users\rivie\AppData\Roaming\Godot\app_userdata\CyberCrawler_BasicTowerDefense\logs\godot.log
+
+there are up to 5 log files to look through.
+
+use mcp tools and reading of code first before writing new code to figure out what exists and what doesn't exist. this is to try to prevent hallucinations.
+
+after you figure out the tool you want to use, use call_tool to call the tool.
+
+
+#IMPORTANT: Read code and use mcp tools first to figure out the code first.
+
+MCP Tools:
+- Godot
+- Blender
+- Trello
+- GitHub
+
+you may need to use the documentation of the tool to figure out how to use the tool.
