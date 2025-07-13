@@ -6,7 +6,9 @@ Always try to look for tools with the retrieve_tools call first before using the
 make sure to use correct project path and project name when using the tools.
 example: for godot, the project path is C:/Users/rivie/CursorProjects/CyberCrawler_basic_tower_defense_demo/cybercrawler_basictowerdefense and the project name is cybercrawler_basictowerdefense
 
-GoDot logs: C:/Users/rivie/CursorProjects/CyberCrawler_basic_tower_defense_demo/cybercrawler_basictowerdefense/logs/godot.log
+GoDot logs: user://logs/godot.log (this is the default location for godot logs) which is: C:\Users\rivie\AppData\Roaming\Godot\app_userdata\CyberCrawler_BasicTowerDefense\logs\godot.log
+
+there are up to 5 log files to look through.
 
 use mcp tools and reading of code first before writing new code to figure out what exists and what doesn't exist. this is to try to prevent hallucinations.
 
