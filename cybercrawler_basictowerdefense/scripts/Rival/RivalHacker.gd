@@ -8,6 +8,9 @@ class_name RivalHacker
 @export var attack_damage: int = 3  # High damage to player towers
 @export var detection_range: float = 400.0  # Range to detect player towers
 
+# Click damage properties
+# Click damage properties handled by Clickable interface (between enemy and tower sizes)
+
 # Targeting and movement
 var current_target: Tower = null
 var target_position: Vector2
@@ -197,6 +200,19 @@ func die():
 	hacker_destroyed.emit(self)
 	print("RivalHacker destroyed!")
 	queue_free()
+
+# Click damage detection using Clickable interface
+func is_clicked_at(world_pos: Vector2) -> bool:
+	"""Check if a world position click hits this RivalHacker"""
+	return Clickable.is_clicked_at(global_position, world_pos, Clickable.RIVAL_HACKER_CONFIG)
+
+func handle_click_damage():
+	"""Handle damage from player click"""
+	return Clickable.handle_click_damage(self, Clickable.RIVAL_HACKER_CONFIG, "RivalHacker")
+
+func get_health_info() -> String:
+	"""Get health information for logging"""
+	return " Health: " + str(health) + "/" + str(max_health)
 
 func stop_activity():
 	# Stop all hacker activity for game over
