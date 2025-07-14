@@ -15,7 +15,7 @@ enum AlertType {
 
 # Alert configuration
 @export var time_window_for_burst: float = 5.0  # Time window to check for "at once" placements
-@export var max_towers_per_burst: int = 2  # Max towers allowed in time window (lowered from 3 for testing)
+@export var max_towers_per_burst: int = 3  # Max towers allowed in time window
 @export var max_powerful_towers_per_burst: int = 1  # Max powerful towers in time window (lowered from 2 for testing)
 @export var exit_proximity_threshold: int = 3  # Grid cells from exit point
 @export var powerful_tower_damage_threshold: int = 1  # Damage threshold for "powerful" towers (lowered from 3 for testing)
