@@ -6,6 +6,10 @@ class_name Enemy
 @export var health: int = 3
 @export var max_health: int = 3
 
+# Click damage properties
+@export var click_damage_taken: int = 1  # Damage taken per click
+@export var click_radius: float = 20.0   # Click detection radius (smaller than towers)
+
 # Path following
 var path_points: Array[Vector2] = []
 var current_path_index: int = 0
@@ -125,6 +129,41 @@ func die():
 	is_alive = false
 	enemy_died.emit(self)
 	queue_free()
+
+# Click damage detection
+func is_clicked_at(world_pos: Vector2) -> bool:
+	"""Check if a world position click hits this enemy"""
+	return global_position.distance_to(world_pos) <= click_radius
+
+func handle_click_damage():
+	"""Handle damage from player click"""
+	if not is_alive:
+		return false
+	
+	# Apply click damage
+	take_damage(click_damage_taken)
+	
+	# Create visual feedback
+	create_click_feedback()
+	
+	print("Enemy was clicked! Took ", click_damage_taken, " damage. Health: ", health, "/", max_health)
+	return true
+
+func create_click_feedback():
+	"""Create visual feedback when enemy is clicked"""
+	# Create a temporary damage indicator
+	var damage_label = Label.new()
+	damage_label.text = "-" + str(click_damage_taken)
+	damage_label.position = Vector2(-10, -35)
+	damage_label.add_theme_color_override("font_color", Color.ORANGE)
+	damage_label.add_theme_font_size_override("font_size", 14)
+	add_child(damage_label)
+	
+	# Animate the damage number
+	var tween = create_tween()
+	tween.parallel().tween_property(damage_label, "position", damage_label.position + Vector2(0, -25), 0.8)
+	tween.parallel().tween_property(damage_label, "modulate:a", 0.0, 0.8)
+	tween.tween_callback(damage_label.queue_free)
 
 func reach_end():
 	enemy_reached_end.emit(self)

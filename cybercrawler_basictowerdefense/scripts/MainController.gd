@@ -118,10 +118,34 @@ func _input(event):
 		grid_manager.handle_mouse_hover(world_mouse_pos)
 
 func handle_grid_click(global_pos: Vector2):
+	# First check if we clicked on an enemy entity for damage
+	if try_click_damage_enemy(global_pos):
+		return  # If we hit an enemy, don't try tower placement
+	
+	# If no enemy was hit, try tower placement
 	var grid_pos = grid_manager.world_to_grid(global_pos)
 	
 	if grid_manager.is_valid_grid_position(grid_pos):
 		tower_manager.attempt_tower_placement(grid_pos, selected_tower_type)
+
+func try_click_damage_enemy(global_pos: Vector2) -> bool:
+	"""Try to damage an enemy entity at the clicked position. Returns true if an enemy was hit."""
+	
+	# Check enemy towers first (larger targets, easier to click)
+	if rival_hacker_manager:
+		var enemy_towers = rival_hacker_manager.get_enemy_towers()
+		for enemy_tower in enemy_towers:
+			if is_instance_valid(enemy_tower) and enemy_tower.is_clicked_at(global_pos):
+				return enemy_tower.handle_click_damage()
+	
+	# Check regular enemies
+	if wave_manager:
+		var enemies = wave_manager.get_enemies()
+		for enemy in enemies:
+			if is_instance_valid(enemy) and enemy.is_clicked_at(global_pos):
+				return enemy.handle_click_damage()
+	
+	return false  # No enemy was hit
 
 func _on_basic_tower_selected():
 	selected_tower_type = BASIC_TOWER
