@@ -43,12 +43,7 @@ func setup_timers():
 	placement_timer.autostart = false
 	add_child(placement_timer)
 	
-	# Timer for initial activation delay
-	# Remove activation_timer = Timer.new()
-	# Remove activation_timer.wait_time = activation_delay
-	# Remove activation_timer.timeout.connect(_on_activation_timer_timeout)
-	# Remove activation_timer.one_shot = true
-	# add_child(activation_timer)
+	# Timer for initial activation delay - removed (now using alert-based activation)
 
 func initialize(grid_mgr: GridManager, currency_mgr: CurrencyManager, tower_mgr: TowerManager, wave_mgr: WaveManager):
 	grid_manager = grid_mgr
@@ -95,7 +90,6 @@ func activate():
 		return
 	
 	print("RivalHacker: Starting activation sequence...")
-	# Remove activation_timer.start()
 	
 	# Start alert system monitoring immediately
 	if alert_system:
@@ -207,19 +201,14 @@ func _on_player_tower_placed(grid_pos: Vector2i):
 		# Get the actual tower object from the tower manager
 		var towers = tower_manager.get_towers()
 		if towers.size() > 0:
-			var latest_tower = towers[-1]  # Get the most recently placed tower
+			var latest_tower = towers[towers.size() - 1]  # Get the most recently placed tower
 			alert_system.on_player_tower_placed(grid_pos, latest_tower)
 	
-	# Remove early activation logic since we only want alert-based activation
-	# if not is_active and player_threat_level >= 3:
-	#	print("RivalHacker: Player threat detected! Activating early...")
-	#	# Remove activation_timer.stop()
-	#	_on_activation_timer_timeout()
+	# Early activation logic removed - now using alert-based activation only
 
 func deactivate():
 	is_active = false
 	placement_timer.stop()
-	# Remove activation_timer.stop()
 
 func get_enemy_towers() -> Array:
 	return enemy_towers_placed
@@ -254,6 +243,10 @@ func _on_alert_triggered(alert_type: String, severity: float):
 			respond_to_powerful_tower_alert(severity)
 		"HONEYPOT_TRAP_DETECTED":
 			respond_to_honeypot_alert(severity)
+		"TRAP_STRATEGY_DETECTED":
+			respond_to_trap_strategy_alert(severity)
+		"RUSH_STRATEGY_DETECTED":
+			respond_to_rush_strategy_alert(severity)
 		"MULTI_FACTOR_THREAT", "CRITICAL_COMBINATION_THREAT", "SOPHISTICATED_THREAT":
 			respond_to_critical_alert(alert_type, severity)
 		_:
@@ -281,6 +274,16 @@ func respond_to_honeypot_alert(severity: float):
 	# Player fell for honeypot trap - this is good for us, be more aggressive
 	placement_timer.wait_time = max(0.5, placement_interval - severity * 1.8)
 	print("RivalHacker: Player triggered honeypot - increasing aggression")
+
+func respond_to_trap_strategy_alert(severity: float):
+	# Player is using trap strategy (honeypot + burst placement) - counter with strategic placement
+	placement_timer.wait_time = max(0.6, placement_interval - severity * 1.5)
+	print("RivalHacker: Trap strategy detected - deploying counter-measures")
+
+func respond_to_rush_strategy_alert(severity: float):
+	# Player is using rush strategy (proximity + burst placement) - respond with defensive positioning
+	placement_timer.wait_time = max(0.4, placement_interval - severity * 2.0)
+	print("RivalHacker: Rush strategy detected - activating defensive protocols")
 
 func respond_to_critical_alert(alert_type: String, severity: float):
 	# Critical threat detected - maximum response
