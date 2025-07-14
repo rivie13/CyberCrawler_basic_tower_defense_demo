@@ -136,7 +136,7 @@ func check_exit_proximity_alert(grid_pos: Vector2i):
 			alert_triggered.emit("TOWERS_TOO_CLOSE_TO_EXIT", severity)
 			print("RivalAlertSystem: EXIT PROXIMITY ALERT - Tower placed too close to exit too soon (severity: ", severity, ")")
 
-func calculate_exit_proximity_severity(grid_pos: Vector2i, distance_to_exit: int) -> float:
+func calculate_exit_proximity_severity(_grid_pos: Vector2i, distance_to_exit: int) -> float:
 	# Calculate severity based on multiple factors
 	var severity = 0.0
 	
@@ -262,12 +262,12 @@ func check_powerful_tower_alert():
 
 func calculate_tower_power_level(stats: Dictionary) -> float:
 	var damage = stats.get("damage", 1)
-	var range = stats.get("range", 100.0)
+	var tower_range = stats.get("range", 100.0)  # Renamed to avoid built-in function conflict
 	var attack_rate = stats.get("attack_rate", 1.0)
 	
 	# Normalize each stat to 0-1 scale based on expected values
 	var damage_score = min(1.0, damage / 5.0)  # Assuming max damage of 5 for normalization
-	var range_score = min(1.0, range / 300.0)  # Assuming max range of 300 for normalization
+	var range_score = min(1.0, tower_range / 300.0)  # Assuming max range of 300 for normalization
 	var attack_rate_score = min(1.0, attack_rate / 3.0)  # Assuming max attack rate of 3 for normalization
 	
 	# Calculate weighted power level
@@ -361,12 +361,12 @@ func calculate_honeypot_severity(grid_pos: Vector2i) -> float:
 
 func is_powerful_tower(stats: Dictionary) -> bool:
 	var damage = stats.get("damage", 0)
-	var range = stats.get("range", 0.0)
+	var tower_range = stats.get("range", 0.0)  # Renamed to avoid built-in function conflict
 	var attack_rate = stats.get("attack_rate", 0.0)
 	
 	# A tower is considered "powerful" if it has high damage, range, or attack rate
 	return damage >= powerful_tower_damage_threshold or \
-		   range >= powerful_tower_range_threshold or \
+		   tower_range >= powerful_tower_range_threshold or \
 		   attack_rate >= 2.0  # High attack rate threshold
 
 func calculate_alert_level():
