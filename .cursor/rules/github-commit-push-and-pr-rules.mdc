@@ -15,6 +15,7 @@ description: |
     - Test the game in Godot to ensure all new and existing features work as intended.
     - If issues are found, fix them and commit those fixes before pushing.
     - Do not push broken or untested code.
+    - BEFORE A COMMIT IS PUSHED, MAKE SURE THE GAME WORKS AS INTENDED. That means test the game in Godot to ensure all new and existing features work as intended... before pushing.
 
   ## 3. Pull Requests (PRs)
   - Open a PR from your feature branch to `dev` (or from `dev` to `main`).
