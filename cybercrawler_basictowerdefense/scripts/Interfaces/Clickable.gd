@@ -40,10 +40,7 @@ static func is_clicked_at(entity_position: Vector2, world_pos: Vector2, config: 
 # Handle click damage for an entity
 static func handle_click_damage(entity: Node2D, config: ClickConfig, entity_name: String = "Entity") -> bool:
 	"""Handle damage from player click"""
-	if not entity.has_method("is_alive") and not entity.has_signal("is_alive") and not ("is_alive" in entity):
-		push_error("Entity " + entity_name + " does not have is_alive property")
-		return false
-	
+	# Simple check - trust that entities using this interface have is_alive and take_damage
 	if not entity.is_alive:
 		return false
 	

@@ -251,12 +251,6 @@ func _draw():
 		draw_circle(Vector2.ZERO, tower_range, range_color)
 
 # For debugging
-func _input(event):
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
-		var mouse_pos = get_global_mouse_position()
-		if global_position.distance_to(mouse_pos) < 32:
-			show_range_debug()
-
 func show_range_debug():
 	print("Tower at ", grid_position, " - Range: ", tower_range, " - Current Target: ", current_target)
 	# Toggle range visualization for debugging
