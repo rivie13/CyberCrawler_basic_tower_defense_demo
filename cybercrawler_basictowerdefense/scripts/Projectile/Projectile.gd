@@ -5,7 +5,7 @@ class_name Projectile
 const HIT_THRESHOLD: float = 10.0  # Distance threshold for projectile hits
 
 # Projectile properties
-var target: Enemy
+var target: Node  # Can be Enemy or Tower (any Node with take_damage method)
 var damage: int
 var speed: float
 var start_position: Vector2
@@ -25,14 +25,21 @@ func setup(start_pos: Vector2, target_enemy: Enemy, projectile_damage: int, proj
 	damage = projectile_damage
 	speed = projectile_speed
 
+func setup_for_tower_target(start_pos: Vector2, target_tower: Node, projectile_damage: int, projectile_speed: float):
+	global_position = start_pos
+	start_position = start_pos
+	target = target_tower
+	damage = projectile_damage
+	speed = projectile_speed
+
 func _process(delta):
 	if not target or not is_instance_valid(target):
 		queue_free()
 		return
 	
 	# Check if game is over (projectiles should stop when game ends)
-	var grid_system = get_parent()
-	if grid_system and grid_system.has_method("is_game_over") and grid_system.is_game_over():
+	var main_controller = get_main_controller()
+	if main_controller and main_controller.game_manager and main_controller.game_manager.is_game_over():
 		queue_free()
 		return
 	
@@ -47,4 +54,13 @@ func _process(delta):
 func hit_target():
 	if target and is_instance_valid(target):
 		target.take_damage(damage)
-	queue_free() 
+	queue_free()
+
+func get_main_controller():
+	# Navigate up the tree to find MainController
+	var current_node = self
+	while current_node:
+		if current_node is MainController:
+			return current_node
+		current_node = current_node.get_parent()
+	return null 

@@ -1,6 +1,10 @@
 extends Node2D
 class_name GameManager
 
+# Signals for game state changes
+signal game_over_triggered()
+signal game_won_triggered()
+
 # Game state
 var player_health: int = 10
 var enemies_killed: int = 0
@@ -90,7 +94,8 @@ func trigger_game_over():
 	# Clean up projectiles
 	cleanup_projectiles()
 	
-	# Game over UI will be handled by MainController
+	# Emit signal for UI handling
+	game_over_triggered.emit()
 
 func trigger_game_won():
 	if game_won or game_over:
@@ -100,16 +105,22 @@ func trigger_game_won():
 	var max_waves = wave_manager.get_max_waves() if wave_manager else 10
 	print("Victory! You survived all ", max_waves, " waves and killed ", enemies_killed, " enemies!")
 	
-	# Stop all systems
+	# Stop all systems (same as game over)
 	if wave_manager:
 		wave_manager.stop_all_timers()
+		wave_manager.cleanup_all_enemies()
 	
-	# Victory screen will be handled by MainController
+	if tower_manager and tower_manager.has_method("stop_all_towers"):
+		tower_manager.stop_all_towers()
 	
-	# Victory UI will be handled by MainController
+	# Clean up projectiles
+	cleanup_projectiles()
+	
+	# Emit signal for UI handling
+	game_won_triggered.emit()
 
 func get_victory_data() -> Dictionary:
-	var max_waves = wave_manager.get_max_waves() if wave_manager else 10
+	var max_waves = wave_manager.max_waves if wave_manager else 10
 	var current_currency = currency_manager.get_currency() if currency_manager and currency_manager.has_method("get_currency") else 0
 	var final_time = format_time(get_session_time())
 	
@@ -118,6 +129,20 @@ func get_victory_data() -> Dictionary:
 		"enemies_killed": enemies_killed,
 		"currency": current_currency,
 		"time_played": final_time
+	}
+
+func get_game_over_data() -> Dictionary:
+	var current_wave = wave_manager.current_wave if wave_manager else 1
+	var current_currency = currency_manager.get_currency() if currency_manager and currency_manager.has_method("get_currency") else 0
+	var final_time = format_time(get_session_time())
+	
+	return {
+		"waves_survived": current_wave - 1,  # Since they failed on current wave
+		"current_wave": current_wave,
+		"enemies_killed": enemies_killed,
+		"currency": current_currency,
+		"time_played": final_time,
+		"player_health": player_health
 	}
 
 func get_info_label_text() -> String:
@@ -169,7 +194,7 @@ func _on_exit_game_pressed():
 	get_tree().quit()
 
 func is_game_over() -> bool:
-	return game_over
+	return game_over or game_won
 
 func get_player_health() -> int:
 	return player_health

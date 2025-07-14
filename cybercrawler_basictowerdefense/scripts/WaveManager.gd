@@ -26,12 +26,15 @@ var max_waves: int = 10  # Win condition: survive 10 waves
 
 # Grid reference for positioning
 var grid_manager: Node
+var grid_layout: GridLayout
+var selected_layout_type: GridLayout.LayoutType
 
 func _ready():
 	setup_enemy_spawning()
 
 func initialize(grid_ref: Node):
 	grid_manager = grid_ref
+	grid_layout = GridLayout.new(grid_manager)
 	create_enemy_path()
 
 func setup_enemy_spawning():
@@ -49,38 +52,30 @@ func setup_enemy_spawning():
 	add_child(wave_timer)
 
 func create_enemy_path():
-	if not grid_manager:
-		push_error("WaveManager: grid_manager not set!")
+	if not grid_layout:
+		push_error("WaveManager: grid_layout not set!")
 		return
-		
-	# Create a simple path from left to right across the grid
-	enemy_path = []
-	var grid_height = grid_manager.GRID_HEIGHT
-	var grid_width = grid_manager.GRID_WIDTH
-	var grid_size = grid_manager.GRID_SIZE
-	var start_y = grid_height / 2.0
 	
-	# Path goes from left edge to right edge
-	for x in range(grid_width + 2):
-		var world_pos = Vector2((x - 1) * grid_size + grid_size / 2.0, start_y * grid_size + grid_size / 2.0)
-		enemy_path.append(world_pos)
+	# Randomly select a layout type for variety (only select once)
+	var layout_types = [
+		GridLayout.LayoutType.STRAIGHT_LINE,
+		GridLayout.LayoutType.L_SHAPED,
+		GridLayout.LayoutType.S_CURVED,
+		GridLayout.LayoutType.ZIGZAG
+	]
+	selected_layout_type = layout_types[randi() % layout_types.size()]
+	
+	print("WaveManager: Selected random layout type: ", selected_layout_type)
+	
+	# Use GridLayout to create the enemy path with selected layout
+	enemy_path = grid_layout.create_path(selected_layout_type)
 
 func get_path_grid_positions() -> Array[Vector2i]:
-	if not grid_manager:
+	if not grid_layout:
 		return []
-		
-	var path_positions: Array[Vector2i] = []
-	var grid_height = grid_manager.GRID_HEIGHT
-	var grid_width = grid_manager.GRID_WIDTH
-	var start_y = grid_height / 2.0
-	var path_grid_y = int(start_y)
 	
-	# Track grid positions that are part of the path (only those within the grid)
-	for x in range(1, grid_width + 1):
-		var grid_pos = Vector2i(x - 1, path_grid_y)
-		path_positions.append(grid_pos)
-	
-	return path_positions
+	# Use the same selected layout type for consistency
+	return grid_layout.get_path_grid_positions(selected_layout_type)
 
 func start_wave():
 	if wave_active or current_wave > max_waves:
@@ -107,14 +102,15 @@ func _on_enemy_spawn_timer_timeout():
 	enemies_spawned_this_wave += 1
 
 func _on_wave_timer_timeout():
+	# Check if we've completed all waves
+	if current_wave >= max_waves:
+		all_waves_completed.emit()
+		return
+	
 	# Start next wave
 	current_wave += 1
 	enemies_per_wave += 2  # Increase difficulty
-	
-	if current_wave > max_waves:
-		all_waves_completed.emit()
-	else:
-		start_wave()
+	start_wave()
 
 func spawn_enemy():
 	var enemy = ENEMY_SCENE.instantiate()

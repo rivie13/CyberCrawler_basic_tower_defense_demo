@@ -130,6 +130,9 @@ func is_on_enemy_path(grid_pos: Vector2i) -> bool:
 func get_grid_container() -> Node2D:
 	return grid_container
 
+func get_grid_size() -> Vector2i:
+	return Vector2i(GRID_WIDTH, GRID_HEIGHT)
+
 func _draw():
 	# Draw hover highlight
 	if is_valid_grid_position(hover_grid_pos) and not is_grid_occupied(hover_grid_pos) and not is_on_enemy_path(hover_grid_pos):

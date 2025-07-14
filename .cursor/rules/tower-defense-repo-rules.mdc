@@ -1,83 +1,101 @@
----
-alwaysApply: true
----
 
-# Tower Defense Repository Scope Rule
+# Enhanced Tower Defense Repository Scope Rule
 
 ## Repository Purpose - STRICTLY ENFORCED
 
-This repository is **EXCLUSIVELY** for the basic tower defense demo that serves as Phase 1 of the CyberCrawler vertical slice. 
+This repository is **EXCLUSIVELY** for the enhanced tower defense demo that serves as Phase 1B of the CyberCrawler vertical slice. 
 
 ### What This Repository IS For:
-- **Basic tower defense gameplay mechanics**
-- **Grid-based map system**  
-- **Player tower placement and management**
-- **Enemy creep movement and pathfinding**
-- **Basic resource management**
-- **Simple combat system (towers vs enemies)**
-- **Core game loop: build → defend → survive**
+- **Enhanced tower defense gameplay mechanics** with rival AI opponent
+- **Strategic grid-based combat system** (player vs AI hacker)
+- **Bidirectional tower combat** (towers fight towers)
+- **Program data packet transmission mechanics** (core win condition)
+- **Dynamic grid layouts** with strategic positioning
+- **Tower health and destruction systems**
+- **Rival hacker AI** that places and manages enemy towers
+- **Advanced resource management** for strategic depth
 
 ### What This Repository IS NOT For:
-- ❌ **Stealth gameplay mechanics**
-- ❌ **Hub/Safehouse systems**
+- ❌ **Stealth gameplay mechanics** (separate project)
+- ❌ **Hub/Safehouse systems** (separate project)
 - ❌ **Character dialogue or story elements**
-- ❌ **Complex 3D assets or animations**
-- ❌ **Multiple game modes or sections**
-- ❌ **Advanced AI systems beyond basic tower defense**
+- ❌ **Multiple game modes beyond enhanced tower defense**
 - ❌ **Networking or multiplayer features**
-- ❌ **Complete art pipelines or final assets**
+- ❌ **Final art assets** (placeholder art only)
 
-## Phase 1 Implementation Guidelines
+## Phase 1B Implementation Guidelines
 
-### Core Requirements (Must Have)
-- **Single grid map** - Simple, functional layout
-- **One type of player tower** - Basic attack functionality
-- **One type of enemy creep** - Follows path from A to B
-- **Tower placement system** - Click to place, basic validation
-- **Enemy spawning system** - Simple wave-based spawning
-- **Basic win/lose conditions** - Clear objectives
+### Phase 1A: Basic Tower Defense ✅ COMPLETED
+- [x] Single grid map with simple path
+- [x] Basic player towers that shoot at enemies  
+- [x] Enemy waves that move along path
+- [x] Currency system and tower purchasing
+- [x] Win/lose conditions (10 waves survival)
+- [x] Victory screen implementation
 
-### Phase 1 Constraints (Must NOT Have)
-- **Multiple tower types** - Keep it simple initially
-- **Complex enemy varieties** - One basic enemy type only
-- **Advanced graphics** - Use colored squares/circles for prototyping
-- **Sound/Music integration** - Focus on mechanics first
-- **UI polish** - Functional over beautiful
+### Phase 1B: Enhanced Strategic Tower Defense 🚧 IN PROGRESS
+
+#### Core Requirements (Must Have)
+- **Enhanced grid system** - Strategic layouts with multiple paths/chokepoints
+- **Player program data packet** - Core win condition mechanic
+- **Rival hacker AI** - AI opponent that places enemy towers
+- **Bidirectional combat** - Player towers vs enemy towers
+- **Tower health systems** - Destructible towers with health bars
+- **Strategic depth** - Chess-like tactical gameplay
+
+#### Current Constraints (Must NOT Have)
+- **Stealth mechanics** - Belongs in separate stealth project
+- **Hub/safehouse systems** - Belongs in separate hub project
+- **Multiple tower varieties** - Keep to basic + enemy tower types
+- **Complex 3D graphics** - Focus on strategic gameplay mechanics
+- **Sound/Music integration** - Mechanics first, polish later
 - **Save/Load systems** - Not needed for prototype
 
-## Current Development Focus (From Trello Board)
+## Current Development Focus (Updated July 2025)
 
-### Active Development Priorities (July 2025)
-1. **Code Organization & Structure**
-   - Reorganize files into logical directories (scripts/, scenes/, etc.)
-   - Improve class separation and modularity
-   - Better project structure for expansion
+### HIGH PRIORITY - Core Functionality
+1. **Debug and improve tower defense prototype** 
+   - Fix any remaining bugs from Phase 1A
+   - Ensure victory/defeat conditions work correctly
+   - Optimize performance for enhanced features
 
-2. **Basic Currency System** 
-   - Tower defense scope only (no complex economics)
-   - Simple resource earning from enemy kills
-   - Currency display in UI
+2. **Code organization and architecture**
+   - Separate systems into proper classes
+   - Prepare codebase for AI opponent integration
+   - Ensure modular design for future expansion
 
-3. **Basic Timer Functionality**
-   - Wave countdown timers
-   - Game session timing
-   - Time-based events
+### NEXT PRIORITIES - Enhanced Mechanics
+3. **Enhanced Grid System**
+   - Replace straight-line path with strategic layouts
+   - Multiple paths and chokepoints for tactical decisions
+   - Grid positions that favor different strategies
 
-4. **Tower Purchase System**
-   - Enable buying towers with currency
-   - Replace free placement with purchase mechanics
-   - Basic cost balancing
+4. **Player Program Data Packet**
+   - Core win condition: transport data through enemy defenses
+   - Can be attacked and destroyed by enemy towers
+   - Player victory when packet reaches destination
 
-5. **Tower Selection UI**
-   - Simple interface for tower types
-   - Purchase confirmation
-   - Currency status display
+5. **Rival Hacker AI Foundation**
+   - AI system that places enemy towers strategically
+   - Responds to player tower placement decisions
+   - Creates meaningful opposition and challenge
+
+### MEDIUM PRIORITY - Strategic Depth
+6. **Bidirectional Combat System**
+   - Player towers can target and destroy enemy towers
+   - Enemy towers can target and destroy player towers
+   - Dynamic battlefield with shifting control
+
+7. **Tower Health Systems**
+   - Both player and enemy towers have health points
+   - Visual health indicators for tactical feedback
+   - Destruction and rebuilding mechanics
 
 ### Implementation Notes
-- All features must maintain "basic" prototype level
-- No feature creep beyond core tower defense mechanics
-- Each addition should enhance the core loop: build → defend → survive
-- UI should remain functional over beautiful
+- **Strategic depth over visual polish** - Gameplay mechanics first
+- **AI opponent focus** - Rival hacker must provide meaningful challenge
+- **Modular architecture** - Systems must support future integration
+- **Enhanced prototype level** - Functional systems with strategic depth
 
 ## Trello Board Integration
 
@@ -85,94 +103,95 @@ All feature additions must be approved through the [CyberCrawler_VerticalSlice](
 
 ### Development Workflow:
 1. **Backlog** - Features must be added here first
-2. **To Do** - Ready for implementation
+2. **To Do** - Ready for implementation  
 3. **Doing (prototyping)** - Currently being worked on
 4. **Done** - Completed and tested
 
 ### Expansion Rules:
 - **Only add features listed in Trello backlog**
-- **No feature creep beyond tower defense scope**
-- **All additions must maintain "basic" implementation level**
-- **Complex features require breaking down into basic components**
+- **No feature creep beyond enhanced tower defense scope**
+- **All additions must serve strategic hacker vs hacker gameplay**
+- **Complex features require breaking down into implementable components**
 
 ## Implementation Standards
 
 ### Code Structure:
-- **Modular design** - Separate systems for towers, enemies, grid, etc.
-- **Simple architecture** - No over-engineering for basic prototype
-- **Clear separation** - Tower logic ≠ Enemy logic ≠ Grid logic
-- **Godot best practices** - Use appropriate nodes and scenes
+- **Modular design** - Separate systems for players, AI, towers, combat, grid
+- **Strategic architecture** - Support for AI opponent and bidirectional combat
+- **Clear separation** - Player logic ≠ AI logic ≠ Tower logic ≠ Grid logic
+- **Expandable foundation** - Prepare for future stealth/hub integration
 
 ### Asset Requirements:
-- **Placeholder art only** - Focus on functionality
-- **Consistent style** - Simple geometric shapes or basic sprites
-- **No final assets** - This is a prototype, not a finished game
-- **Blender workflow** - If 3D models needed, use Blender → 2D pipeline
+- **Strategic placeholder art** - Focus on gameplay clarity
+- **Consistent tactical style** - Clear visual differentiation of systems
+- **No final assets** - This is still a prototype phase
+- **Functional over beautiful** - Strategic gameplay first
 
 ### Testing Criteria:
-- **Can player place towers?** - Basic interaction works
-- **Do enemies follow paths?** - Movement system functional
-- **Do towers attack enemies?** - Combat system operational
-- **Are win/lose conditions clear?** - Game loop complete
+- **Can player place towers strategically?** - Enhanced interaction works
+- **Does AI opponent provide challenge?** - Rival hacker creates tension
+- **Do bidirectional combat mechanics work?** - Tower vs tower combat
+- **Is program data packet system functional?** - Core win condition works
+- **Are strategic decisions meaningful?** - Tactical depth present
 
 ## Scope Violation Prevention
 
 ### Red Flags - STOP IMMEDIATELY:
-- **Adding stealth mechanics** - Wrong repository
+- **Adding stealth mechanics** - Wrong repository (separate stealth project)
 - **Creating story elements** - Wrong repository  
-- **Building hub systems** - Wrong repository
-- **Complex AI beyond basic pathfinding** - Too advanced for Phase 1
-- **Multiple game modes** - Scope creep
+- **Building hub systems** - Wrong repository (separate hub project)
+- **Multiple game modes** - Scope creep beyond enhanced tower defense
 - **Advanced graphics rendering** - Premature optimization
+- **Complex AI beyond rival hacker** - Too advanced for Phase 1B
 
 ### Yellow Flags - Review Before Proceeding:
-- **Adding second tower type** - Check Trello board first
-- **Enemy variety** - Ensure it's in approved backlog
-- **UI improvements** - Functional > Beautiful at this stage
-- **Performance optimization** - May be premature
+- **Additional tower types** - Check if it serves strategic depth
+- **Complex UI systems** - Functional > Beautiful at this stage
+- **Performance optimization** - May be premature unless blocking development
 
 ## Quality Gates
 
 ### Before ANY Implementation:
 - [ ] Is this feature on the Trello board?
-- [ ] Does this serve the basic tower defense prototype?
-- [ ] Am I staying within Phase 1 constraints?
-- [ ] Will this help answer "Is the basic TD concept fun?"
+- [ ] Does this serve the enhanced tower defense with rival AI?
+- [ ] Am I staying within Phase 1B scope?
+- [ ] Will this enhance strategic hacker vs hacker gameplay?
 
 ### Before ANY Commit:
-- [ ] Does the game still focus on tower defense only?
-- [ ] Are the core mechanics (place tower, enemy moves, tower shoots) working?
+- [ ] Does the game still focus on enhanced tower defense only?
+- [ ] Are the strategic mechanics (AI opponent, bidirectional combat) working?
 - [ ] Have I avoided adding stealth/hub/story elements?
-- [ ] Is this still a "basic" implementation?
+- [ ] Does this maintain the "enhanced prototype" level?
 
 ## Success Metrics
 
-### Phase 1 Complete When:
-- **Player can place towers on grid**
-- **Enemies spawn and follow path**
-- **Towers automatically attack enemies in range**
-- **Win condition: All enemies defeated**
-- **Lose condition: Too many enemies reach end**
-- **Core loop is fun and engaging**
+### Phase 1B Complete When:
+- **Player can place towers strategically on enhanced grid**
+- **AI opponent places enemy towers that create meaningful challenge**
+- **Bidirectional combat works (towers fight towers)**
+- **Program data packet system provides core win condition**
+- **Strategic depth creates engaging hacker vs hacker gameplay**
+- **Core enhanced tower defense loop is fun and tactically rich**
 
 ### Ready for Phase 2 When:
-- **Basic tower defense mechanics proven fun**
-- **Code structure supports expansion**
-- **All Phase 1 requirements met**
-- **Trello board shows Phase 1 tasks complete**
+- **Enhanced tower defense mechanics proven strategically engaging**
+- **AI opponent provides satisfying challenge**
+- **Code structure supports stealth integration**
+- **All Phase 1B requirements met**
+- **Trello board shows Phase 1B tasks complete**
 
 ## Rule Enforcement
 
 ### Automatic Checks:
-- **No stealth-related code** - Keywords: "stealth", "hide", "sneak"
-- **No hub-related code** - Keywords: "safehouse", "base", "hub"
-- **No story-related code** - Keywords: "dialogue", "cutscene", "narrative"
+- **No stealth-related code** - Keywords: "stealth", "hide", "sneak", "infiltrate"
+- **No hub-related code** - Keywords: "safehouse", "base", "hub", "upgrade shop"
+- **No story-related code** - Keywords: "dialogue", "cutscene", "narrative", "character"
 
 ### Manual Reviews:
-- **Weekly scope review** - Are we staying focused?
-- **Feature addition review** - Trello board alignment
-- **Complexity assessment** - Are we keeping it basic?
+- **Scope adherence review** - Are we staying focused on enhanced tower defense?
+- **Strategic depth assessment** - Does this enhance hacker vs hacker gameplay?
+- **AI opponent integration** - Does this support or improve rival hacker challenge?
 
-**Remember**: This is a prototype to test if the basic tower defense concept is fun. Everything else is scope creep that will delay the vertical slice and violate the phased development approach.
+**Remember**: This is an enhanced strategic tower defense prototype focused on hacker vs hacker tactical gameplay. Everything else is scope creep that will delay the vertical slice and violate the phased development approach.
 
-**Focus**: Build the minimum viable tower defense game. Make it fun. Then move to Phase 2. 
+**Focus**: Build the strategic hacker duel experience. Make the AI opponent engaging. Perfect the tactical depth. Then move to Phase 2. 
