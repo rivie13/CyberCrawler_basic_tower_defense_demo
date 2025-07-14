@@ -105,3 +105,28 @@ offset_right = 75.0
 offset_bottom = 100.0
 text = "Selected: Basic"
 horizontal_alignment = 1
+
+[node name="ModeToggleButton" type="Button" parent="UI/TowerSelectionPanel"]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -75.0
+offset_top = 110.0
+offset_right = 75.0
+offset_bottom = 140.0
+text = "Mode: Build Towers"
+
+[node name="ModeIndicatorLabel" type="Label" parent="UI/TowerSelectionPanel"]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -75.0
+offset_top = 150.0
+offset_right = 75.0
+offset_bottom = 170.0
+text = "Click: Place Towers"
+horizontal_alignment = 1

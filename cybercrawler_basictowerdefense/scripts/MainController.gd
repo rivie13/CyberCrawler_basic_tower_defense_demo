@@ -10,6 +10,10 @@ const WARNING_COLOR = Color(0.8, 0.8, 0.2)  # Accessible yellow for warnings
 const BASIC_TOWER = "basic"
 const POWERFUL_TOWER = "powerful"
 
+# Click mode constants
+const MODE_BUILD_TOWERS = "build_towers"
+const MODE_ATTACK_ENEMIES = "attack_enemies"
+
 # Manager references
 var grid_manager: GridManager
 var wave_manager: WaveManager  
@@ -23,6 +27,9 @@ var ui_update_timer: Timer
 
 # Tower selection system
 var selected_tower_type: String = BASIC_TOWER  # Default to basic tower
+
+# Click mode system
+var current_click_mode: String = MODE_BUILD_TOWERS  # Default to tower building mode
 
 func _ready():
 	setup_managers()
@@ -88,6 +95,11 @@ func setup_ui():
 	if powerful_tower_button:
 		powerful_tower_button.pressed.connect(_on_powerful_tower_selected)
 	
+	# Setup mode toggle button
+	var mode_toggle_button = $UI/TowerSelectionPanel/ModeToggleButton
+	if mode_toggle_button:
+		mode_toggle_button.pressed.connect(_on_mode_toggle_pressed)
+	
 	# Setup UI update timer to refresh every second
 	ui_update_timer = Timer.new()
 	ui_update_timer.wait_time = 1.0  # Update every second
@@ -97,6 +109,7 @@ func setup_ui():
 	
 	# Update initial UI state
 	update_tower_selection_ui()
+	update_mode_ui()
 	update_info_label()
 
 func start_game():
@@ -118,15 +131,17 @@ func _input(event):
 		grid_manager.handle_mouse_hover(world_mouse_pos)
 
 func handle_grid_click(global_pos: Vector2):
-	# First check if we clicked on an enemy entity for damage
-	if try_click_damage_enemy(global_pos):
-		return  # If we hit an enemy, don't try tower placement
-	
-	# If no enemy was hit, try tower placement
-	var grid_pos = grid_manager.world_to_grid(global_pos)
-	
-	if grid_manager.is_valid_grid_position(grid_pos):
-		tower_manager.attempt_tower_placement(grid_pos, selected_tower_type)
+	# Handle click based on current mode
+	if current_click_mode == MODE_ATTACK_ENEMIES:
+		# In attack mode, only try to damage enemies
+		try_click_damage_enemy(global_pos)
+	elif current_click_mode == MODE_BUILD_TOWERS:
+		# In build mode, first check for enemies, then try tower placement
+		if not try_click_damage_enemy(global_pos):
+			# If no enemy was hit, try tower placement
+			var grid_pos = grid_manager.world_to_grid(global_pos)
+			if grid_manager.is_valid_grid_position(grid_pos):
+				tower_manager.attempt_tower_placement(grid_pos, selected_tower_type)
 
 func try_click_damage_enemy(global_pos: Vector2) -> bool:
 	"""Try to damage an enemy entity at the clicked position. Returns true if an enemy was hit."""
@@ -156,6 +171,17 @@ func _on_powerful_tower_selected():
 	selected_tower_type = POWERFUL_TOWER
 	print("Powerful Tower selected (Cost: %d) - Click on grid to place" % [currency_manager.get_powerful_tower_cost()])
 	update_tower_selection_ui()
+
+func _on_mode_toggle_pressed():
+	# Toggle between build and attack modes
+	if current_click_mode == MODE_BUILD_TOWERS:
+		current_click_mode = MODE_ATTACK_ENEMIES
+		print("Switched to Attack Mode - Click enemies to damage them")
+	else:
+		current_click_mode = MODE_BUILD_TOWERS
+		print("Switched to Build Mode - Click to place towers or attack enemies")
+	
+	update_mode_ui()
 
 # Backwards compatibility
 func _on_tower_selected():
@@ -212,6 +238,25 @@ func update_tower_selection_ui():
 			selected_label.modulate = Color.WHITE
 		else:
 			selected_label.modulate = Color.RED
+
+func update_mode_ui():
+	# Update mode toggle button text
+	var mode_toggle_button = $UI/TowerSelectionPanel/ModeToggleButton
+	if mode_toggle_button:
+		if current_click_mode == MODE_BUILD_TOWERS:
+			mode_toggle_button.text = "Mode: Build Towers"
+		else:
+			mode_toggle_button.text = "Mode: Attack Enemies"
+	
+	# Update mode indicator label
+	var mode_indicator = $UI/TowerSelectionPanel/ModeIndicatorLabel
+	if mode_indicator:
+		if current_click_mode == MODE_BUILD_TOWERS:
+			mode_indicator.text = "Click: Place Towers"
+			mode_indicator.modulate = Color.CYAN
+		else:
+			mode_indicator.text = "Click: Attack Enemies"
+			mode_indicator.modulate = Color.ORANGE
 
 func update_info_label():
 	var info_label = $UI/InfoLabel
