@@ -204,7 +204,8 @@ func _on_player_tower_placed(grid_pos: Vector2i):
 			var latest_tower = towers[towers.size() - 1]  # Get the most recently placed tower
 			alert_system.on_player_tower_placed(grid_pos, latest_tower)
 	
-	# Early activation logic removed - now using alert-based activation only
+	# Update placement frequency based on current threat level
+	analyze_player_threat()
 
 func deactivate():
 	is_active = false

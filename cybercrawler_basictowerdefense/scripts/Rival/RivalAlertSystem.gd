@@ -91,7 +91,7 @@ func on_player_tower_placed(grid_pos: Vector2i, tower: Tower):
 	# Record tower placement with timestamp and stats
 	var placement_data = {
 		"position": grid_pos,
-		"timestamp": Time.get_ticks_msec() / 1000.0,
+		"timestamp": Time.get_unix_time_from_system(),
 		"tower_stats": {
 			"damage": tower.damage,
 			"range": tower.tower_range,
@@ -117,7 +117,7 @@ func on_player_tower_placed(grid_pos: Vector2i, tower: Tower):
 	calculate_alert_level()
 
 func cleanup_old_placements():
-	var current_time = Time.get_ticks_msec() / 1000.0
+	var current_time = Time.get_unix_time_from_system()
 	var cutoff_time = current_time - time_window_for_burst
 	
 	recent_tower_placements = recent_tower_placements.filter(func(placement): 
@@ -291,7 +291,7 @@ func calculate_powerful_tower_severity(powerful_towers_data: Array) -> float:
 	# Factor 2: Average power level of the towers
 	var total_power = 0.0
 	for tower_data in powerful_towers_data:
-		total_power += tower_data.power_level
+		total_power += tower_data["power_level"]
 	var avg_power = total_power / powerful_towers_data.size()
 	severity += avg_power * 0.3  # 30% weight
 	
@@ -313,7 +313,7 @@ func calculate_powerful_tower_time_clustering(powerful_towers_data: Array) -> fl
 	timestamps.sort()
 	
 	# Calculate how clustered they are in time
-	var total_time_span = timestamps[-1] - timestamps[0]
+	var total_time_span = timestamps[timestamps.size() - 1] - timestamps[0]
 	var expected_time_span = time_window_for_burst * 0.8  # 80% of window is reasonable spread
 	
 	# If they're all placed very close together in time, it's more suspicious
