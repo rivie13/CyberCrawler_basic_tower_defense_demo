@@ -1,6 +1,11 @@
 extends Node2D
 class_name MainController
 
+# Accessible color scheme for UI feedback
+const VICTORY_COLOR = Color(0.2, 0.8, 0.2)  # Accessible green for victory
+const DEFEAT_COLOR = Color(0.8, 0.2, 0.2)   # Accessible red for defeat
+const WARNING_COLOR = Color(0.8, 0.8, 0.2)  # Accessible yellow for warnings
+
 # Manager references
 var grid_manager: GridManager
 var wave_manager: WaveManager  
@@ -182,7 +187,7 @@ func show_victory_screen():
 		victory_text += "\nCongratulations on completing the tower defense demo!"
 		
 		info_label.text = victory_text
-		info_label.modulate = Color.GREEN  # Make it green to indicate victory 
+		info_label.modulate = VICTORY_COLOR  # Use accessible color for victory 
 
 func show_game_over_screen():
 	# Stop the UI update timer

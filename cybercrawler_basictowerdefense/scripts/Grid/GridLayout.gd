@@ -1,12 +1,12 @@
 extends Node
 class_name GridLayout
 
-# Layout types that can be expanded later
+# Layout types for strategic path variety
 enum LayoutType {
 	STRAIGHT_LINE,
 	L_SHAPED,
-	S_CURVED, # TODO: Implement S-curved path
-	ZIGZAG # TODO: Implement zigzag path
+	S_CURVED,  # Smooth curved path for strategic positioning
+	ZIGZAG     # Alternating path for tactical advantage
 }
 
 # Grid reference for calculations
@@ -134,19 +134,96 @@ func get_l_shaped_grid_positions() -> Array[Vector2i]:
 	
 	return path_positions
 
-# PLACEHOLDER FUNCTIONS (for future expansion)
+# S-CURVED PATH (Strategic curved layout)
 func create_s_curved_path() -> Array[Vector2]:
-	# TODO: Implement S-curved path
-	return create_l_shaped_path()  # Fallback to L-shaped for now
+	var path: Array[Vector2] = []
+	var grid_height = grid_manager.GRID_HEIGHT
+	var grid_width = grid_manager.GRID_WIDTH
+	var grid_size = grid_manager.GRID_SIZE
+	
+	# S-curved path: Creates a smooth S-shape across the grid
+	var segments = 20  # Number of segments for smooth curve
+	
+	for i in range(segments + 1):
+		var t = float(i) / float(segments)  # 0.0 to 1.0
+		
+		# X position progresses linearly from left to right
+		var x = (t * (grid_width + 1) - 0.5) * grid_size + grid_size / 2.0
+		
+		# Y position follows an S-curve using sine wave
+		var y_normalized = 0.5 + 0.3 * sin(t * PI * 2)  # Creates S-shape
+		var y = y_normalized * grid_height * grid_size + grid_size / 2.0
+		
+		path.append(Vector2(x, y))
+	
+	return path
 
 func get_s_curved_grid_positions() -> Array[Vector2i]:
-	# TODO: Implement S-curved grid positions
-	return get_l_shaped_grid_positions()  # Fallback to L-shaped for now
+	var path_positions: Array[Vector2i] = []
+	var grid_height = grid_manager.GRID_HEIGHT
+	var grid_width = grid_manager.GRID_WIDTH
+	
+	# Approximate the S-curve with grid positions
+	for x in range(0, grid_width):
+		var t = float(x) / float(grid_width)
+		var y_normalized = 0.5 + 0.3 * sin(t * PI * 2)
+		var y = int(y_normalized * grid_height)
+		
+		# Clamp y to valid grid range
+		y = max(0, min(y, grid_height - 1))
+		path_positions.append(Vector2i(x, y))
+	
+	return path_positions
 
+# ZIGZAG PATH (Tactical zigzag layout)
 func create_zigzag_path() -> Array[Vector2]:
-	# TODO: Implement zigzag path
-	return create_l_shaped_path()  # Fallback to L-shaped for now
+	var path: Array[Vector2] = []
+	var grid_height = grid_manager.GRID_HEIGHT
+	var grid_width = grid_manager.GRID_WIDTH
+	var grid_size = grid_manager.GRID_SIZE
+	
+	# Zigzag path: Alternates between top and bottom positions
+	var segments_per_zag = 3  # How many x positions per zig/zag
+	var top_y = grid_height / 4
+	var bottom_y = 3 * grid_height / 4
+	
+	for x in range(-1, grid_width + 2):
+		var segment = int(x / segments_per_zag)
+		var is_top = (segment % 2 == 0)
+		
+		var target_y = top_y if is_top else bottom_y
+		var world_pos = Vector2(x * grid_size + grid_size / 2.0, target_y * grid_size + grid_size / 2.0)
+		path.append(world_pos)
+		
+		# Add transition points at the zigzag turns
+		if x % segments_per_zag == segments_per_zag - 1 and x < grid_width:
+			var next_segment = segment + 1
+			var next_is_top = (next_segment % 2 == 0)
+			var next_y = top_y if next_is_top else bottom_y
+			
+			# Add intermediate points for smooth transition
+			var transition_x = (x + 1) * grid_size + grid_size / 2.0
+			var transition_pos = Vector2(transition_x, next_y * grid_size + grid_size / 2.0)
+			path.append(transition_pos)
+	
+	return path
 
 func get_zigzag_grid_positions() -> Array[Vector2i]:
-	# TODO: Implement zigzag grid positions
-	return get_l_shaped_grid_positions()  # Fallback to L-shaped for now 
+	var path_positions: Array[Vector2i] = []
+	var grid_height = grid_manager.GRID_HEIGHT
+	var grid_width = grid_manager.GRID_WIDTH
+	
+	var segments_per_zag = 3
+	var top_y = grid_height / 4
+	var bottom_y = 3 * grid_height / 4
+	
+	for x in range(0, grid_width):
+		var segment = int(x / segments_per_zag)
+		var is_top = (segment % 2 == 0)
+		var y = top_y if is_top else bottom_y
+		
+		# Clamp y to valid grid range
+		y = max(0, min(y, grid_height - 1))
+		path_positions.append(Vector2i(x, y))
+	
+	return path_positions 

@@ -177,9 +177,14 @@ func attack_target():
 		projectile.setup(global_position, current_target, damage, projectile_speed)
 	elif current_target is EnemyTower:
 		projectile.setup_for_tower_target(global_position, current_target, damage, projectile_speed)
-	else:
+	elif "take_damage" in current_target:
 		# Fallback for any other Node with take_damage method
 		projectile.setup(global_position, current_target, damage, projectile_speed)
+	else:
+		# Log an error for unexpected target types
+		print("Error: Unexpected target type passed to attack_target: ", current_target)
+		projectile.queue_free()  # Clean up the projectile
+		return
 	
 	get_parent().add_child(projectile)
 	

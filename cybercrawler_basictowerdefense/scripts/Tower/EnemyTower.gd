@@ -133,9 +133,9 @@ func attack_target():
 	if not current_target or not is_instance_valid(current_target):
 		return
 	
-	# Create projectile - we'll need to modify projectile to handle tower targets
+	# Create projectile to attack the target tower
 	var projectile = PROJECTILE_SCENE.instantiate()
-	# For now, use existing projectile setup - will modify projectile system later
+	# Use specialized tower targeting setup
 	projectile.setup_for_tower_target(global_position, current_target, damage, projectile_speed)
 	get_parent().add_child(projectile)
 	

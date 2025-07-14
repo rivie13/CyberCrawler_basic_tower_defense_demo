@@ -1,6 +1,9 @@
 extends Node2D
 class_name RivalHackerManager
 
+# Enemy tower scene reference
+const ENEMY_TOWER_SCENE = preload("res://scenes/EnemyTower.tscn")
+
 # Signals
 signal enemy_tower_placed(grid_pos: Vector2i)
 signal rival_hacker_activated()
@@ -155,8 +158,8 @@ func place_enemy_tower(grid_pos: Vector2i) -> bool:
 	# Mark grid as occupied
 	grid_manager.set_grid_occupied(grid_pos, true)
 	
-	# Create enemy tower instance
-	var enemy_tower = EnemyTower.new()
+	# Create enemy tower instance using scene instantiation
+	var enemy_tower = ENEMY_TOWER_SCENE.instantiate()
 	var world_pos = grid_manager.grid_to_world(grid_pos)
 	enemy_tower.global_position = world_pos
 	enemy_tower.set_grid_position(grid_pos)
