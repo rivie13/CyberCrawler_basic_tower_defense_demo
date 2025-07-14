@@ -27,6 +27,7 @@ var max_waves: int = 10  # Win condition: survive 10 waves
 # Grid reference for positioning
 var grid_manager: Node
 var grid_layout: GridLayout
+var selected_layout_type: GridLayout.LayoutType
 
 func _ready():
 	setup_enemy_spawning()
@@ -55,15 +56,26 @@ func create_enemy_path():
 		push_error("WaveManager: grid_layout not set!")
 		return
 	
-	# Use GridLayout to create the enemy path
-	enemy_path = grid_layout.create_path()
+	# Randomly select a layout type for variety (only select once)
+	var layout_types = [
+		GridLayout.LayoutType.STRAIGHT_LINE,
+		GridLayout.LayoutType.L_SHAPED,
+		GridLayout.LayoutType.S_CURVED,
+		GridLayout.LayoutType.ZIGZAG
+	]
+	selected_layout_type = layout_types[randi() % layout_types.size()]
+	
+	print("WaveManager: Selected random layout type: ", selected_layout_type)
+	
+	# Use GridLayout to create the enemy path with selected layout
+	enemy_path = grid_layout.create_path(selected_layout_type)
 
 func get_path_grid_positions() -> Array[Vector2i]:
 	if not grid_layout:
 		return []
 	
-	# Use GridLayout to get path grid positions
-	return grid_layout.get_path_grid_positions()
+	# Use the same selected layout type for consistency
+	return grid_layout.get_path_grid_positions(selected_layout_type)
 
 func start_wave():
 	if wave_active or current_wave > max_waves:
