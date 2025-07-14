@@ -153,6 +153,13 @@ func try_click_damage_enemy(global_pos: Vector2) -> bool:
 			if is_instance_valid(enemy_tower) and enemy_tower.is_clicked_at(global_pos):
 				return enemy_tower.handle_click_damage()
 	
+	# Check RivalHacker special enemies (high-value targets)
+	if rival_hacker_manager:
+		var rival_hackers = rival_hacker_manager.get_rival_hackers()
+		for rival_hacker in rival_hackers:
+			if is_instance_valid(rival_hacker) and rival_hacker.is_clicked_at(global_pos):
+				return rival_hacker.handle_click_damage()
+	
 	# Check regular enemies
 	if wave_manager:
 		var enemies = wave_manager.get_enemies()
