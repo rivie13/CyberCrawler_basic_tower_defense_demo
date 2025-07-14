@@ -9,6 +9,7 @@ description: |
   - Keep branches focused and compact—avoid large, monolithic changes.
   - When a feature is complete and tested, merge the feature branch into the `dev` branch.
   - Only merge `dev` into `main` after all features currently being worked on are stable and tested.
+  - When a branch is merged into dev, it should be deleted.
 
   ## 2. Testing Before Push
   - **Before every push (to any branch):**
