@@ -177,7 +177,7 @@ func attack_target():
 		projectile.setup(global_position, current_target, damage, projectile_speed)
 	elif current_target is EnemyTower:
 		projectile.setup_for_tower_target(global_position, current_target, damage, projectile_speed)
-	elif "take_damage" in current_target:
+	elif current_target.has_method("take_damage"):
 		# Fallback for any other Node with take_damage method
 		projectile.setup(global_position, current_target, damage, projectile_speed)
 	else:

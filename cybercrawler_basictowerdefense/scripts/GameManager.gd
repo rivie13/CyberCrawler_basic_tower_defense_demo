@@ -113,7 +113,7 @@ func trigger_game_won():
 	game_won_triggered.emit()
 
 func get_victory_data() -> Dictionary:
-	var max_waves = wave_manager.get_max_waves() if wave_manager else 10
+	var max_waves = wave_manager.max_waves if wave_manager else 10
 	var current_currency = currency_manager.get_currency() if currency_manager and currency_manager.has_method("get_currency") else 0
 	var final_time = format_time(get_session_time())
 	
@@ -125,7 +125,7 @@ func get_victory_data() -> Dictionary:
 	}
 
 func get_game_over_data() -> Dictionary:
-	var current_wave = wave_manager.get_current_wave() if wave_manager else 1
+	var current_wave = wave_manager.current_wave if wave_manager else 1
 	var current_currency = currency_manager.get_currency() if currency_manager and currency_manager.has_method("get_currency") else 0
 	var final_time = format_time(get_session_time())
 	

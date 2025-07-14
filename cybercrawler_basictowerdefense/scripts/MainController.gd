@@ -212,7 +212,7 @@ func show_game_over_screen():
 		game_over_text += "\nBetter luck next time! The rival hacker won this round."
 		
 		info_label.text = game_over_text
-		info_label.modulate = Color.RED  # Make it red to indicate defeat
+		info_label.modulate = DEFEAT_COLOR  # Use accessible color for defeat
 
 func _on_rival_hacker_activated():
 	print("MainController: Rival Hacker has been activated!")
