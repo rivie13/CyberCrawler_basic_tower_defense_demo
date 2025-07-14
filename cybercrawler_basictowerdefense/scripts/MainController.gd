@@ -6,6 +6,10 @@ const VICTORY_COLOR = Color(0.2, 0.8, 0.2)  # Accessible green for victory
 const DEFEAT_COLOR = Color(0.8, 0.2, 0.2)   # Accessible red for defeat
 const WARNING_COLOR = Color(0.8, 0.8, 0.2)  # Accessible yellow for warnings
 
+# Tower type constants - consistent with TowerManager
+const BASIC_TOWER = "basic"
+const POWERFUL_TOWER = "powerful"
+
 # Manager references
 var grid_manager: GridManager
 var wave_manager: WaveManager  
@@ -18,7 +22,7 @@ var rival_hacker_manager: RivalHackerManager
 var ui_update_timer: Timer
 
 # Tower selection system
-var selected_tower_type: String = "basic"  # Default to basic tower
+var selected_tower_type: String = BASIC_TOWER  # Default to basic tower
 
 func _ready():
 	setup_managers()
@@ -120,12 +124,12 @@ func handle_grid_click(global_pos: Vector2):
 		tower_manager.attempt_tower_placement(grid_pos, selected_tower_type)
 
 func _on_basic_tower_selected():
-	selected_tower_type = "basic"
+	selected_tower_type = BASIC_TOWER
 	print("Basic Tower selected (Cost: %d) - Click on grid to place" % [currency_manager.get_basic_tower_cost()])
 	update_tower_selection_ui()
 
 func _on_powerful_tower_selected():
-	selected_tower_type = "powerful"
+	selected_tower_type = POWERFUL_TOWER
 	print("Powerful Tower selected (Cost: %d) - Click on grid to place" % [currency_manager.get_powerful_tower_cost()])
 	update_tower_selection_ui()
 
@@ -143,7 +147,7 @@ func _on_tower_placed(grid_pos: Vector2i, tower_type: String):
 	update_info_label()
 	
 	# Check if this was a powerful tower for alert system integration
-	if tower_type == "powerful":
+	if tower_type == POWERFUL_TOWER:
 		print("MainController: Powerful tower placed - this should trigger alert system!")
 
 func _on_tower_placement_failed(reason: String):
@@ -176,7 +180,7 @@ func update_tower_selection_ui():
 	# Update selected tower label
 	var selected_label = $UI/TowerSelectionPanel/SelectedTowerLabel
 	if selected_label:
-		var cost = currency_manager.get_basic_tower_cost() if selected_tower_type == "basic" else currency_manager.get_powerful_tower_cost()
+		var cost = currency_manager.get_basic_tower_cost() if selected_tower_type == BASIC_TOWER else currency_manager.get_powerful_tower_cost()
 		selected_label.text = "Selected: %s (%d)" % [selected_tower_type.capitalize(), cost]
 		
 		# Change color based on affordability

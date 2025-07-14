@@ -5,6 +5,10 @@ class_name TowerManager
 signal tower_placed(grid_pos: Vector2i, tower_type: String)
 signal tower_placement_failed(reason: String)
 
+# Tower type constants - addresses Copilot feedback about string literals
+const BASIC_TOWER = "basic"
+const POWERFUL_TOWER = "powerful"
+
 # Tower scenes
 const TOWER_SCENE = preload("res://scenes/Tower.tscn")
 const POWERFUL_TOWER_SCENE = preload("res://scenes/PowerfulTower.tscn")
@@ -22,7 +26,7 @@ func initialize(grid_mgr: Node, currency_mgr: CurrencyManager, wave_mgr: WaveMan
 	currency_manager = currency_mgr
 	wave_manager = wave_mgr
 
-func attempt_tower_placement(grid_pos: Vector2i, tower_type: String = "basic") -> bool:
+func attempt_tower_placement(grid_pos: Vector2i, tower_type: String = BASIC_TOWER) -> bool:
 	if not grid_manager or not currency_manager:
 		print("TowerManager: Required managers not set!")
 		return false
@@ -51,9 +55,9 @@ func attempt_tower_placement(grid_pos: Vector2i, tower_type: String = "basic") -
 
 # Backwards compatibility
 func attempt_basic_tower_placement(grid_pos: Vector2i) -> bool:
-	return attempt_tower_placement(grid_pos, "basic")
+	return attempt_tower_placement(grid_pos, BASIC_TOWER)
 
-func place_tower(grid_pos: Vector2i, tower_type: String = "basic") -> bool:
+func place_tower(grid_pos: Vector2i, tower_type: String = BASIC_TOWER) -> bool:
 	if not currency_manager.purchase_tower_type(tower_type):
 		return false
 	
@@ -63,16 +67,16 @@ func place_tower(grid_pos: Vector2i, tower_type: String = "basic") -> bool:
 	# Create tower from appropriate scene
 	var tower: Tower
 	match tower_type:
-		"basic":
+		BASIC_TOWER:
 			tower = TOWER_SCENE.instantiate()
-		"powerful":
+		POWERFUL_TOWER:
 			tower = POWERFUL_TOWER_SCENE.instantiate()
 		_:
 			print("TowerManager: Unknown tower type: ", tower_type)
 			# Refund the purchase since we can't create the tower
-			if tower_type == "basic":
+			if tower_type == BASIC_TOWER:
 				currency_manager.add_currency(currency_manager.get_basic_tower_cost())
-			elif tower_type == "powerful":
+			elif tower_type == POWERFUL_TOWER:
 				currency_manager.add_currency(currency_manager.get_powerful_tower_cost())
 			grid_manager.set_grid_occupied(grid_pos, false)
 			return false
@@ -117,15 +121,17 @@ func cleanup_all_towers():
 func get_tower_count() -> int:
 	return towers_placed.size()
 
+# Get count of towers by type - addresses Copilot feedback for docstring
 func get_tower_count_by_type(tower_type: String) -> int:
 	var count = 0
 	for tower in towers_placed:
 		if is_instance_valid(tower):
 			match tower_type:
-				"basic":
-					if tower.get_script() == load("res://scripts/Tower/Tower.gd"):
+				BASIC_TOWER:
+					# Type-safe check: basic tower is Tower but not PowerfulTower
+					if tower is Tower and not tower is PowerfulTower:
 						count += 1
-				"powerful":
+				POWERFUL_TOWER:
 					if tower is PowerfulTower:
 						count += 1
 	return count

@@ -1,6 +1,10 @@
 extends Node
 class_name CurrencyManager
 
+# Tower type constants - consistent with TowerManager  
+const BASIC_TOWER = "basic"
+const POWERFUL_TOWER = "powerful"
+
 # Signals for UI updates
 signal currency_changed(new_amount: int)
 
@@ -36,9 +40,9 @@ func can_afford_powerful_tower() -> bool:
 
 func can_afford_tower_type(tower_type: String) -> bool:
 	match tower_type:
-		"basic":
+		BASIC_TOWER:
 			return can_afford_basic_tower()
-		"powerful":
+		POWERFUL_TOWER:
 			return can_afford_powerful_tower()
 		_:
 			print("Unknown tower type: ", tower_type)
@@ -75,9 +79,9 @@ func purchase_powerful_tower() -> bool:
 
 func purchase_tower_type(tower_type: String) -> bool:
 	match tower_type:
-		"basic":
+		BASIC_TOWER:
 			return purchase_basic_tower()
-		"powerful":
+		POWERFUL_TOWER:
 			return purchase_powerful_tower()
 		_:
 			print("Unknown tower type: ", tower_type)
