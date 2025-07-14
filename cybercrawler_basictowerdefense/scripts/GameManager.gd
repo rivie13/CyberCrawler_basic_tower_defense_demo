@@ -105,9 +105,16 @@ func trigger_game_won():
 	var max_waves = wave_manager.get_max_waves() if wave_manager else 10
 	print("Victory! You survived all ", max_waves, " waves and killed ", enemies_killed, " enemies!")
 	
-	# Stop all systems
+	# Stop all systems (same as game over)
 	if wave_manager:
 		wave_manager.stop_all_timers()
+		wave_manager.cleanup_all_enemies()
+	
+	if tower_manager and tower_manager.has_method("stop_all_towers"):
+		tower_manager.stop_all_towers()
+	
+	# Clean up projectiles
+	cleanup_projectiles()
 	
 	# Emit signal for UI handling
 	game_won_triggered.emit()
@@ -187,7 +194,7 @@ func _on_exit_game_pressed():
 	get_tree().quit()
 
 func is_game_over() -> bool:
-	return game_over
+	return game_over or game_won
 
 func get_player_health() -> int:
 	return player_health
