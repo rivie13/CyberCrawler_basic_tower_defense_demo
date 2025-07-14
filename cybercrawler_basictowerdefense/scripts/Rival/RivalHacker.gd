@@ -9,8 +9,7 @@ class_name RivalHacker
 @export var detection_range: float = 400.0  # Range to detect player towers
 
 # Click damage properties
-@export var click_damage_taken: int = 2  # Takes more clicks than regular enemies (higher value target)
-@export var click_radius: float = 25.0   # Click detection radius (between enemy and tower sizes)
+# Click damage properties handled by Clickable interface (between enemy and tower sizes)
 
 # Targeting and movement
 var current_target: Tower = null
@@ -202,40 +201,18 @@ func die():
 	print("RivalHacker destroyed!")
 	queue_free()
 
-# Click damage detection
+# Click damage detection using Clickable interface
 func is_clicked_at(world_pos: Vector2) -> bool:
 	"""Check if a world position click hits this RivalHacker"""
-	return global_position.distance_to(world_pos) <= click_radius
+	return Clickable.is_clicked_at(global_position, world_pos, Clickable.RIVAL_HACKER_CONFIG)
 
 func handle_click_damage():
 	"""Handle damage from player click"""
-	if not is_alive:
-		return false
-	
-	# Apply click damage
-	take_damage(click_damage_taken)
-	
-	# Create visual feedback
-	create_click_feedback()
-	
-	print("RivalHacker was clicked! Took ", click_damage_taken, " damage. Health: ", health, "/", max_health)
-	return true
+	return Clickable.handle_click_damage(self, Clickable.RIVAL_HACKER_CONFIG, "RivalHacker")
 
-func create_click_feedback():
-	"""Create visual feedback when RivalHacker is clicked"""
-	# Create a temporary damage indicator (red for special enemy)
-	var damage_label = Label.new()
-	damage_label.text = "-" + str(click_damage_taken)
-	damage_label.position = Vector2(-12, -40)
-	damage_label.add_theme_color_override("font_color", Color.RED)
-	damage_label.add_theme_font_size_override("font_size", 18)  # Slightly larger for special enemy
-	add_child(damage_label)
-	
-	# Animate the damage number
-	var tween = create_tween()
-	tween.parallel().tween_property(damage_label, "position", damage_label.position + Vector2(0, -35), 1.2)
-	tween.parallel().tween_property(damage_label, "modulate:a", 0.0, 1.2)
-	tween.tween_callback(damage_label.queue_free)
+func get_health_info() -> String:
+	"""Get health information for logging"""
+	return " Health: " + str(health) + "/" + str(max_health)
 
 func stop_activity():
 	# Stop all hacker activity for game over

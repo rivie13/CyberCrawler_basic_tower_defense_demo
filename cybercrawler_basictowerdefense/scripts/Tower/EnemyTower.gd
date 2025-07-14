@@ -9,9 +9,7 @@ class_name EnemyTower
 @export var max_health: int = 3
 @export var health: int = 3
 
-# Click damage properties
-@export var click_damage_taken: int = 1  # Damage taken per click
-@export var click_radius: float = 35.0   # Click detection radius
+# Click damage properties handled by Clickable interface
 
 # State
 var attack_timer: Timer
@@ -211,48 +209,20 @@ func stop_attacking():
 		attack_timer.stop()
 	current_target = null
 
-# Click damage detection
+# Click damage detection using Clickable interface
 func is_clicked_at(world_pos: Vector2) -> bool:
 	"""Check if a world position click hits this enemy tower"""
-	return global_position.distance_to(world_pos) <= click_radius
+	return Clickable.is_clicked_at(global_position, world_pos, Clickable.ENEMY_TOWER_CONFIG)
 
 func handle_click_damage():
 	"""Handle damage from player click"""
-	if not is_alive:
-		return false
-	
-	# Apply click damage
-	take_damage(click_damage_taken)
-	
-	# Create visual feedback
-	create_click_feedback()
-	
-	print("EnemyTower at ", grid_position, " was clicked! Took ", click_damage_taken, " damage. Health: ", health, "/", max_health)
-	return true
+	return Clickable.handle_click_damage(self, Clickable.ENEMY_TOWER_CONFIG, "EnemyTower at " + str(grid_position))
 
-func create_click_feedback():
-	"""Create visual feedback when tower is clicked"""
-	# Create a temporary damage indicator
-	var damage_label = Label.new()
-	damage_label.text = "-" + str(click_damage_taken)
-	damage_label.position = Vector2(-15, -50)
-	damage_label.add_theme_color_override("font_color", Color.YELLOW)
-	damage_label.add_theme_font_size_override("font_size", 16)
-	add_child(damage_label)
-	
-	# Animate the damage number
-	var tween = create_tween()
-	tween.parallel().tween_property(damage_label, "position", damage_label.position + Vector2(0, -30), 1.0)
-	tween.parallel().tween_property(damage_label, "modulate:a", 0.0, 1.0)
-	tween.tween_callback(damage_label.queue_free)
+func get_health_info() -> String:
+	"""Get health information for logging"""
+	return " Health: " + str(health) + "/" + str(max_health)
 
-# For debugging (right-click)
-func _input(event):
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
-		var mouse_pos = get_global_mouse_position()
-		if global_position.distance_to(mouse_pos) < 32:
-			show_range_debug()
-
+# Debug method for range visualization (can be called from console)
 func show_range_debug():
 	print("EnemyTower at ", grid_position, " - Range: ", tower_range, " - Current Target: ", current_target, " - Health: ", health, "/", max_health)
 	# Toggle range visualization for debugging

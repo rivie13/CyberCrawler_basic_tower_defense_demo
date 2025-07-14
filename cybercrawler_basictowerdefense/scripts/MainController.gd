@@ -136,12 +136,10 @@ func handle_grid_click(global_pos: Vector2):
 		# In attack mode, only try to damage enemies
 		try_click_damage_enemy(global_pos)
 	elif current_click_mode == MODE_BUILD_TOWERS:
-		# In build mode, first check for enemies, then try tower placement
-		if not try_click_damage_enemy(global_pos):
-			# If no enemy was hit, try tower placement
-			var grid_pos = grid_manager.world_to_grid(global_pos)
-			if grid_manager.is_valid_grid_position(grid_pos):
-				tower_manager.attempt_tower_placement(grid_pos, selected_tower_type)
+		# In build mode, only try tower placement
+		var grid_pos = grid_manager.world_to_grid(global_pos)
+		if grid_manager.is_valid_grid_position(grid_pos):
+			tower_manager.attempt_tower_placement(grid_pos, selected_tower_type)
 
 func try_click_damage_enemy(global_pos: Vector2) -> bool:
 	"""Try to damage an enemy entity at the clicked position. Returns true if an enemy was hit."""
@@ -183,10 +181,10 @@ func _on_mode_toggle_pressed():
 	# Toggle between build and attack modes
 	if current_click_mode == MODE_BUILD_TOWERS:
 		current_click_mode = MODE_ATTACK_ENEMIES
-		print("Switched to Attack Mode - Click enemies to damage them")
+		print("Switched to Attack Mode - Click enemies to damage them (tower placement disabled)")
 	else:
 		current_click_mode = MODE_BUILD_TOWERS
-		print("Switched to Build Mode - Click to place towers or attack enemies")
+		print("Switched to Build Mode - Click to place towers (enemy clicking disabled)")
 	
 	update_mode_ui()
 
@@ -259,10 +257,10 @@ func update_mode_ui():
 	var mode_indicator = $UI/TowerSelectionPanel/ModeIndicatorLabel
 	if mode_indicator:
 		if current_click_mode == MODE_BUILD_TOWERS:
-			mode_indicator.text = "Click: Place Towers"
+			mode_indicator.text = "Click: Place Towers Only"
 			mode_indicator.modulate = Color.CYAN
 		else:
-			mode_indicator.text = "Click: Attack Enemies"
+			mode_indicator.text = "Click: Attack Enemies Only"
 			mode_indicator.modulate = Color.ORANGE
 
 func update_info_label():
