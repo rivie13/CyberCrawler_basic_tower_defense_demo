@@ -2,11 +2,14 @@ extends Node2D
 class_name TowerManager
 
 # Signals
-signal tower_placed(grid_pos: Vector2i)
+signal tower_placed(grid_pos: Vector2i, tower_type: String)
 signal tower_placement_failed(reason: String)
 
-# Tower management
+# Tower scenes
 const TOWER_SCENE = preload("res://scenes/Tower.tscn")
+const POWERFUL_TOWER_SCENE = preload("res://scenes/PowerfulTower.tscn")
+
+# Tower management
 var towers_placed: Array[Tower] = []
 
 # References to other managers
@@ -19,7 +22,7 @@ func initialize(grid_mgr: Node, currency_mgr: CurrencyManager, wave_mgr: WaveMan
 	currency_manager = currency_mgr
 	wave_manager = wave_mgr
 
-func attempt_tower_placement(grid_pos: Vector2i) -> bool:
+func attempt_tower_placement(grid_pos: Vector2i, tower_type: String = "basic") -> bool:
 	if not grid_manager or not currency_manager:
 		print("TowerManager: Required managers not set!")
 		return false
@@ -38,23 +41,42 @@ func attempt_tower_placement(grid_pos: Vector2i) -> bool:
 		tower_placement_failed.emit("Cannot place tower on enemy path")
 		return false
 	
-	# Check currency
-	if not currency_manager.can_afford_tower():
-		tower_placement_failed.emit("Insufficient funds")
+	# Check currency for the specific tower type
+	if not currency_manager.can_afford_tower_type(tower_type):
+		tower_placement_failed.emit("Insufficient funds for " + tower_type + " tower")
 		return false
 	
 	# All checks passed, place the tower
-	return place_tower(grid_pos)
+	return place_tower(grid_pos, tower_type)
 
-func place_tower(grid_pos: Vector2i) -> bool:
-	if not currency_manager.purchase_tower():
+# Backwards compatibility
+func attempt_basic_tower_placement(grid_pos: Vector2i) -> bool:
+	return attempt_tower_placement(grid_pos, "basic")
+
+func place_tower(grid_pos: Vector2i, tower_type: String = "basic") -> bool:
+	if not currency_manager.purchase_tower_type(tower_type):
 		return false
 	
 	# Mark grid as occupied
 	grid_manager.set_grid_occupied(grid_pos, true)
 	
-	# Create tower from scene
-	var tower = TOWER_SCENE.instantiate()
+	# Create tower from appropriate scene
+	var tower: Tower
+	match tower_type:
+		"basic":
+			tower = TOWER_SCENE.instantiate()
+		"powerful":
+			tower = POWERFUL_TOWER_SCENE.instantiate()
+		_:
+			print("TowerManager: Unknown tower type: ", tower_type)
+			# Refund the purchase since we can't create the tower
+			if tower_type == "basic":
+				currency_manager.add_currency(currency_manager.get_basic_tower_cost())
+			elif tower_type == "powerful":
+				currency_manager.add_currency(currency_manager.get_powerful_tower_cost())
+			grid_manager.set_grid_occupied(grid_pos, false)
+			return false
+	
 	var world_pos = grid_manager.grid_to_world(grid_pos)
 	tower.global_position = world_pos
 	tower.set_grid_position(grid_pos)
@@ -67,8 +89,8 @@ func place_tower(grid_pos: Vector2i) -> bool:
 	else:
 		add_child(tower)
 	
-	tower_placed.emit(grid_pos)
-	print("Tower placed at grid position: ", grid_pos)
+	tower_placed.emit(grid_pos, tower_type)
+	print("TowerManager: ", tower_type.capitalize(), " tower placed at grid position: ", grid_pos)
 	return true
 
 func get_enemies_for_towers() -> Array[Enemy]:
@@ -95,8 +117,39 @@ func cleanup_all_towers():
 func get_tower_count() -> int:
 	return towers_placed.size()
 
+func get_tower_count_by_type(tower_type: String) -> int:
+	var count = 0
+	for tower in towers_placed:
+		if is_instance_valid(tower):
+			match tower_type:
+				"basic":
+					if tower.get_script() == load("res://scripts/Tower/Tower.gd"):
+						count += 1
+				"powerful":
+					if tower is PowerfulTower:
+						count += 1
+	return count
+
 func remove_tower(tower: Tower):
 	if tower in towers_placed:
 		towers_placed.erase(tower)
 		# Could add logic here to mark grid position as unoccupied
 		# if we need tower removal functionality 
+
+# Get total power level of all placed towers (for alert system)
+func get_total_power_level() -> float:
+	var total_power = 0.0
+	for tower in towers_placed:
+		if is_instance_valid(tower):
+			var damage = tower.damage
+			var tower_range = tower.tower_range
+			var attack_rate = tower.attack_rate
+			
+			# Use same power calculation as alert system
+			var damage_score = min(1.0, damage / 5.0)
+			var range_score = min(1.0, tower_range / 300.0)
+			var attack_rate_score = min(1.0, attack_rate / 3.0)
+			var power_level = (damage_score * 0.4) + (range_score * 0.3) + (attack_rate_score * 0.3)
+			total_power += power_level
+	
+	return total_power 
