@@ -15,11 +15,11 @@ enum AlertType {
 
 # Alert configuration
 @export var time_window_for_burst: float = 5.0  # Time window to check for "at once" placements
-@export var max_towers_per_burst: int = 3  # Max towers allowed in time window
-@export var max_powerful_towers_per_burst: int = 2  # Max powerful towers in time window
+@export var max_towers_per_burst: int = 2  # Max towers allowed in time window (lowered from 3 for testing)
+@export var max_powerful_towers_per_burst: int = 1  # Max powerful towers in time window (lowered from 2 for testing)
 @export var exit_proximity_threshold: int = 3  # Grid cells from exit point
-@export var powerful_tower_damage_threshold: int = 3  # Damage threshold for "powerful" towers
-@export var powerful_tower_range_threshold: float = 200.0  # Range threshold for "powerful" towers
+@export var powerful_tower_damage_threshold: int = 1  # Damage threshold for "powerful" towers (lowered from 3 for testing)
+@export var powerful_tower_range_threshold: float = 120.0  # Range threshold for "powerful" towers (lowered from 200 for testing)
 
 # State tracking
 var recent_tower_placements: Array = []  # Array of {position: Vector2i, timestamp: float, tower_stats: Dictionary}
@@ -138,7 +138,7 @@ func check_exit_proximity_alert(grid_pos: Vector2i):
 		
 		alert_factors["exit_proximity"] = severity
 		
-		if severity >= 0.6:
+		if severity >= 0.4:  # Lowered from 0.6 for testing
 			alert_triggered.emit("TOWERS_TOO_CLOSE_TO_EXIT", severity)
 			print("RivalAlertSystem: EXIT PROXIMITY ALERT - Tower placed too close to exit too soon (severity: ", severity, ")")
 
