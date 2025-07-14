@@ -14,12 +14,12 @@ var alert_system: RivalAlertSystem
 # AI behavior configuration
 @export var placement_interval: float = 3.0  # Time between tower placements
 @export var max_enemy_towers: int = 10
-@export var activation_delay: float = 5.0  # Delay before AI starts placing towers
+# Remove activation_delay since we're using alert-based activation only
 
 # State management
 var is_active: bool = false
 var placement_timer: Timer
-var activation_timer: Timer
+# Remove activation_timer since we're using alert-based activation only
 var enemy_towers_placed: Array = []
 
 # AI strategy parameters
@@ -44,11 +44,11 @@ func setup_timers():
 	add_child(placement_timer)
 	
 	# Timer for initial activation delay
-	activation_timer = Timer.new()
-	activation_timer.wait_time = activation_delay
-	activation_timer.timeout.connect(_on_activation_timer_timeout)
-	activation_timer.one_shot = true
-	add_child(activation_timer)
+	# Remove activation_timer = Timer.new()
+	# Remove activation_timer.wait_time = activation_delay
+	# Remove activation_timer.timeout.connect(_on_activation_timer_timeout)
+	# Remove activation_timer.one_shot = true
+	# add_child(activation_timer)
 
 func initialize(grid_mgr: GridManager, currency_mgr: CurrencyManager, tower_mgr: TowerManager, wave_mgr: WaveManager):
 	grid_manager = grid_mgr
@@ -95,18 +95,13 @@ func activate():
 		return
 	
 	print("RivalHacker: Starting activation sequence...")
-	activation_timer.start()
-
-func _on_activation_timer_timeout():
-	is_active = true
-	placement_timer.start()
+	# Remove activation_timer.start()
 	
-	# Start alert system monitoring
+	# Start alert system monitoring immediately
 	if alert_system:
 		alert_system.start_monitoring()
 	
-	rival_hacker_activated.emit()
-	print("RivalHacker: Now active and placing enemy towers!")
+	print("RivalHacker: Alert system monitoring started - waiting for alerts to trigger tower placement")
 
 func _on_placement_timer_timeout():
 	if not is_active:
@@ -215,16 +210,16 @@ func _on_player_tower_placed(grid_pos: Vector2i):
 			var latest_tower = towers[-1]  # Get the most recently placed tower
 			alert_system.on_player_tower_placed(grid_pos, latest_tower)
 	
-	# If player is getting aggressive, activate rival hacker early
-	if not is_active and player_threat_level >= 3:
-		print("RivalHacker: Player threat detected! Activating early...")
-		activation_timer.stop()
-		_on_activation_timer_timeout()
+	# Remove early activation logic since we only want alert-based activation
+	# if not is_active and player_threat_level >= 3:
+	#	print("RivalHacker: Player threat detected! Activating early...")
+	#	# Remove activation_timer.stop()
+	#	_on_activation_timer_timeout()
 
 func deactivate():
 	is_active = false
 	placement_timer.stop()
-	activation_timer.stop()
+	# Remove activation_timer.stop()
 
 func get_enemy_towers() -> Array:
 	return enemy_towers_placed
@@ -241,6 +236,13 @@ func _on_enemy_tower_destroyed(enemy_tower: EnemyTower):
 func _on_alert_triggered(alert_type: String, severity: float):
 	# Respond to alerts from the alert system
 	print("RivalHacker: ALERT DETECTED - ", alert_type, " (severity: ", severity, ")")
+	
+	# If this is the first alert and we're not active yet, activate now
+	if not is_active:
+		is_active = true
+		placement_timer.start()
+		rival_hacker_activated.emit()
+		print("RivalHacker: FIRST ALERT TRIGGERED - Now active and placing enemy towers!")
 	
 	# Adjust AI behavior based on alert type and severity
 	match alert_type:
