@@ -124,6 +124,20 @@ func get_victory_data() -> Dictionary:
 		"time_played": final_time
 	}
 
+func get_game_over_data() -> Dictionary:
+	var current_wave = wave_manager.get_current_wave() if wave_manager else 1
+	var current_currency = currency_manager.get_currency() if currency_manager and currency_manager.has_method("get_currency") else 0
+	var final_time = format_time(get_session_time())
+	
+	return {
+		"waves_survived": current_wave - 1,  # Since they failed on current wave
+		"current_wave": current_wave,
+		"enemies_killed": enemies_killed,
+		"currency": current_currency,
+		"time_played": final_time,
+		"player_health": player_health
+	}
+
 func get_info_label_text() -> String:
 	var timer_text = ""
 	

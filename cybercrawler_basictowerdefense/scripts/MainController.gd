@@ -148,12 +148,13 @@ func update_info_label():
 		info_label.text = game_manager.get_info_label_text()
 
 func _on_game_over():
-	print("Game Over - UI handling not yet implemented")
+	print("Game Over!")
 	
 	# Stop all activity immediately when game over occurs
 	stop_all_game_activity()
 	
-	# TODO: Implement game over screen
+	# Show game over screen
+	show_game_over_screen()
 
 func _on_game_won():
 	print("Victory! - Displaying victory screen")
@@ -182,6 +183,31 @@ func show_victory_screen():
 		
 		info_label.text = victory_text
 		info_label.modulate = Color.GREEN  # Make it green to indicate victory 
+
+func show_game_over_screen():
+	# Stop the UI update timer
+	if ui_update_timer:
+		ui_update_timer.stop()
+	
+	# Stop all game activity
+	stop_all_game_activity()
+	
+	# Get game over data from game manager
+	var game_over_data = game_manager.get_game_over_data()
+	
+	# Update info label to show game over message
+	var info_label = $UI/InfoLabel
+	if info_label:
+		var game_over_text = "GAME OVER!\n"
+		game_over_text += "You were defeated on wave %d!\n" % [game_over_data.current_wave]
+		game_over_text += "Waves survived: %d\n" % [game_over_data.waves_survived]
+		game_over_text += "Enemies killed: %d\n" % [game_over_data.enemies_killed]
+		game_over_text += "Final currency: %d\n" % [game_over_data.currency]
+		game_over_text += "Time played: %s\n" % [game_over_data.time_played]
+		game_over_text += "\nBetter luck next time! The rival hacker won this round."
+		
+		info_label.text = game_over_text
+		info_label.modulate = Color.RED  # Make it red to indicate defeat
 
 func _on_rival_hacker_activated():
 	print("MainController: Rival Hacker has been activated!")
