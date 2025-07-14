@@ -7,6 +7,7 @@ var wave_manager: WaveManager
 var tower_manager: TowerManager
 var currency_manager: CurrencyManager
 var game_manager: GameManager
+var rival_hacker_manager: RivalHackerManager
 
 # UI update timer
 var ui_update_timer: Timer
@@ -24,6 +25,7 @@ func setup_managers():
 	tower_manager = TowerManager.new()
 	currency_manager = CurrencyManager.new()
 	game_manager = GameManager.new()
+	rival_hacker_manager = RivalHackerManager.new()
 	
 	# Add them as children
 	add_child(grid_manager)
@@ -31,6 +33,7 @@ func setup_managers():
 	add_child(tower_manager)
 	add_child(currency_manager)
 	add_child(game_manager)
+	add_child(rival_hacker_manager)
 
 func initialize_systems():
 	# Initialize GridManager with the GridContainer from the scene
@@ -41,6 +44,7 @@ func initialize_systems():
 	wave_manager.initialize(grid_manager)
 	tower_manager.initialize(grid_manager, currency_manager, wave_manager)
 	game_manager.initialize(wave_manager, currency_manager, tower_manager)
+	rival_hacker_manager.initialize(grid_manager, currency_manager, tower_manager, wave_manager)
 	
 	# Set up enemy path in grid
 	var path_positions = wave_manager.get_path_grid_positions()
@@ -56,6 +60,10 @@ func initialize_systems():
 	# Connect game manager signals
 	game_manager.game_over_triggered.connect(_on_game_over)
 	game_manager.game_won_triggered.connect(_on_game_won)
+	
+	# Connect rival hacker manager signals
+	rival_hacker_manager.rival_hacker_activated.connect(_on_rival_hacker_activated)
+	rival_hacker_manager.enemy_tower_placed.connect(_on_enemy_tower_placed)
 
 func setup_ui():
 	# Setup tower selection UI
@@ -77,6 +85,9 @@ func setup_ui():
 func start_game():
 	# Start the first wave
 	wave_manager.start_wave()
+	
+	# Activate rival hacker (will start placing enemy towers after delay)
+	rival_hacker_manager.activate()
 
 func _input(event):
 	if game_manager.is_game_over():
@@ -138,6 +149,11 @@ func update_info_label():
 
 func _on_game_over():
 	print("Game Over - UI handling not yet implemented")
+	
+	# Stop rival hacker activity
+	if rival_hacker_manager:
+		rival_hacker_manager.stop_all_activity()
+	
 	# TODO: Implement game over screen
 
 func _on_game_won():
@@ -148,6 +164,10 @@ func show_victory_screen():
 	# Stop the UI update timer
 	if ui_update_timer:
 		ui_update_timer.stop()
+	
+	# Stop rival hacker activity
+	if rival_hacker_manager:
+		rival_hacker_manager.stop_all_activity()
 	
 	# Get victory data from game manager
 	var victory_data = game_manager.get_victory_data()
@@ -164,3 +184,11 @@ func show_victory_screen():
 		
 		info_label.text = victory_text
 		info_label.modulate = Color.GREEN  # Make it green to indicate victory 
+
+func _on_rival_hacker_activated():
+	print("MainController: Rival Hacker has been activated!")
+	# Could add UI updates here to notify player
+
+func _on_enemy_tower_placed(grid_pos: Vector2i):
+	print("MainController: Enemy tower placed at ", grid_pos)
+	# Could add visual/audio feedback here

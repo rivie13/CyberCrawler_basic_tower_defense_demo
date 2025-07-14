@@ -5,7 +5,7 @@ class_name Projectile
 const HIT_THRESHOLD: float = 10.0  # Distance threshold for projectile hits
 
 # Projectile properties
-var target: Enemy
+var target: Node  # Can be Enemy or Tower (any Node with take_damage method)
 var damage: int
 var speed: float
 var start_position: Vector2
@@ -22,6 +22,13 @@ func setup(start_pos: Vector2, target_enemy: Enemy, projectile_damage: int, proj
 	global_position = start_pos
 	start_position = start_pos
 	target = target_enemy
+	damage = projectile_damage
+	speed = projectile_speed
+
+func setup_for_tower_target(start_pos: Vector2, target_tower: Node, projectile_damage: int, projectile_speed: float):
+	global_position = start_pos
+	start_position = start_pos
+	target = target_tower
 	damage = projectile_damage
 	speed = projectile_speed
 
