@@ -1,0 +1,35 @@
+---
+description: |
+  # GitHub Commit, Push, and PR Rule for CyberCrawler
+
+  **This rule governs all version control activity for the CyberCrawler project. It is intelligently applied when working with version control operations.**
+
+  ## 1. Branching & Feature Workflow
+  - Create a new branch for each new feature or significant bugfix.
+  - Keep branches focused and compact—avoid large, monolithic changes.
+  - When a feature is complete and tested, merge the feature branch into the `dev` branch.
+  - Only merge `dev` into `main` after all features currently being worked on are stable and tested.
+
+  ## 2. Testing Before Push
+  - **Before every push (to any branch):**
+    - Test the game in Godot to ensure all new and existing features work as intended.
+    - If issues are found, fix them and commit those fixes before pushing.
+    - Do not push broken or untested code.
+
+  ## 3. Pull Requests (PRs)
+  - Open a PR from your feature branch to `dev` (or from `dev` to `main`).
+  - After opening a PR, run a GitHub Copilot review:
+    - Wait a few minutes for Copilot to analyze the PR.
+    - Review Copilot's comments and suggestions.
+    - Address all actionable Copilot feedback with additional commits as needed.
+    - Only merge the PR after all Copilot-flagged issues are resolved or consciously dismissed.
+
+  ## 4. General Version Control Discipline
+  - Always be conscious and intentional with commits, pushes, and merges.
+  - Use clear, descriptive commit messages.
+  - Never skip the testing and review steps.
+  - This rule is always in effect for all contributors.
+
+globs:
+  - "**"
+---
