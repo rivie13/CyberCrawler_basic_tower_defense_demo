@@ -66,6 +66,9 @@ func setup_honeypot_positions():
 		honeypot_positions.append(Vector2i(center_x + 1, center_y))
 		honeypot_positions.append(Vector2i(center_x, center_y - 1))
 		honeypot_positions.append(Vector2i(center_x, center_y + 1))
+		
+		print("RivalAlertSystem: Honeypot positions set up - ", honeypot_positions.size(), " positions")
+		print("RivalAlertSystem: Grid size: ", grid_size, " | Exit threshold: ", exit_proximity_threshold)
 
 func start_monitoring():
 	if not grid_manager:
@@ -97,6 +100,9 @@ func on_player_tower_placed(grid_pos: Vector2i, tower: Tower):
 	}
 	
 	recent_tower_placements.append(placement_data)
+	
+	print("RivalAlertSystem: Tower placed at ", grid_pos, " | Total recent: ", recent_tower_placements.size())
+	print("RivalAlertSystem: Tower stats - Damage: ", tower.damage, " Range: ", tower.tower_range, " Attack: ", tower.attack_rate)
 	
 	# Clean up old placements (outside time window)
 	cleanup_old_placements()
