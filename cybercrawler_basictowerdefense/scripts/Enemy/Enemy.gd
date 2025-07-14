@@ -6,6 +6,8 @@ class_name Enemy
 @export var health: int = 3
 @export var max_health: int = 3
 
+# Click damage properties handled by Clickable interface
+
 # Path following
 var path_points: Array[Vector2] = []
 var current_path_index: int = 0
@@ -125,6 +127,19 @@ func die():
 	is_alive = false
 	enemy_died.emit(self)
 	queue_free()
+
+# Click damage detection using Clickable interface
+func is_clicked_at(world_pos: Vector2) -> bool:
+	"""Check if a world position click hits this enemy"""
+	return Clickable.is_clicked_at(global_position, world_pos, Clickable.ENEMY_CONFIG)
+
+func handle_click_damage():
+	"""Handle damage from player click"""
+	return Clickable.handle_click_damage(self, Clickable.ENEMY_CONFIG, "Enemy")
+
+func get_health_info() -> String:
+	"""Get health information for logging"""
+	return " Health: " + str(health) + "/" + str(max_health)
 
 func reach_end():
 	enemy_reached_end.emit(self)

@@ -9,6 +9,8 @@ class_name EnemyTower
 @export var max_health: int = 3
 @export var health: int = 3
 
+# Click damage properties handled by Clickable interface
+
 # State
 var attack_timer: Timer
 var current_target: Tower = null  # Targets player towers instead of enemies
@@ -207,13 +209,20 @@ func stop_attacking():
 		attack_timer.stop()
 	current_target = null
 
-# For debugging
-func _input(event):
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
-		var mouse_pos = get_global_mouse_position()
-		if global_position.distance_to(mouse_pos) < 32:
-			show_range_debug()
+# Click damage detection using Clickable interface
+func is_clicked_at(world_pos: Vector2) -> bool:
+	"""Check if a world position click hits this enemy tower"""
+	return Clickable.is_clicked_at(global_position, world_pos, Clickable.ENEMY_TOWER_CONFIG)
 
+func handle_click_damage():
+	"""Handle damage from player click"""
+	return Clickable.handle_click_damage(self, Clickable.ENEMY_TOWER_CONFIG, "EnemyTower at " + str(grid_position))
+
+func get_health_info() -> String:
+	"""Get health information for logging"""
+	return " Health: " + str(health) + "/" + str(max_health)
+
+# Debug method for range visualization (can be called from console)
 func show_range_debug():
 	print("EnemyTower at ", grid_position, " - Range: ", tower_range, " - Current Target: ", current_target, " - Health: ", health, "/", max_health)
 	# Toggle range visualization for debugging
