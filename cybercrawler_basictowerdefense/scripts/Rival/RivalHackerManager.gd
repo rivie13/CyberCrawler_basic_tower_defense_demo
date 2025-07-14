@@ -1,8 +1,9 @@
 extends Node2D
 class_name RivalHackerManager
 
-# Enemy tower scene reference
+# Scene references
 const ENEMY_TOWER_SCENE = preload("res://scenes/EnemyTower.tscn")
+const RIVAL_HACKER_SCENE = preload("res://scenes/RivalHacker.tscn")
 
 # Tower type constants - consistent with TowerManager  
 const POWERFUL_TOWER = "powerful"
@@ -17,13 +18,17 @@ var alert_system: RivalAlertSystem
 # AI behavior configuration
 @export var placement_interval: float = 3.0  # Time between tower placements
 @export var max_enemy_towers: int = 10
+@export var hacker_spawn_interval: float = 8.0  # Time between RivalHacker spawns
+@export var max_rival_hackers: int = 3  # Maximum RivalHackers alive at once
 # Remove activation_delay since we're using alert-based activation only
 
 # State management
 var is_active: bool = false
 var placement_timer: Timer
+var hacker_spawn_timer: Timer
 # Remove activation_timer since we're using alert-based activation only
 var enemy_towers_placed: Array = []
+var rival_hackers_active: Array[RivalHacker] = []
 
 # AI strategy parameters
 var preferred_grid_zones: Array[Vector2i] = []  # Areas AI prefers to place towers
@@ -45,6 +50,13 @@ func setup_timers():
 	placement_timer.timeout.connect(_on_placement_timer_timeout)
 	placement_timer.autostart = false
 	add_child(placement_timer)
+	
+	# Timer for RivalHacker spawning
+	hacker_spawn_timer = Timer.new()
+	hacker_spawn_timer.wait_time = hacker_spawn_interval
+	hacker_spawn_timer.timeout.connect(_on_hacker_spawn_timer_timeout)
+	hacker_spawn_timer.autostart = false
+	add_child(hacker_spawn_timer)
 	
 	# Timer for initial activation delay - removed (now using alert-based activation)
 
@@ -111,6 +123,17 @@ func _on_placement_timer_timeout():
 	# Analyze situation and attempt tower placement
 	analyze_player_threat()
 	attempt_enemy_tower_placement()
+
+func _on_hacker_spawn_timer_timeout():
+	if not is_active:
+		return
+	
+	# Check if we've reached maximum RivalHackers
+	if rival_hackers_active.size() >= max_rival_hackers:
+		return
+	
+	# Attempt to spawn a RivalHacker
+	attempt_rival_hacker_spawn()
 
 func analyze_player_threat():
 	# Calculate threat level based on player towers
@@ -194,6 +217,74 @@ func place_enemy_tower(grid_pos: Vector2i) -> bool:
 	enemy_tower_placed.emit(grid_pos)
 	return true
 
+func attempt_rival_hacker_spawn():
+	var spawn_position = find_rival_hacker_spawn_position()
+	
+	if spawn_position != Vector2.ZERO:
+		spawn_rival_hacker(spawn_position)
+
+func find_rival_hacker_spawn_position() -> Vector2:
+	if not grid_manager:
+		return Vector2.ZERO
+	
+	# Spawn RivalHackers on the enemy side (right side) of the grid
+	var grid_size = grid_manager.get_grid_size()
+	var spawn_attempts = 10  # Try multiple positions
+	
+	for i in range(spawn_attempts):
+		# Random position on enemy side (right 1/3 of the grid)
+		var spawn_x = randi_range(int(grid_size.x * 0.67), grid_size.x - 1)
+		var spawn_y = randi_range(0, grid_size.y - 1)
+		var grid_pos = Vector2i(spawn_x, spawn_y)
+		
+		# Check if position is valid (not occupied, not on path)
+		if grid_manager.is_valid_grid_position(grid_pos) and not grid_manager.is_grid_occupied(grid_pos) and not grid_manager.is_on_enemy_path(grid_pos):
+			return grid_manager.grid_to_world(grid_pos)
+	
+	# Fallback: spawn at edge if no good position found
+	var edge_x = grid_size.x - 1
+	var edge_y = randi_range(1, grid_size.y - 2)
+	return grid_manager.grid_to_world(Vector2i(edge_x, edge_y))
+
+func spawn_rival_hacker(world_position: Vector2) -> bool:
+	# Create RivalHacker instance
+	var rival_hacker = RIVAL_HACKER_SCENE.instantiate()
+	rival_hacker.global_position = world_position
+	
+	# Connect signals
+	rival_hacker.hacker_destroyed.connect(_on_rival_hacker_destroyed)
+	rival_hacker.tower_attacked.connect(_on_rival_hacker_tower_attacked)
+	
+	# Add to tracking and scene
+	rival_hackers_active.append(rival_hacker)
+	var grid_container = grid_manager.get_grid_container()
+	if grid_container:
+		grid_container.add_child(rival_hacker)
+	else:
+		add_child(rival_hacker)
+	
+	print("RivalHacker: Special enemy RivalHacker spawned at ", world_position)
+	return true
+
+func _on_rival_hacker_destroyed(hacker: RivalHacker):
+	# Remove from tracking array
+	rival_hackers_active.erase(hacker)
+	print("RivalHacker: Special enemy destroyed, ", rival_hackers_active.size(), " hackers remaining")
+
+func _on_rival_hacker_tower_attacked(tower: Tower, damage: int):
+	# RivalHacker successfully attacked a player tower
+	print("RivalHacker: Player tower attacked for ", damage, " damage!")
+	# Could add additional logic here for AI learning or escalation
+
+func get_rival_hackers() -> Array[RivalHacker]:
+	# Clean up any invalid hackers from our array
+	var valid_hackers: Array[RivalHacker] = []
+	for hacker in rival_hackers_active:
+		if is_instance_valid(hacker) and hacker.is_alive:
+			valid_hackers.append(hacker)
+	rival_hackers_active = valid_hackers
+	return rival_hackers_active
+
 func _on_player_tower_placed(grid_pos: Vector2i, tower_type: String):
 	# React to player tower placement
 	print("RivalHacker: Player placed %s tower at %s - threat level increased!" % [tower_type, grid_pos])
@@ -219,6 +310,7 @@ func _on_player_tower_placed(grid_pos: Vector2i, tower_type: String):
 func deactivate():
 	is_active = false
 	placement_timer.stop()
+	hacker_spawn_timer.stop()
 
 func get_enemy_towers() -> Array:
 	return enemy_towers_placed
@@ -226,6 +318,11 @@ func get_enemy_towers() -> Array:
 func stop_all_activity():
 	# Stop all AI activity (for game over scenarios)
 	deactivate()
+	
+	# Stop all RivalHackers
+	for hacker in rival_hackers_active:
+		if is_instance_valid(hacker):
+			hacker.stop_activity()
 
 func _on_enemy_tower_destroyed(enemy_tower: EnemyTower):
 	# Remove from our tracking array
@@ -240,8 +337,9 @@ func _on_alert_triggered(alert_type: String, severity: float):
 	if not is_active:
 		is_active = true
 		placement_timer.start()
+		hacker_spawn_timer.start()
 		rival_hacker_activated.emit()
-		print("RivalHacker: FIRST ALERT TRIGGERED - Now active and placing enemy towers!")
+		print("RivalHacker: FIRST ALERT TRIGGERED - Now active and placing enemy towers and spawning hackers!")
 	
 	# Adjust AI behavior based on alert type and severity
 	match alert_type:

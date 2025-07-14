@@ -32,6 +32,13 @@ func setup_for_tower_target(start_pos: Vector2, target_tower: Node, projectile_d
 	damage = projectile_damage
 	speed = projectile_speed
 
+func setup_for_rival_hacker(start_pos: Vector2, target_hacker: RivalHacker, projectile_damage: int, projectile_speed: float):
+	global_position = start_pos
+	start_position = start_pos
+	target = target_hacker
+	damage = projectile_damage
+	speed = projectile_speed
+
 func _process(delta):
 	if not target or not is_instance_valid(target):
 		queue_free()

@@ -88,20 +88,32 @@ func find_target():
 	if current_target and is_target_in_range(current_target):
 		return
 	
-	# Find new target - prioritize enemies over enemy towers
+	# Find new target - prioritize RivalHackers > enemies > enemy towers
 	current_target = null
 	var closest_distance = tower_range
 	
-	# First, look for enemies (higher priority)
-	var enemies = get_enemies_from_parent()
-	for enemy in enemies:
-		if not is_instance_valid(enemy):
+	# First, look for RivalHackers (highest priority - they attack our towers!)
+	var rival_hackers = get_rival_hackers()
+	for hacker in rival_hackers:
+		if not is_instance_valid(hacker):
 			continue
 		
-		var distance = global_position.distance_to(enemy.global_position)
+		var distance = global_position.distance_to(hacker.global_position)
 		if distance <= tower_range and distance < closest_distance:
-			current_target = enemy
+			current_target = hacker
 			closest_distance = distance
+	
+	# If no RivalHackers found, look for regular enemies
+	if not current_target:
+		var enemies = get_enemies_from_parent()
+		for enemy in enemies:
+			if not is_instance_valid(enemy):
+				continue
+			
+			var distance = global_position.distance_to(enemy.global_position)
+			if distance <= tower_range and distance < closest_distance:
+				current_target = enemy
+				closest_distance = distance
 	
 	# If no enemies found, look for enemy towers
 	if not current_target:
@@ -139,6 +151,27 @@ func get_enemies_from_parent() -> Array[Enemy]:
 	
 	return enemies
 
+func get_rival_hackers() -> Array[RivalHacker]:
+	var rival_hackers: Array[RivalHacker] = []
+	
+	# Get RivalHackers from RivalHackerManager via MainController
+	var main_controller = get_main_controller()
+	if main_controller and main_controller.rival_hacker_manager:
+		# Check if RivalHackerManager has a method to get rival hackers
+		if main_controller.rival_hacker_manager.has_method("get_rival_hackers"):
+			var hackers_array = main_controller.rival_hacker_manager.get_rival_hackers()
+			for hacker in hackers_array:
+				if hacker is RivalHacker:
+					rival_hackers.append(hacker)
+	
+	# Fallback: Search through scene for RivalHackers
+	if rival_hackers.is_empty():
+		var root = get_tree().get_current_scene()
+		if root:
+			_search_for_rival_hackers_recursive(root, rival_hackers)
+	
+	return rival_hackers
+
 func get_enemy_towers() -> Array[EnemyTower]:
 	var enemy_towers: Array[EnemyTower] = []
 	
@@ -159,6 +192,12 @@ func _search_for_enemies_recursive(node: Node, enemies: Array[Enemy]):
 	for child in node.get_children():
 		_search_for_enemies_recursive(child, enemies)
 
+func _search_for_rival_hackers_recursive(node: Node, rival_hackers: Array[RivalHacker]):
+	if node is RivalHacker:
+		rival_hackers.append(node)
+	for child in node.get_children():
+		_search_for_rival_hackers_recursive(child, rival_hackers)
+
 func is_target_in_range(target: Node) -> bool:
 	if not is_instance_valid(target):
 		return false
@@ -173,7 +212,9 @@ func attack_target():
 	var projectile = PROJECTILE_SCENE.instantiate()
 	
 	# Handle different target types
-	if current_target is Enemy:
+	if current_target is RivalHacker:
+		projectile.setup_for_rival_hacker(global_position, current_target, damage, projectile_speed)
+	elif current_target is Enemy:
 		projectile.setup(global_position, current_target, damage, projectile_speed)
 	elif current_target is EnemyTower:
 		projectile.setup_for_tower_target(global_position, current_target, damage, projectile_speed)

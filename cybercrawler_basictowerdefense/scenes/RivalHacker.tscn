@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://bg3qxj8tn8xvi"]
+
+[ext_resource type="Script" path="res://scripts/Rival/RivalHacker.gd" id="1_s8n9q"]
+
+[node name="RivalHacker" type="CharacterBody2D"]
+script = ExtResource("1_s8n9q") 
