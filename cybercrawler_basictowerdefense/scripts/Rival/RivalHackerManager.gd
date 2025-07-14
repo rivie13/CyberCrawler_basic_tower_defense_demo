@@ -4,6 +4,9 @@ class_name RivalHackerManager
 # Enemy tower scene reference
 const ENEMY_TOWER_SCENE = preload("res://scenes/EnemyTower.tscn")
 
+# Tower type constants - consistent with TowerManager  
+const POWERFUL_TOWER = "powerful"
+
 # Signals
 signal enemy_tower_placed(grid_pos: Vector2i)
 signal rival_hacker_activated()
@@ -191,10 +194,16 @@ func place_enemy_tower(grid_pos: Vector2i) -> bool:
 	enemy_tower_placed.emit(grid_pos)
 	return true
 
-func _on_player_tower_placed(grid_pos: Vector2i):
+func _on_player_tower_placed(grid_pos: Vector2i, tower_type: String):
 	# React to player tower placement
-	print("RivalHacker: Player placed tower at ", grid_pos, " - threat level increased!")
-	player_threat_level += 1
+	print("RivalHacker: Player placed %s tower at %s - threat level increased!" % [tower_type, grid_pos])
+	
+	# Increase threat level more for powerful towers
+	if tower_type == POWERFUL_TOWER:
+		player_threat_level += 3  # Powerful towers are much more threatening
+		print("RivalHacker: POWERFUL TOWER DETECTED - Significant threat increase!")
+	else:
+		player_threat_level += 1  # Basic towers get normal threat increase
 	
 	# Notify alert system about tower placement
 	if alert_system and alert_system.is_monitoring:

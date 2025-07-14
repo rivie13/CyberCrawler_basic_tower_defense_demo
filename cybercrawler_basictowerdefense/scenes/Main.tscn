@@ -30,7 +30,7 @@ anchor_right = 1.0
 offset_left = -200.0
 offset_top = 10.0
 offset_right = -10.0
-offset_bottom = 200.0
+offset_bottom = 280.0
 
 [node name="TowerSelectionLabel" type="Label" parent="UI/TowerSelectionPanel"]
 layout_mode = 0
@@ -50,10 +50,22 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -75.0
-offset_top = -40.0
+offset_top = -60.0
 offset_right = 75.0
-offset_bottom = -10.0
+offset_bottom = -30.0
 text = "Basic Tower"
+
+[node name="PowerfulTowerButton" type="Button" parent="UI/TowerSelectionPanel"]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -75.0
+offset_top = -20.0
+offset_right = 75.0
+offset_bottom = 10.0
+text = "Powerful Tower"
 
 [node name="CostLabel" type="Label" parent="UI/TowerSelectionPanel"]
 layout_mode = 0
@@ -62,9 +74,10 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -75.0
+offset_top = 20.0
 offset_right = 75.0
-offset_bottom = 20.0
-text = "Cost: 50"
+offset_bottom = 40.0
+text = "Basic: 50 | Powerful: 75"
 horizontal_alignment = 1
 
 [node name="CurrencyLabel" type="Label" parent="UI/TowerSelectionPanel"]
@@ -74,8 +87,21 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -75.0
-offset_top = 30.0
+offset_top = 50.0
 offset_right = 75.0
-offset_bottom = 50.0
+offset_bottom = 70.0
 text = "Currency: 100"
+horizontal_alignment = 1
+
+[node name="SelectedTowerLabel" type="Label" parent="UI/TowerSelectionPanel"]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -75.0
+offset_top = 80.0
+offset_right = 75.0
+offset_bottom = 100.0
+text = "Selected: Basic"
 horizontal_alignment = 1
