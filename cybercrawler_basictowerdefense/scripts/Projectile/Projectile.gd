@@ -38,8 +38,8 @@ func _process(delta):
 		return
 	
 	# Check if game is over (projectiles should stop when game ends)
-	var grid_system = get_parent()
-	if grid_system and grid_system.has_method("is_game_over") and grid_system.is_game_over():
+	var main_controller = get_main_controller()
+	if main_controller and main_controller.game_manager and main_controller.game_manager.is_game_over():
 		queue_free()
 		return
 	
@@ -54,4 +54,13 @@ func _process(delta):
 func hit_target():
 	if target and is_instance_valid(target):
 		target.take_damage(damage)
-	queue_free() 
+	queue_free()
+
+func get_main_controller():
+	# Navigate up the tree to find MainController
+	var current_node = self
+	while current_node:
+		if current_node is MainController:
+			return current_node
+		current_node = current_node.get_parent()
+	return null 

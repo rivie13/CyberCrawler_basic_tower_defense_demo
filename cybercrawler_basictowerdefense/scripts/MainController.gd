@@ -150,9 +150,8 @@ func update_info_label():
 func _on_game_over():
 	print("Game Over - UI handling not yet implemented")
 	
-	# Stop rival hacker activity
-	if rival_hacker_manager:
-		rival_hacker_manager.stop_all_activity()
+	# Stop all activity immediately when game over occurs
+	stop_all_game_activity()
 	
 	# TODO: Implement game over screen
 
@@ -165,9 +164,8 @@ func show_victory_screen():
 	if ui_update_timer:
 		ui_update_timer.stop()
 	
-	# Stop rival hacker activity
-	if rival_hacker_manager:
-		rival_hacker_manager.stop_all_activity()
+	# Stop all game activity
+	stop_all_game_activity()
 	
 	# Get victory data from game manager
 	var victory_data = game_manager.get_victory_data()
@@ -192,3 +190,33 @@ func _on_rival_hacker_activated():
 func _on_enemy_tower_placed(grid_pos: Vector2i):
 	print("MainController: Enemy tower placed at ", grid_pos)
 	# Could add visual/audio feedback here
+
+func stop_all_game_activity():
+	# Stop rival hacker activity
+	if rival_hacker_manager:
+		rival_hacker_manager.stop_all_activity()
+	
+	# Stop all player towers
+	if tower_manager:
+		var player_towers = tower_manager.get_towers()
+		for tower in player_towers:
+			if is_instance_valid(tower):
+				tower.stop_attacking()
+	
+	# Stop all enemy towers
+	if rival_hacker_manager:
+		var enemy_towers = rival_hacker_manager.get_enemy_towers()
+		for enemy_tower in enemy_towers:
+			if is_instance_valid(enemy_tower):
+				enemy_tower.stop_attacking()
+	
+	# Destroy all projectiles
+	destroy_all_projectiles()
+
+func destroy_all_projectiles():
+	# Find and destroy all projectiles in the scene
+	var grid_container = grid_manager.get_grid_container()
+	if grid_container:
+		for child in grid_container.get_children():
+			if child is Projectile:
+				child.queue_free()
