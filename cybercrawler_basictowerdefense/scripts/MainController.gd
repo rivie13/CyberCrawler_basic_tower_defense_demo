@@ -6,6 +6,10 @@ const VICTORY_COLOR = Color(0.2, 0.8, 0.2)  # Accessible green for victory
 const DEFEAT_COLOR = Color(0.8, 0.2, 0.2)   # Accessible red for defeat
 const WARNING_COLOR = Color(0.8, 0.8, 0.2)  # Accessible yellow for warnings
 
+# Tower type constants - consistent with TowerManager
+const BASIC_TOWER = "basic"
+const POWERFUL_TOWER = "powerful"
+
 # Manager references
 var grid_manager: GridManager
 var wave_manager: WaveManager  
@@ -16,6 +20,9 @@ var rival_hacker_manager: RivalHackerManager
 
 # UI update timer
 var ui_update_timer: Timer
+
+# Tower selection system
+var selected_tower_type: String = BASIC_TOWER  # Default to basic tower
 
 func _ready():
 	setup_managers()
@@ -71,10 +78,15 @@ func initialize_systems():
 	rival_hacker_manager.enemy_tower_placed.connect(_on_enemy_tower_placed)
 
 func setup_ui():
-	# Setup tower selection UI
-	var tower_button = $UI/TowerSelectionPanel/BasicTowerButton
-	if tower_button:
-		tower_button.pressed.connect(_on_tower_selected)
+	# Setup basic tower selection UI
+	var basic_tower_button = $UI/TowerSelectionPanel/BasicTowerButton
+	if basic_tower_button:
+		basic_tower_button.pressed.connect(_on_basic_tower_selected)
+	
+	# Setup powerful tower selection UI
+	var powerful_tower_button = $UI/TowerSelectionPanel/PowerfulTowerButton
+	if powerful_tower_button:
+		powerful_tower_button.pressed.connect(_on_powerful_tower_selected)
 	
 	# Setup UI update timer to refresh every second
 	ui_update_timer = Timer.new()
@@ -109,19 +121,34 @@ func handle_grid_click(global_pos: Vector2):
 	var grid_pos = grid_manager.world_to_grid(global_pos)
 	
 	if grid_manager.is_valid_grid_position(grid_pos):
-		tower_manager.attempt_tower_placement(grid_pos)
+		tower_manager.attempt_tower_placement(grid_pos, selected_tower_type)
 
+func _on_basic_tower_selected():
+	selected_tower_type = BASIC_TOWER
+	print("Basic Tower selected (Cost: %d) - Click on grid to place" % [currency_manager.get_basic_tower_cost()])
+	update_tower_selection_ui()
+
+func _on_powerful_tower_selected():
+	selected_tower_type = POWERFUL_TOWER
+	print("Powerful Tower selected (Cost: %d) - Click on grid to place" % [currency_manager.get_powerful_tower_cost()])
+	update_tower_selection_ui()
+
+# Backwards compatibility
 func _on_tower_selected():
-	# For now, just provide feedback that tower is selected
-	print("Basic Tower selected - Click on grid to place (Cost: %d)" % [currency_manager.get_tower_cost()])
+	_on_basic_tower_selected()
 
 func _on_currency_changed(_new_amount: int):
 	update_tower_selection_ui()
 	update_info_label()
 
-func _on_tower_placed(_grid_pos: Vector2i):
+func _on_tower_placed(grid_pos: Vector2i, tower_type: String):
+	print("MainController: %s tower placed at %s" % [tower_type.capitalize(), grid_pos])
 	update_tower_selection_ui()
 	update_info_label()
+	
+	# Check if this was a powerful tower for alert system integration
+	if tower_type == POWERFUL_TOWER:
+		print("MainController: Powerful tower placed - this should trigger alert system!")
 
 func _on_tower_placement_failed(reason: String):
 	print("Tower placement failed: ", reason)
@@ -131,21 +158,36 @@ func _on_ui_update_timer_timeout():
 	update_info_label()
 
 func update_tower_selection_ui():
-	# Update cost label
+	# Update cost label to show both tower types
 	var cost_label = $UI/TowerSelectionPanel/CostLabel
 	if cost_label:
-		cost_label.text = "Cost: %d" % [currency_manager.get_tower_cost()]
+		cost_label.text = "Basic: %d | Powerful: %d" % [
+			currency_manager.get_basic_tower_cost(),
+			currency_manager.get_powerful_tower_cost()
+		]
 	
 	# Update currency label
 	var currency_label = $UI/TowerSelectionPanel/CurrencyLabel  
 	if currency_label:
 		currency_label.text = "Currency: %d" % [currency_manager.get_currency()]
 		
-		# Change color based on affordability
-		if currency_manager.can_afford_tower():
+		# Change color based on affordability of selected tower
+		if currency_manager.can_afford_tower_type(selected_tower_type):
 			currency_label.modulate = Color.WHITE
 		else:
 			currency_label.modulate = Color.RED
+	
+	# Update selected tower label
+	var selected_label = $UI/TowerSelectionPanel/SelectedTowerLabel
+	if selected_label:
+		var cost = currency_manager.get_basic_tower_cost() if selected_tower_type == BASIC_TOWER else currency_manager.get_powerful_tower_cost()
+		selected_label.text = "Selected: %s (%d)" % [selected_tower_type.capitalize(), cost]
+		
+		# Change color based on affordability
+		if currency_manager.can_afford_tower_type(selected_tower_type):
+			selected_label.modulate = Color.WHITE
+		else:
+			selected_label.modulate = Color.RED
 
 func update_info_label():
 	var info_label = $UI/InfoLabel
