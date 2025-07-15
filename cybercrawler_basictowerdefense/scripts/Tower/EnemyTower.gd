@@ -1,15 +1,18 @@
 extends Node2D
 class_name EnemyTower
 
-# Enemy tower properties
-@export var damage: int = 1
-@export var tower_range: float = 120.0  # Slightly shorter range than player towers
-@export var attack_rate: float = 0.8  # Slightly slower than player towers
-@export var projectile_speed: float = 250.0
-@export var max_health: int = 3
-@export var health: int = 3
+# Tower properties
+@export var tower_range: float = 120.0
+@export var damage: int = 2
+@export var attack_speed: float = 2.0  # Attacks per second
+@export var health: int = 15
+@export var max_health: int = 15
+
+# Cost (for removal reward)
+@export var removal_reward: int = 5
 
 # Click damage properties handled by Clickable interface
+# EnemyTower uses TOWER_CONFIG for medium-sized click area
 
 # State
 var attack_timer: Timer
@@ -18,102 +21,72 @@ var grid_position: Vector2i
 var show_range_indicator: bool = false
 var is_alive: bool = true
 
-# Visual components
-var range_circle: Node2D
-var tower_body: ColorRect
-var health_bar: ColorRect
-var health_bar_bg: ColorRect
-
-# Projectile scene - reuse the same projectile system
-const PROJECTILE_SCENE = preload("res://scenes/Projectile.tscn")
-
 # Signals
-signal enemy_tower_destroyed(enemy_tower: EnemyTower)
+signal enemy_tower_destroyed(tower: EnemyTower)
 
 func _ready():
+	# Create tower visual
 	create_enemy_tower_visual()
+	
+	# Setup attack timer
 	setup_attack_timer()
-	update_health_bar()
+	
+	# Setup damage immunity timer
+	setup_damage_immunity_timer()
 
 func create_enemy_tower_visual():
-	# Create enemy tower body (red rectangle to distinguish from player towers)
-	tower_body = ColorRect.new()
-	tower_body.size = Vector2(60, 60)
-	tower_body.position = Vector2(-30, -30)
-	tower_body.color = Color(0.8, 0.2, 0.2, 0.8)  # Red color for enemy
-	add_child(tower_body)
+	# Create red square for enemy tower
+	var square = ColorRect.new()
+	square.size = Vector2(32, 32)
+	square.position = Vector2(-16, -16)
+	square.color = Color(0.8, 0.2, 0.2, 0.8)  # Red color
+	add_child(square)
 	
-	# Create health bar background
-	health_bar_bg = ColorRect.new()
-	health_bar_bg.size = Vector2(64, 8)
-	health_bar_bg.position = Vector2(-32, -44)
-	health_bar_bg.color = Color(0.3, 0.3, 0.3, 0.8)
-	add_child(health_bar_bg)
+	# Add a darker outline
+	var outline = ColorRect.new()
+	outline.size = Vector2(36, 36)
+	outline.position = Vector2(-18, -18)
+	outline.color = Color(0.6, 0.1, 0.1, 0.6)  # Darker red
+	add_child(outline)
+	move_child(outline, 0)  # Send to back
 	
-	# Create health bar
-	health_bar = ColorRect.new()
-	health_bar.size = Vector2(60, 6)
-	health_bar.position = Vector2(-30, -43)
-	health_bar.color = Color(0.8, 0.2, 0.2, 0.8)  # Red health bar
-	add_child(health_bar)
-	
-	# Create range indicator (visible when selected)
-	range_circle = Node2D.new()
-	add_child(range_circle)
+	# Add health bar
+	create_health_bar()
 
 func setup_attack_timer():
 	attack_timer = Timer.new()
-	attack_timer.wait_time = 1.0 / attack_rate
+	attack_timer.wait_time = 1.0 / attack_speed
 	attack_timer.timeout.connect(_on_attack_timer_timeout)
 	add_child(attack_timer)
-	attack_timer.start()
+
+func setup_damage_immunity_timer():
+	damage_immunity_timer = Timer.new()
+	damage_immunity_timer.wait_time = damage_immunity_duration
+	damage_immunity_timer.one_shot = true
+	damage_immunity_timer.timeout.connect(_on_damage_immunity_timeout)
+	add_child(damage_immunity_timer)
 
 func _on_attack_timer_timeout():
 	if not is_alive:
 		return
-	
-	# Check if game is over
-	var main_controller = get_main_controller()
-	if main_controller and main_controller.game_manager and main_controller.game_manager.is_game_over():
-		return
 		
 	find_target()
-	if current_target and is_instance_valid(current_target):
+	
+	if current_target:
 		attack_target()
 
 func find_target():
-	# Clear invalid target
-	if current_target and not is_instance_valid(current_target):
-		current_target = null
-	
-	# If we have a valid target in range, keep it
-	if current_target and is_target_in_range(current_target):
+	# Use the new TargetingUtil to find the best target
+	var main_controller = get_main_controller()
+	if not main_controller:
 		return
 	
-	# Find new target - prioritize program data packet over player towers
-	current_target = null
-	var closest_distance = tower_range
+	# Check if current target is still valid and in range
+	if current_target and TargetingUtil.is_target_in_range(global_position, current_target, tower_range):
+		return
 	
-	# First, look for program data packet (highest priority) - only if active
-	var program_packet = get_program_data_packet()
-	if program_packet and is_instance_valid(program_packet) and program_packet.is_active:
-		var distance = global_position.distance_to(program_packet.global_position)
-		if distance <= tower_range:
-			current_target = program_packet
-			closest_distance = distance
-	
-	# If no program data packet found, look for player towers
-	if not current_target:
-		var player_towers = get_player_towers()
-		
-		for tower in player_towers:
-			if not is_instance_valid(tower):
-				continue
-			
-			var distance = global_position.distance_to(tower.global_position)
-			if distance <= tower_range and distance < closest_distance:
-				current_target = tower
-				closest_distance = distance
+	# Find new target using shared utility
+	current_target = TargetingUtil.find_best_target(global_position, tower_range, main_controller)
 
 func get_main_controller():
 	# Navigate up the tree to find MainController
@@ -126,11 +99,9 @@ func get_main_controller():
 
 func get_player_towers() -> Array[Tower]:
 	var towers: Array[Tower] = []
-	
-	# Get player towers from TowerManager via MainController
 	var main_controller = get_main_controller()
 	if main_controller and main_controller.tower_manager:
-		return main_controller.tower_manager.get_towers()
+		towers = main_controller.tower_manager.get_towers()
 	
 	return towers
 
@@ -144,79 +115,111 @@ func attack_target():
 	if not current_target or not is_instance_valid(current_target):
 		return
 	
-	# Create projectile to attack the target tower
-	var projectile = PROJECTILE_SCENE.instantiate()
-	# Use specialized tower targeting setup
-	projectile.setup_for_tower_target(global_position, current_target, damage, projectile_speed)
-	get_parent().add_child(projectile)
+	# Deal damage to target
+	current_target.take_damage(damage)
 	
-	# Visual feedback - rotate tower towards target
-	var direction = (current_target.global_position - global_position).normalized()
-	rotation = direction.angle()
+	# Create projectile visual effect
+	create_projectile_to_target(current_target)
+	
+	print("EnemyTower at ", grid_position, " attacked target for ", damage, " damage!")
+	
+	# Check if target was destroyed
+	if (current_target is Tower and not current_target.is_alive) or (current_target is ProgramDataPacket and not current_target.is_alive):
+		current_target = null
+		attack_timer.stop()
+
+func create_projectile_to_target(target: Node):
+	# Create a simple projectile visual effect
+	var projectile = ColorRect.new()
+	projectile.size = Vector2(6, 6)
+	projectile.position = Vector2(-3, -3)
+	projectile.color = Color(0.8, 0.8, 0.2, 0.9)  # Yellow projectile
+	add_child(projectile)
+	
+	# Animate projectile to target
+	var tween = create_tween()
+	var target_pos = target.global_position - global_position
+	tween.tween_property(projectile, "position", target_pos, 0.3)
+	tween.tween_callback(func(): projectile.queue_free())
+
+func start_attacking():
+	if not is_alive:
+		return
+	find_target()
+	attack_timer.start()
+
+func stop_attacking():
+	attack_timer.stop()
+
+func set_grid_position(pos: Vector2i):
+	grid_position = pos
+
+func get_grid_position() -> Vector2i:
+	return grid_position
+
+# Damage immunity system
+var damage_immunity_timer: Timer
+var damage_immunity_duration: float = 0.3  # 0.3 seconds of immunity
+var is_immune_to_damage: bool = false
+
+func _on_damage_immunity_timeout():
+	is_immune_to_damage = false
+	# Reset visual opacity to normal
+	modulate.a = 1.0
+
+func create_health_bar():
+	var health_bar_bg = ColorRect.new()
+	health_bar_bg.size = Vector2(36, 6)
+	health_bar_bg.position = Vector2(-18, -40)
+	health_bar_bg.color = Color(0.3, 0.3, 0.3, 0.8)
+	add_child(health_bar_bg)
+	
+	var health_bar = ColorRect.new()
+	health_bar.name = "HealthBar"
+	health_bar.size = Vector2(32, 4)
+	health_bar.position = Vector2(-16, -39)
+	health_bar.color = Color(0.8, 0.2, 0.2, 0.8)  # Red to match tower
+	add_child(health_bar)
 
 func take_damage(damage_amount: int):
-	if not is_alive:
+	if not is_alive or is_immune_to_damage:
 		return
 	
 	health -= damage_amount
-	health = max(0, health)
 	update_health_bar()
+	
+	# Start damage immunity to prevent rapid damage
+	is_immune_to_damage = true
+	damage_immunity_timer.start()
+	
+	# Visual feedback: make tower semi-transparent during immunity
+	modulate.a = 0.6
 	
 	print("EnemyTower at ", grid_position, " took ", damage_amount, " damage. Health: ", health, "/", max_health)
 	
 	if health <= 0:
-		destroy_tower()
+		die()
 
 func update_health_bar():
+	var health_bar = get_node("HealthBar")
 	if health_bar:
 		var health_percentage = float(health) / float(max_health)
-		health_bar.size.x = 60 * health_percentage
+		health_bar.size.x = 32 * health_percentage
 		
 		# Change color based on health
 		if health_percentage > 0.6:
 			health_bar.color = Color(0.8, 0.2, 0.2, 0.8)  # Red
 		elif health_percentage > 0.3:
-			health_bar.color = Color(0.8, 0.6, 0.2, 0.8)  # Orange
+			health_bar.color = Color(0.8, 0.8, 0.2, 0.8)  # Yellow
 		else:
-			health_bar.color = Color(0.6, 0.1, 0.1, 0.8)  # Dark red
+			health_bar.color = Color(0.8, 0.4, 0.2, 0.8)  # Orange
 
-func destroy_tower():
+func die():
 	is_alive = false
-	attack_timer.stop()
-	
-	# Free up grid position
-	var main_controller = get_main_controller()
-	if main_controller and main_controller.grid_manager:
-		main_controller.grid_manager.set_grid_occupied(grid_position, false)
-	
-	# Notify rival hacker manager
+	stop_attacking()
 	enemy_tower_destroyed.emit(self)
-	
 	print("EnemyTower at ", grid_position, " destroyed!")
 	queue_free()
-
-func set_grid_position(grid_pos: Vector2i):
-	grid_position = grid_pos
-
-func show_range():
-	show_range_indicator = true
-	queue_redraw()
-
-func hide_range():
-	show_range_indicator = false
-	queue_redraw()
-
-func _draw():
-	# Draw range circle when selected
-	if show_range_indicator:
-		var range_color = Color(0.8, 0.2, 0.2, 0.3)  # Semi-transparent red
-		draw_circle(Vector2.ZERO, tower_range, range_color)
-
-func stop_attacking():
-	# Stop all tower activity for game over
-	if attack_timer:
-		attack_timer.stop()
-	current_target = null
 
 # Click damage detection using Clickable interface
 func is_clicked_at(world_pos: Vector2) -> bool:
@@ -225,7 +228,7 @@ func is_clicked_at(world_pos: Vector2) -> bool:
 
 func handle_click_damage():
 	"""Handle damage from player click"""
-	return Clickable.handle_click_damage(self, Clickable.ENEMY_TOWER_CONFIG, "EnemyTower at " + str(grid_position))
+	return Clickable.handle_click_damage(self, Clickable.ENEMY_TOWER_CONFIG, "EnemyTower")
 
 func get_health_info() -> String:
 	"""Get health information for logging"""
@@ -240,9 +243,4 @@ func get_program_data_packet() -> ProgramDataPacket:
 
 # Debug method for range visualization (can be called from console)
 func show_range_debug():
-	print("EnemyTower at ", grid_position, " - Range: ", tower_range, " - Current Target: ", current_target, " - Health: ", health, "/", max_health)
-	# Toggle range visualization for debugging
-	if show_range_indicator:
-		hide_range()
-	else:
-		show_range() 
+	print("EnemyTower at ", grid_position, " - Range: ", tower_range, " - Current Target: ", current_target, " - Health: ", health, "/", max_health) 
