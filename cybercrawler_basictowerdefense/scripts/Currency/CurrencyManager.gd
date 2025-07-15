@@ -96,6 +96,15 @@ func add_currency(amount: int):
 		player_currency += amount
 		currency_changed.emit(player_currency)
 
+func spend_currency(amount: int) -> bool:
+	if player_currency >= amount:
+		player_currency -= amount
+		currency_changed.emit(player_currency)
+		return true
+	else:
+		print("Insufficient funds! Need %d currency, have %d" % [amount, player_currency])
+		return false
+
 # Backwards compatibility
 func set_tower_cost(new_cost: int):
 	if new_cost > 0:
