@@ -21,6 +21,7 @@ var tower_manager: TowerManager
 var currency_manager: CurrencyManager
 var game_manager: GameManager
 var rival_hacker_manager: RivalHackerManager
+var program_data_packet_manager: ProgramDataPacketManager
 
 # UI update timer
 var ui_update_timer: Timer
@@ -45,6 +46,7 @@ func setup_managers():
 	currency_manager = CurrencyManager.new()
 	game_manager = GameManager.new()
 	rival_hacker_manager = RivalHackerManager.new()
+	program_data_packet_manager = ProgramDataPacketManager.new()
 	
 	# Add them as children
 	add_child(grid_manager)
@@ -53,6 +55,7 @@ func setup_managers():
 	add_child(currency_manager)
 	add_child(game_manager)
 	add_child(rival_hacker_manager)
+	add_child(program_data_packet_manager)
 
 func initialize_systems():
 	# Initialize GridManager with the GridContainer from the scene
@@ -64,6 +67,7 @@ func initialize_systems():
 	tower_manager.initialize(grid_manager, currency_manager, wave_manager)
 	game_manager.initialize(wave_manager, currency_manager, tower_manager)
 	rival_hacker_manager.initialize(grid_manager, currency_manager, tower_manager, wave_manager)
+	program_data_packet_manager.initialize(grid_manager, game_manager, wave_manager)
 	
 	# Set up enemy path in grid
 	var path_positions = wave_manager.get_path_grid_positions()
@@ -83,6 +87,11 @@ func initialize_systems():
 	# Connect rival hacker manager signals
 	rival_hacker_manager.rival_hacker_activated.connect(_on_rival_hacker_activated)
 	rival_hacker_manager.enemy_tower_placed.connect(_on_enemy_tower_placed)
+	
+	# Connect program data packet manager signals
+	program_data_packet_manager.program_packet_ready.connect(_on_program_packet_ready)
+	program_data_packet_manager.program_packet_destroyed.connect(_on_program_packet_destroyed)
+	program_data_packet_manager.program_packet_reached_end.connect(_on_program_packet_reached_end)
 
 func setup_ui():
 	# Setup basic tower selection UI
@@ -99,6 +108,11 @@ func setup_ui():
 	var mode_toggle_button = $UI/TowerSelectionPanel/ModeToggleButton
 	if mode_toggle_button:
 		mode_toggle_button.pressed.connect(_on_mode_toggle_pressed)
+	
+	# Setup program data packet button
+	var packet_button = $UI/TowerSelectionPanel/ProgramDataPacketButton
+	if packet_button:
+		packet_button.pressed.connect(_on_program_data_packet_button_pressed)
 	
 	# Setup UI update timer to refresh every second
 	ui_update_timer = Timer.new()
@@ -211,6 +225,8 @@ func _on_tower_placement_failed(reason: String):
 func _on_ui_update_timer_timeout():
 	# Update info label every second to refresh timer display
 	update_info_label()
+	# Update packet UI 
+	update_packet_ui()
 
 func update_tower_selection_ui():
 	# Update cost label to show both tower types
@@ -296,11 +312,21 @@ func show_victory_screen():
 	var info_label = $UI/InfoLabel
 	if info_label:
 		var victory_text = "VICTORY!\n"
-		victory_text += "Survived all %d waves!\n" % [victory_data.max_waves]
-		victory_text += "Enemies killed: %d\n" % [victory_data.enemies_killed]
-		victory_text += "Final currency: %d\n" % [victory_data.currency]
-		victory_text += "Time played: %s\n" % [victory_data.time_played]
-		victory_text += "\nCongratulations on completing the tower defense demo!"
+		
+		# Show different victory messages based on victory type
+		if victory_data.victory_type == GameManager.VictoryType.PROGRAM_DATA_PACKET:
+			victory_text += "Program data packet successfully infiltrated the enemy network!\n"
+			victory_text += "Mission accomplished during wave %d!\n" % [victory_data.current_wave]
+			victory_text += "\nYou've hacked into the enemy system and retrieved critical data!"
+		else:
+			victory_text += "Survived all %d waves!\n" % [victory_data.max_waves]
+			victory_text += "You've successfully defended against all enemy attacks!"
+		
+		victory_text += "\n\nMission Statistics:"
+		victory_text += "\nEnemies eliminated: %d" % [victory_data.enemies_killed]
+		victory_text += "\nFinal currency: %d" % [victory_data.currency]
+		victory_text += "\nTime played: %s" % [victory_data.time_played]
+		victory_text += "\n\nCongratulations on completing the tower defense demo!"
 		
 		info_label.text = victory_text
 		info_label.modulate = VICTORY_COLOR  # Use accessible color for victory 
@@ -359,6 +385,49 @@ func stop_all_game_activity():
 	
 	# Destroy all projectiles
 	destroy_all_projectiles()
+
+# Program Data Packet Manager signal callbacks
+func _on_program_packet_ready():
+	print("MainController: Program data packet ready for release")
+	update_packet_ui()
+
+func _on_program_packet_destroyed(_packet: ProgramDataPacket):
+	print("MainController: Program data packet destroyed")
+	update_packet_ui()
+
+func _on_program_packet_reached_end(_packet: ProgramDataPacket):
+	print("MainController: Program data packet reached enemy network! Victory!")
+	update_packet_ui()
+
+func _on_program_data_packet_button_pressed():
+	print("MainController: Program data packet button pressed")
+	if program_data_packet_manager and program_data_packet_manager.can_player_release_packet():
+		program_data_packet_manager.release_program_data_packet()
+		update_packet_ui()
+	else:
+		print("MainController: Cannot release program data packet")
+
+func update_packet_ui():
+	var packet_button = $UI/TowerSelectionPanel/ProgramDataPacketButton
+	var packet_status_label = $UI/TowerSelectionPanel/PacketStatusLabel
+	
+	if packet_button and packet_status_label and program_data_packet_manager:
+		var can_release = program_data_packet_manager.can_player_release_packet()
+		var is_spawned = program_data_packet_manager.is_packet_spawned
+		var is_active = program_data_packet_manager.is_packet_active
+		var is_alive = program_data_packet_manager.is_packet_alive()
+		
+		packet_button.disabled = not can_release
+		
+		if not is_spawned:
+			packet_status_label.text = "Packet: Not Ready"
+		elif is_active:
+			if is_alive:
+				packet_status_label.text = "Packet: Active"
+			else:
+				packet_status_label.text = "Packet: Destroyed"
+		else:
+			packet_status_label.text = "Packet: Ready"
 
 func destroy_all_projectiles():
 	# Find and destroy all projectiles in the scene

@@ -11,6 +11,13 @@ var enemies_killed: int = 0
 var game_over: bool = false
 var game_won: bool = false
 
+# Victory types
+enum VictoryType {
+	WAVE_SURVIVAL,
+	PROGRAM_DATA_PACKET
+}
+var victory_type: VictoryType = VictoryType.WAVE_SURVIVAL
+
 # Timer system
 var game_session_start_time: int = 0
 var wave_countdown_time: float = 0.0
@@ -102,6 +109,7 @@ func trigger_game_won():
 		return
 	
 	game_won = true
+	victory_type = VictoryType.WAVE_SURVIVAL
 	var max_waves = wave_manager.get_max_waves() if wave_manager else 10
 	print("Victory! You survived all ", max_waves, " waves and killed ", enemies_killed, " enemies!")
 	
@@ -119,13 +127,39 @@ func trigger_game_won():
 	# Emit signal for UI handling
 	game_won_triggered.emit()
 
+func trigger_game_won_packet():
+	"""Trigger game won when program data packet reaches end"""
+	if game_won or game_over:
+		return
+	
+	game_won = true
+	victory_type = VictoryType.PROGRAM_DATA_PACKET
+	print("Victory! Program data packet successfully infiltrated the enemy network!")
+	
+	# Stop all systems (same as game over)
+	if wave_manager:
+		wave_manager.stop_all_timers()
+		wave_manager.cleanup_all_enemies()
+	
+	if tower_manager and tower_manager.has_method("stop_all_towers"):
+		tower_manager.stop_all_towers()
+	
+	# Clean up projectiles
+	cleanup_projectiles()
+	
+	# Emit signal for UI handling
+	game_won_triggered.emit()
+
 func get_victory_data() -> Dictionary:
 	var max_waves = wave_manager.max_waves if wave_manager else 10
+	var current_wave = wave_manager.get_current_wave() if wave_manager else 1
 	var current_currency = currency_manager.get_currency() if currency_manager and currency_manager.has_method("get_currency") else 0
 	var final_time = format_time(get_session_time())
 	
 	return {
+		"victory_type": victory_type,
 		"max_waves": max_waves,
+		"current_wave": current_wave,
 		"enemies_killed": enemies_killed,
 		"currency": current_currency,
 		"time_played": final_time
