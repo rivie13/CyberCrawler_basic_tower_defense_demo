@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://bw5a8p4jm0pvr"]
+
+[ext_resource type="Script" path="res://scripts/FreezeMine/FreezeMine.gd" id="1_1xc4y"]
+
+[node name="FreezeMine" type="Node2D"]
+script = ExtResource("1_1xc4y") 
