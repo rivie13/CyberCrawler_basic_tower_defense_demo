@@ -1,6 +1,10 @@
 extends Node2D
 class_name ProgramDataPacket
 
+# Constants for magic numbers (addressing Copilot review)
+const COLLISION_THRESHOLD: float = 40.0
+const TARGET_REACH_THRESHOLD: float = 10.0
+
 # Program data packet properties
 @export var speed: float = 80.0  # Slightly slower than enemies
 @export var health: int = 30  # Increased to survive multiple enemy towers
@@ -90,8 +94,8 @@ func activate():
 	is_active = true
 	print("Program data packet activated!")
 
-func _process(delta):
-	# Changed from _physics_process to _process since we're no longer using physics
+func _physics_process(delta):
+	# Changed back to _physics_process for consistent movement with fixed timestep (Copilot review fix)
 	if not is_alive or not is_active or path_points.size() == 0:
 		return
 	
@@ -123,7 +127,7 @@ func move_along_path(delta):
 	check_enemy_collisions()
 	
 	# Check if reached current target
-	if distance_to_target < 10.0:
+	if distance_to_target < TARGET_REACH_THRESHOLD:
 		current_path_index += 1
 		
 		# Check if reached end of path
@@ -207,7 +211,7 @@ func check_enemy_collisions():
 		
 		var distance = global_position.distance_to(enemy.global_position)
 		# If packet is close enough to enemy, take damage
-		if distance < 40.0:  # Increased collision threshold
+		if distance < COLLISION_THRESHOLD:  # Use constant instead of magic number
 			take_damage(1)
 			print("Program data packet hit enemy at distance ", distance, "! Taking damage...")
 			break  # Only take damage from one enemy per frame to avoid rapid damage

@@ -1,6 +1,9 @@
 extends Node2D
 class_name ProgramDataPacketManager
 
+# Constants (addressing Copilot review)
+const AUTO_RELEASE_WAVE_NUMBER: int = 10
+
 # Signals for communication with other managers
 signal program_packet_ready()
 signal program_packet_destroyed(packet: ProgramDataPacket)
@@ -113,11 +116,11 @@ func _on_wave_started(wave_number: int):
 	"""Handle wave start events"""
 	print("ProgramDataPacketManager: Wave ", wave_number, " started")
 	
-	# Allow packet release from wave 1, but auto-release on wave 10
+	# Allow packet release from wave 1, but auto-release on final wave
 	if wave_number == 1 and not is_packet_spawned:
 		spawn_program_data_packet()
 		enable_packet_release()
-	elif wave_number == 10 and can_player_release_packet():
+	elif wave_number == AUTO_RELEASE_WAVE_NUMBER and can_player_release_packet():
 		# Auto-release on final wave if player hasn't done it yet
 		release_program_data_packet()
 
