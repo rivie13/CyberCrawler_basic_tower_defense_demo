@@ -13,7 +13,7 @@ class_name EnemyTower
 
 # State
 var attack_timer: Timer
-var current_target: Tower = null  # Targets player towers instead of enemies
+var current_target: Node = null  # Can target player towers or program data packet
 var grid_position: Vector2i
 var show_range_indicator: bool = false
 var is_alive: bool = true
@@ -90,21 +90,30 @@ func find_target():
 	if current_target and is_target_in_range(current_target):
 		return
 	
-	# Find new target (player towers)
+	# Find new target - prioritize program data packet over player towers
 	current_target = null
 	var closest_distance = tower_range
 	
-	# Get all player towers
-	var player_towers = get_player_towers()
-	
-	for tower in player_towers:
-		if not is_instance_valid(tower):
-			continue
-		
-		var distance = global_position.distance_to(tower.global_position)
-		if distance <= tower_range and distance < closest_distance:
-			current_target = tower
+	# First, look for program data packet (highest priority) - only if active
+	var program_packet = get_program_data_packet()
+	if program_packet and is_instance_valid(program_packet) and program_packet.is_active:
+		var distance = global_position.distance_to(program_packet.global_position)
+		if distance <= tower_range:
+			current_target = program_packet
 			closest_distance = distance
+	
+	# If no program data packet found, look for player towers
+	if not current_target:
+		var player_towers = get_player_towers()
+		
+		for tower in player_towers:
+			if not is_instance_valid(tower):
+				continue
+			
+			var distance = global_position.distance_to(tower.global_position)
+			if distance <= tower_range and distance < closest_distance:
+				current_target = tower
+				closest_distance = distance
 
 func get_main_controller():
 	# Navigate up the tree to find MainController
@@ -125,7 +134,7 @@ func get_player_towers() -> Array[Tower]:
 	
 	return towers
 
-func is_target_in_range(target: Tower) -> bool:
+func is_target_in_range(target: Node) -> bool:
 	if not is_instance_valid(target):
 		return false
 	var distance_to_target = global_position.distance_to(target.global_position)
@@ -221,6 +230,13 @@ func handle_click_damage():
 func get_health_info() -> String:
 	"""Get health information for logging"""
 	return " Health: " + str(health) + "/" + str(max_health)
+
+func get_program_data_packet() -> ProgramDataPacket:
+	"""Get the program data packet from the main controller"""
+	var main_controller = get_main_controller()
+	if main_controller and main_controller.program_data_packet_manager:
+		return main_controller.program_data_packet_manager.get_program_data_packet()
+	return null
 
 # Debug method for range visualization (can be called from console)
 func show_range_debug():

@@ -163,4 +163,8 @@ func cleanup_all_enemies():
 	for enemy in enemies_alive.duplicate():
 		if is_instance_valid(enemy):
 			enemy.queue_free()
-	enemies_alive.clear() 
+	enemies_alive.clear()
+
+func get_enemy_path() -> Array[Vector2]:
+	"""Get the current enemy path for other systems to use"""
+	return enemy_path 

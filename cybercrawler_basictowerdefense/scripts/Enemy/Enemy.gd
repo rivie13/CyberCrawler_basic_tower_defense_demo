@@ -68,6 +68,7 @@ func _physics_process(delta):
 	if main_controller and main_controller.game_manager and main_controller.game_manager.is_game_over():
 		return
 	
+	# ALWAYS follow the path - never deviate to chase other targets
 	move_along_path(delta)
 
 func get_main_controller():
@@ -80,6 +81,9 @@ func get_main_controller():
 	return null
 
 func move_along_path(_delta):
+	# CRITICAL: Enemies must ALWAYS follow their path to the end to damage the player
+	# Do not allow any targeting or deviation from the path
+	
 	var direction = (target_position - global_position).normalized()
 	var distance_to_target = global_position.distance_to(target_position)
 	
@@ -142,5 +146,11 @@ func get_health_info() -> String:
 	return " Health: " + str(health) + "/" + str(max_health)
 
 func reach_end():
+	# This is critical - enemies must reach the end to damage the player
+	# Do not allow any interference with this behavior
 	enemy_reached_end.emit(self)
-	queue_free() 
+	queue_free()
+
+# NOTE: Enemies do NOT target the program data packet
+# They only follow their path to damage the player
+# Any collision with the packet is handled by the packet itself 

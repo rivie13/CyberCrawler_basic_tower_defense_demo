@@ -12,7 +12,7 @@ class_name RivalHacker
 # Click damage properties handled by Clickable interface (between enemy and tower sizes)
 
 # Targeting and movement
-var current_target: Tower = null
+var current_target: Node = null  # Can target Tower or ProgramDataPacket
 var target_position: Vector2
 var is_seeking_target: bool = true
 
@@ -94,12 +94,26 @@ func find_nearest_tower():
 	if current_target and is_target_in_range(current_target):
 		return
 	
-	# Find nearest player tower
+	# Find nearest target - prioritize program data packet over towers
 	current_target = null
 	var closest_distance = detection_range
 	
+	# Get main controller
 	var main_controller = get_main_controller()
-	if main_controller and main_controller.tower_manager:
+	if not main_controller:
+		return
+	
+	# First, look for program data packet (highest priority) - only if active
+	if main_controller.program_data_packet_manager:
+		var program_packet = main_controller.program_data_packet_manager.get_program_data_packet()
+		if program_packet and is_instance_valid(program_packet) and program_packet.is_alive and program_packet.is_active:
+			var distance = global_position.distance_to(program_packet.global_position)
+			if distance < closest_distance:
+				current_target = program_packet
+				closest_distance = distance
+	
+	# If no program data packet found, look for player towers
+	if not current_target and main_controller.tower_manager:
 		var towers = main_controller.tower_manager.get_towers()
 		for tower in towers:
 			if not is_instance_valid(tower) or not tower.is_alive:
@@ -110,9 +124,16 @@ func find_nearest_tower():
 				current_target = tower
 				closest_distance = distance
 
-func is_target_in_range(target: Tower) -> bool:
-	if not is_instance_valid(target) or not target.is_alive:
+func is_target_in_range(target: Node) -> bool:
+	if not is_instance_valid(target):
 		return false
+	
+	# Check if target is alive (different methods for different types)
+	if target is Tower and not target.is_alive:
+		return false
+	elif target is ProgramDataPacket and not target.is_alive:
+		return false
+	
 	var distance_to_target = global_position.distance_to(target.global_position)
 	return distance_to_target <= detection_range
 
@@ -156,14 +177,20 @@ func attack_target():
 	if not current_target or not is_instance_valid(current_target):
 		return
 	
-	# Deal damage to the tower
+	# Deal damage to the target
 	current_target.take_damage(attack_damage)
-	tower_attacked.emit(current_target, attack_damage)
 	
-	print("RivalHacker attacked tower at ", current_target.grid_position, " for ", attack_damage, " damage!")
+	# Emit appropriate signal and print message based on target type
+	if current_target is Tower:
+		tower_attacked.emit(current_target, attack_damage)
+		print("RivalHacker attacked tower at ", current_target.grid_position, " for ", attack_damage, " damage!")
+	elif current_target is ProgramDataPacket:
+		print("RivalHacker attacked program data packet for ", attack_damage, " damage!")
+	else:
+		print("RivalHacker attacked target for ", attack_damage, " damage!")
 	
-	# Check if tower was destroyed
-	if not current_target.is_alive:
+	# Check if target was destroyed
+	if (current_target is Tower and not current_target.is_alive) or (current_target is ProgramDataPacket and not current_target.is_alive):
 		current_target = null
 		attack_timer.stop()
 
