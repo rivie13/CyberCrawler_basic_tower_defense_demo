@@ -84,7 +84,7 @@ func setup_preferred_zones():
 	if grid_manager:
 		var grid_size = grid_manager.get_grid_size()
 		# Focus on right half of the grid
-		for x in range(grid_size.x / 2, grid_size.x):
+		for x in range(int(grid_size.x / 2), grid_size.x):
 			for y in range(grid_size.y):
 				preferred_grid_zones.append(Vector2i(x, y))
 
@@ -252,7 +252,7 @@ func spawn_rival_hacker(world_position: Vector2) -> bool:
 	rival_hacker.global_position = world_position
 	
 	# Connect signals
-	rival_hacker.hacker_destroyed.connect(_on_rival_hacker_destroyed)
+	rival_hacker.rival_hacker_destroyed.connect(_on_rival_hacker_destroyed)
 	rival_hacker.tower_attacked.connect(_on_rival_hacker_tower_attacked)
 	
 	# Add to tracking and scene
@@ -271,7 +271,7 @@ func _on_rival_hacker_destroyed(hacker: RivalHacker):
 	rival_hackers_active.erase(hacker)
 	print("RivalHacker: Special enemy destroyed, ", rival_hackers_active.size(), " hackers remaining")
 
-func _on_rival_hacker_tower_attacked(tower: Tower, damage: int):
+func _on_rival_hacker_tower_attacked(_tower: Tower, damage: int):
 	# RivalHacker successfully attacked a player tower
 	print("RivalHacker: Player tower attacked for ", damage, " damage!")
 	# Could add additional logic here for AI learning or escalation
@@ -322,7 +322,7 @@ func stop_all_activity():
 	# Stop all RivalHackers
 	for hacker in rival_hackers_active:
 		if is_instance_valid(hacker):
-			hacker.stop_activity()
+			hacker.is_alive = false
 
 func _on_enemy_tower_destroyed(enemy_tower: EnemyTower):
 	# Remove from our tracking array

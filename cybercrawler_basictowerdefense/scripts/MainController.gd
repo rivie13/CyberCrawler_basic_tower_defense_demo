@@ -391,11 +391,11 @@ func _on_program_packet_ready():
 	print("MainController: Program data packet ready for release")
 	update_packet_ui()
 
-func _on_program_packet_destroyed(packet: ProgramDataPacket):
+func _on_program_packet_destroyed(_packet: ProgramDataPacket):
 	print("MainController: Program data packet destroyed")
 	update_packet_ui()
 
-func _on_program_packet_reached_end(packet: ProgramDataPacket):
+func _on_program_packet_reached_end(_packet: ProgramDataPacket):
 	print("MainController: Program data packet reached enemy network! Victory!")
 	update_packet_ui()
 

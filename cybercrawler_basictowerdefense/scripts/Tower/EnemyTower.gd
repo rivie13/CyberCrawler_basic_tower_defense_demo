@@ -12,7 +12,7 @@ class_name EnemyTower
 @export var removal_reward: int = 5
 
 # Click damage properties handled by Clickable interface
-# EnemyTower uses TOWER_CONFIG for medium-sized click area
+# EnemyTower uses ENEMY_TOWER_CONFIG for medium-sized click area
 
 # State
 var attack_timer: Timer
@@ -33,6 +33,9 @@ func _ready():
 	
 	# Setup damage immunity timer
 	setup_damage_immunity_timer()
+	
+	# Start attacking immediately
+	start_attacking()
 
 func create_enemy_tower_visual():
 	# Create red square for enemy tower
@@ -76,17 +79,32 @@ func _on_attack_timer_timeout():
 		attack_target()
 
 func find_target():
-	# Use the new TargetingUtil to find the best target
-	var main_controller = get_main_controller()
-	if not main_controller:
-		return
-	
 	# Check if current target is still valid and in range
-	if current_target and TargetingUtil.is_target_in_range(global_position, current_target, tower_range):
+	if current_target and is_instance_valid(current_target) and is_target_in_range(current_target):
 		return
 	
-	# Find new target using shared utility
-	current_target = TargetingUtil.find_best_target(global_position, tower_range, main_controller)
+	# Find new target - prioritize program data packet > player towers
+	current_target = null
+	var closest_distance = tower_range
+	
+	# First priority: Program data packet (if active and alive)
+	var program_packet = get_program_data_packet()
+	if program_packet and is_instance_valid(program_packet) and program_packet.is_alive and program_packet.is_active:
+		var distance = global_position.distance_to(program_packet.global_position)
+		if distance <= tower_range:
+			current_target = program_packet
+			return
+	
+	# Second priority: Player towers
+	var player_towers = get_player_towers()
+	for tower in player_towers:
+		if not is_instance_valid(tower) or not tower.is_alive:
+			continue
+		
+		var distance = global_position.distance_to(tower.global_position)
+		if distance <= tower_range and distance < closest_distance:
+			current_target = tower
+			closest_distance = distance
 
 func get_main_controller():
 	# Navigate up the tree to find MainController
@@ -126,7 +144,6 @@ func attack_target():
 	# Check if target was destroyed
 	if (current_target is Tower and not current_target.is_alive) or (current_target is ProgramDataPacket and not current_target.is_alive):
 		current_target = null
-		attack_timer.stop()
 
 func create_projectile_to_target(target: Node):
 	# Create a simple projectile visual effect
@@ -157,9 +174,9 @@ func set_grid_position(pos: Vector2i):
 func get_grid_position() -> Vector2i:
 	return grid_position
 
-# Damage immunity system
+# Damage immunity system - reduced duration for less tankiness
 var damage_immunity_timer: Timer
-var damage_immunity_duration: float = 0.3  # 0.3 seconds of immunity
+var damage_immunity_duration: float = 0.1  # Reduced from 0.3 to 0.1 seconds
 var is_immune_to_damage: bool = false
 
 func _on_damage_immunity_timeout():

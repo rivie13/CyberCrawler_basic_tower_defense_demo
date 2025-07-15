@@ -59,8 +59,8 @@ func setup_honeypot_positions():
 		honeypot_positions.append(Vector2i(grid_size.x - 1, grid_size.y - 1))  # Bottom-right corner
 		
 		# Category 3: Center choke points - seem like good defensive positions
-		var center_x = grid_size.x / 2
-		var center_y = grid_size.y / 2
+		var center_x = int(grid_size.x / 2)
+		var center_y = int(grid_size.y / 2)
 		honeypot_positions.append(Vector2i(center_x, center_y))
 		honeypot_positions.append(Vector2i(center_x - 1, center_y))
 		honeypot_positions.append(Vector2i(center_x + 1, center_y))
@@ -350,8 +350,8 @@ func calculate_honeypot_severity(grid_pos: Vector2i) -> float:
 	
 	# Category 3: Center choke points - medium-high severity
 	else:
-		var center_x = grid_size.x / 2
-		var center_y = grid_size.y / 2
+		var center_x = int(grid_size.x / 2)
+		var center_y = int(grid_size.y / 2)
 		var distance_to_center = abs(grid_pos.x - center_x) + abs(grid_pos.y - center_y)
 		if distance_to_center <= 1:
 			severity = 0.75
