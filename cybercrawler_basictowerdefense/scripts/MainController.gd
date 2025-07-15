@@ -10,9 +10,13 @@ const WARNING_COLOR = Color(0.8, 0.8, 0.2)  # Accessible yellow for warnings
 const BASIC_TOWER = "basic"
 const POWERFUL_TOWER = "powerful"
 
+# Item type constants
+const FREEZE_MINE = "freeze_mine"
+
 # Click mode constants
 const MODE_BUILD_TOWERS = "build_towers"
 const MODE_ATTACK_ENEMIES = "attack_enemies"
+const MODE_PLACE_FREEZE_MINE = "place_freeze_mine"
 
 # Manager references
 var grid_manager: GridManager
@@ -22,6 +26,7 @@ var currency_manager: CurrencyManager
 var game_manager: GameManager
 var rival_hacker_manager: RivalHackerManager
 var program_data_packet_manager: ProgramDataPacketManager
+var freeze_mine_manager: FreezeMineManager
 
 # UI update timer
 var ui_update_timer: Timer
@@ -47,6 +52,7 @@ func setup_managers():
 	game_manager = GameManager.new()
 	rival_hacker_manager = RivalHackerManager.new()
 	program_data_packet_manager = ProgramDataPacketManager.new()
+	freeze_mine_manager = FreezeMineManager.new()
 	
 	# Add them as children
 	add_child(grid_manager)
@@ -56,6 +62,7 @@ func setup_managers():
 	add_child(game_manager)
 	add_child(rival_hacker_manager)
 	add_child(program_data_packet_manager)
+	add_child(freeze_mine_manager)
 
 func initialize_systems():
 	# Initialize GridManager with the GridContainer from the scene
@@ -68,6 +75,7 @@ func initialize_systems():
 	game_manager.initialize(wave_manager, currency_manager, tower_manager)
 	rival_hacker_manager.initialize(grid_manager, currency_manager, tower_manager, wave_manager)
 	program_data_packet_manager.initialize(grid_manager, game_manager, wave_manager)
+	freeze_mine_manager.initialize(grid_manager, currency_manager)
 	
 	# Set up enemy path in grid
 	var path_positions = wave_manager.get_path_grid_positions()
@@ -92,6 +100,12 @@ func initialize_systems():
 	program_data_packet_manager.program_packet_ready.connect(_on_program_packet_ready)
 	program_data_packet_manager.program_packet_destroyed.connect(_on_program_packet_destroyed)
 	program_data_packet_manager.program_packet_reached_end.connect(_on_program_packet_reached_end)
+	
+	# Connect freeze mine manager signals
+	freeze_mine_manager.freeze_mine_placed.connect(_on_freeze_mine_placed)
+	freeze_mine_manager.freeze_mine_placement_failed.connect(_on_freeze_mine_placement_failed)
+	freeze_mine_manager.freeze_mine_triggered.connect(_on_freeze_mine_triggered)
+	freeze_mine_manager.freeze_mine_depleted.connect(_on_freeze_mine_depleted)
 
 func setup_ui():
 	# Setup basic tower selection UI
@@ -113,6 +127,11 @@ func setup_ui():
 	var packet_button = $UI/TowerSelectionPanel/ProgramDataPacketButton
 	if packet_button:
 		packet_button.pressed.connect(_on_program_data_packet_button_pressed)
+	
+	# Setup freeze mine button
+	var freeze_mine_button = $UI/TowerSelectionPanel/FreezeMineButton
+	if freeze_mine_button:
+		freeze_mine_button.pressed.connect(_on_freeze_mine_button_pressed)
 	
 	# Setup UI update timer to refresh every second
 	ui_update_timer = Timer.new()
@@ -149,6 +168,11 @@ func handle_grid_click(global_pos: Vector2):
 	if current_click_mode == MODE_ATTACK_ENEMIES:
 		# In attack mode, only try to damage enemies
 		try_click_damage_enemy(global_pos)
+	elif current_click_mode == MODE_PLACE_FREEZE_MINE:
+		# In freeze mine mode, try to place freeze mine
+		var grid_pos = grid_manager.world_to_grid(global_pos)
+		if grid_manager.is_valid_grid_position(grid_pos):
+			freeze_mine_manager.place_freeze_mine(grid_pos)
 	elif current_click_mode == MODE_BUILD_TOWERS:
 		# In build mode, only try tower placement
 		var grid_pos = grid_manager.world_to_grid(global_pos)
@@ -266,6 +290,8 @@ func update_mode_ui():
 	if mode_toggle_button:
 		if current_click_mode == MODE_BUILD_TOWERS:
 			mode_toggle_button.text = "Mode: Build Towers"
+		elif current_click_mode == MODE_PLACE_FREEZE_MINE:
+			mode_toggle_button.text = "Mode: Place Freeze Mine"
 		else:
 			mode_toggle_button.text = "Mode: Attack Enemies"
 	
@@ -275,6 +301,9 @@ func update_mode_ui():
 		if current_click_mode == MODE_BUILD_TOWERS:
 			mode_indicator.text = "Click: Place Towers Only"
 			mode_indicator.modulate = Color.CYAN
+		elif current_click_mode == MODE_PLACE_FREEZE_MINE:
+			mode_indicator.text = "Click: Place Freeze Mine"
+			mode_indicator.modulate = Color.MAGENTA
 		else:
 			mode_indicator.text = "Click: Attack Enemies Only"
 			mode_indicator.modulate = Color.ORANGE
@@ -407,6 +436,12 @@ func _on_program_data_packet_button_pressed():
 	else:
 		print("MainController: Cannot release program data packet")
 
+func _on_freeze_mine_button_pressed():
+	print("MainController: Freeze mine button pressed")
+	current_click_mode = MODE_PLACE_FREEZE_MINE
+	update_mode_ui()
+	update_info_label()
+
 func update_packet_ui():
 	var packet_button = $UI/TowerSelectionPanel/ProgramDataPacketButton
 	var packet_status_label = $UI/TowerSelectionPanel/PacketStatusLabel
@@ -436,3 +471,19 @@ func destroy_all_projectiles():
 		for child in grid_container.get_children():
 			if child is Projectile:
 				child.queue_free()
+
+# Freeze mine signal handlers
+func _on_freeze_mine_placed(mine: FreezeMine):
+	print("MainController: Freeze mine placed at ", mine.grid_position)
+	update_info_label()
+
+func _on_freeze_mine_placement_failed(reason: String):
+	print("MainController: Freeze mine placement failed - ", reason)
+	update_info_label()
+
+func _on_freeze_mine_triggered(mine: FreezeMine):
+	print("MainController: Freeze mine triggered at ", mine.grid_position)
+
+func _on_freeze_mine_depleted(mine: FreezeMine):
+	print("MainController: Freeze mine depleted at ", mine.grid_position)
+	update_info_label()

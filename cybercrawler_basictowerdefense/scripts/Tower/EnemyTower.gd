@@ -21,6 +21,11 @@ var grid_position: Vector2i
 var show_range_indicator: bool = false
 var is_alive: bool = true
 
+# Freeze effect state
+var is_frozen: bool = false
+var freeze_timer: Timer
+var freeze_visual: ColorRect
+
 # Signals
 signal enemy_tower_destroyed(tower: EnemyTower)
 
@@ -33,6 +38,9 @@ func _ready():
 	
 	# Setup damage immunity timer
 	setup_damage_immunity_timer()
+	
+	# Setup freeze timer
+	setup_freeze_timer()
 	
 	# Start attacking immediately
 	start_attacking()
@@ -69,14 +77,55 @@ func setup_damage_immunity_timer():
 	damage_immunity_timer.timeout.connect(_on_damage_immunity_timeout)
 	add_child(damage_immunity_timer)
 
+func setup_freeze_timer():
+	freeze_timer = Timer.new()
+	freeze_timer.one_shot = true
+	freeze_timer.timeout.connect(_on_freeze_timer_timeout)
+	add_child(freeze_timer)
+
 func _on_attack_timer_timeout():
-	if not is_alive:
+	if not is_alive or is_frozen:
 		return
 		
 	find_target()
 	
 	if current_target:
 		attack_target()
+
+func _on_freeze_timer_timeout():
+	# Remove freeze effect
+	is_frozen = false
+	remove_freeze_visual()
+	print("EnemyTower at ", grid_position, " is no longer frozen")
+
+func apply_freeze_effect(duration: float):
+	if not is_alive:
+		return
+		
+	is_frozen = true
+	freeze_timer.wait_time = duration
+	freeze_timer.start()
+	
+	# Add freeze visual effect
+	add_freeze_visual()
+	
+	print("EnemyTower at ", grid_position, " has been frozen for ", duration, " seconds")
+
+func add_freeze_visual():
+	if freeze_visual:
+		freeze_visual.queue_free()
+	
+	# Create freeze effect visual (light blue overlay)
+	freeze_visual = ColorRect.new()
+	freeze_visual.size = Vector2(40, 40)
+	freeze_visual.position = Vector2(-20, -20)
+	freeze_visual.color = Color(0.7, 0.9, 1.0, 0.6)  # Light blue semi-transparent
+	add_child(freeze_visual)
+
+func remove_freeze_visual():
+	if freeze_visual:
+		freeze_visual.queue_free()
+		freeze_visual = null
 
 func find_target():
 	# Check if current target is still valid and in range
