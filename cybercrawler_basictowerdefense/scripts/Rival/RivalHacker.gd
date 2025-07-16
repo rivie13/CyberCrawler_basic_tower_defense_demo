@@ -2,7 +2,7 @@ extends Node2D
 class_name RivalHacker
 
 # RivalHacker movement and targeting properties
-@export var movement_speed: float = 50.0
+@export var movement_speed: float = 100.0
 @export var detection_range: float = 100.0
 @export var attack_damage: int = 3
 @export var attack_rate: float = 1.5  # Attacks per second

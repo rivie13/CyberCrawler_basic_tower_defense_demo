@@ -3,10 +3,10 @@ class_name EnemyTower
 
 # Tower properties
 @export var tower_range: float = 120.0
-@export var damage: int = 2
+@export var damage: int = 1
 @export var attack_speed: float = 2.0  # Attacks per second
-@export var health: int = 15
-@export var max_health: int = 15
+@export var health: int = 5
+@export var max_health: int = 5
 
 # Cost (for removal reward)
 @export var removal_reward: int = 5

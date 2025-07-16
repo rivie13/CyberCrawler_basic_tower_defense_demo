@@ -32,7 +32,7 @@ var rival_hackers_active: Array[RivalHacker] = []
 
 # Add a timer for path blocking
 var path_block_timer: Timer
-@export var path_block_interval: float = 6.0  # Time between path blocks
+@export var path_block_interval: float = 30.0  # Time between path blocks (was 6.0)
 
 # Add a timer for non-path blocking (tower placement blocking)
 var non_path_block_timer: Timer
@@ -599,13 +599,29 @@ func _on_path_block_timer_timeout():
 	var blockable = path_positions.slice(1, path_positions.size() - 2)
 	if blockable.size() == 0:
 		return
-	var idx = randi() % blockable.size()
-	var grid_pos = blockable[idx]
-	if not grid_manager.is_grid_blocked(grid_pos):
-		grid_manager.set_grid_blocked(grid_pos, true)
-	print("RivalHacker: Blocked path cell at ", grid_pos)
-	# Repair the path using one of the strategies
-	repair_path_after_block()
+	# Shuffle blockable cells to try multiple options
+	var shuffled = blockable.duplicate()
+	shuffled.shuffle()
+	var blocked = false
+	for grid_pos in shuffled:
+		if not grid_manager.is_grid_blocked(grid_pos):
+			# Simulate block
+			grid_manager.set_grid_blocked(grid_pos, true)
+			# Check if a valid path still exists
+			var start = path_positions[0]
+			var end = path_positions[path_positions.size() - 1]
+			var new_path = grid_manager.find_path(start, end)
+			if new_path.size() > 0:
+				print("RivalHacker: Blocked path cell at ", grid_pos)
+				# Repair the path using one of the strategies
+				repair_path_after_block()
+				blocked = true
+				break
+			else:
+				# Undo block if no path exists
+				grid_manager.set_grid_blocked(grid_pos, false)
+	if not blocked:
+		print("RivalHacker: No valid path block found (all would block the path)")
 	# Restart timer
 	path_block_timer.start()
 
