@@ -179,13 +179,7 @@ func attack_target():
 		attack_timer.stop()
 
 func get_main_controller():
-	# Navigate up the tree to find MainController
-	var current_node = self
-	while current_node:
-		if current_node is MainController:
-			return current_node
-		current_node = current_node.get_parent()
-	return null
+	return get_tree().get_first_node_in_group("main_controller")
 
 func create_health_bar():
 	var health_bar_bg = ColorRect.new()

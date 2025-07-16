@@ -47,33 +47,24 @@ func initialize(grid_mgr: GridManager, game_mgr: GameManager, wave_mgr: WaveMana
 		grid_manager.grid_blocked_changed.connect(_on_grid_blocked_changed)
 
 func create_packet_path():
-	"""Create the path for the program data packet (opposite direction from enemies)"""
+	"""Create the path for the program data packet (reverse of current enemy path)"""
 	if not wave_manager or not grid_manager:
 		print("ProgramDataPacketManager: Cannot create path - missing manager")
 		return
 
-	# Get the current enemy path grid positions from the wave manager's layout
-	var grid_layout = wave_manager.grid_layout
-	var selected_layout_type = wave_manager.selected_layout_type
-	if not grid_layout or selected_layout_type == null:
-		print("ProgramDataPacketManager: No grid layout or layout type available")
+	# Always use the latest enemy_path from WaveManager
+	var enemy_path = wave_manager.enemy_path
+	if enemy_path.size() == 0:
+		print("ProgramDataPacketManager: No enemy path available")
 		return
 
-	var grid_path = grid_layout.get_path_grid_positions(selected_layout_type)
-	if grid_path.size() == 0:
-		print("ProgramDataPacketManager: No grid path available")
-		return
-
-	# Reverse the path for the packet
-	var reversed_path = grid_path.duplicate()
+	# Reverse the enemy path for the packet
+	var reversed_path = enemy_path.duplicate()
 	reversed_path.reverse()
 
-	# Convert grid path to world positions for packet movement
-	packet_path = []
-	for grid_pos in reversed_path:
-		packet_path.append(grid_manager.grid_to_world(grid_pos))
-	
-	print("ProgramDataPacketManager: Created packet path with ", packet_path.size(), " points")
+	# Use as the packet path
+	packet_path = reversed_path
+	print("ProgramDataPacketManager: Created packet path from reversed enemy path with ", packet_path.size(), " points")
 
 func spawn_program_data_packet():
 	"""Spawn the program data packet at the starting position"""
@@ -183,6 +174,7 @@ func is_packet_alive() -> bool:
 # NEW: Handle grid block changes
 func _on_grid_blocked_changed(grid_pos: Vector2i, blocked: bool):
 	create_packet_path()
-	# Update the active program_data_packet with the new path
+	# Update the active program_data_packet with the new path and pause for 5 seconds
 	if program_data_packet and is_packet_spawned and program_data_packet.is_alive:
-		program_data_packet.set_path(packet_path) 
+		program_data_packet.set_path(packet_path)
+		program_data_packet.pause_for_path_change(5.0) 

@@ -1,0 +1,170 @@
+[gd_scene load_steps=2 format=3 uid="uid://blon1xjk7cf1o"]
+
+[ext_resource type="Script" uid="uid://cu4ebqvqy6yab" path="res://scripts/MainController.gd" id="1_0n2mq"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_0n2mq")
+
+[node name="GridContainer" type="Node2D" parent="."]
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(480, 320)
+zoom = Vector2(0.8, 0.8)
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="InfoLabel" type="Label" parent="UI"]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = -50.0
+offset_right = 400.0
+offset_bottom = -10.0
+text = "Click on grid to place towers"
+
+[node name="TowerSelectionPanel" type="Panel" parent="UI"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -200.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = 360.0
+
+[node name="TowerSelectionLabel" type="Label" parent="UI/TowerSelectionPanel"]
+layout_mode = 0
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -75.0
+offset_top = 10.0
+offset_right = 75.0
+offset_bottom = 30.0
+text = "Tower Selection"
+horizontal_alignment = 1
+
+[node name="BasicTowerButton" type="Button" parent="UI/TowerSelectionPanel"]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -75.0
+offset_top = -60.0
+offset_right = 75.0
+offset_bottom = -30.0
+text = "Basic Tower"
+
+[node name="PowerfulTowerButton" type="Button" parent="UI/TowerSelectionPanel"]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -75.0
+offset_top = -20.0
+offset_right = 75.0
+offset_bottom = 10.0
+text = "Powerful Tower"
+
+[node name="CostLabel" type="Label" parent="UI/TowerSelectionPanel"]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -75.0
+offset_top = 20.0
+offset_right = 75.0
+offset_bottom = 40.0
+text = "Basic: 50 | Powerful: 75"
+horizontal_alignment = 1
+
+[node name="CurrencyLabel" type="Label" parent="UI/TowerSelectionPanel"]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -75.0
+offset_top = 50.0
+offset_right = 75.0
+offset_bottom = 70.0
+text = "Currency: 100"
+horizontal_alignment = 1
+
+[node name="SelectedTowerLabel" type="Label" parent="UI/TowerSelectionPanel"]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -75.0
+offset_top = 80.0
+offset_right = 75.0
+offset_bottom = 100.0
+text = "Selected: Basic"
+horizontal_alignment = 1
+
+[node name="ModeToggleButton" type="Button" parent="UI/TowerSelectionPanel"]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -75.0
+offset_top = 110.0
+offset_right = 75.0
+offset_bottom = 140.0
+text = "Mode: Build Towers"
+
+[node name="ModeIndicatorLabel" type="Label" parent="UI/TowerSelectionPanel"]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -75.0
+offset_top = 150.0
+offset_right = 75.0
+offset_bottom = 170.0
+text = "Click: Place Towers"
+horizontal_alignment = 1
+
+[node name="ProgramDataPacketButton" type="Button" parent="UI/TowerSelectionPanel"]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -75.0
+offset_top = 180.0
+offset_right = 75.0
+offset_bottom = 210.0
+disabled = true
+text = "Release Data Packet"
+
+[node name="PacketStatusLabel" type="Label" parent="UI/TowerSelectionPanel"]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -75.0
+offset_top = 220.0
+offset_right = 75.0
+offset_bottom = 240.0
+text = "Packet: Not Ready"
+horizontal_alignment = 1
+
+[node name="FreezeMineButton" type="Button" parent="UI/TowerSelectionPanel"]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -75.0
+offset_top = 250.0
+offset_right = 75.0
+offset_bottom = 280.0
+text = "Freeze Mine (15)"

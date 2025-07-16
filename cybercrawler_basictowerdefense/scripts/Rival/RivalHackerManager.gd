@@ -47,6 +47,7 @@ var grid_manager: GridManager
 var currency_manager: CurrencyManager
 var tower_manager: TowerManager
 var wave_manager: WaveManager
+var game_manager: GameManager = null
 
 # Detour points for adversarial path repair
 var detour_points: Array[Vector2i] = []
@@ -91,11 +92,13 @@ func setup_timers():
 	
 	# Timer for initial activation delay - removed (now using alert-based activation)
 
-func initialize(grid_mgr: GridManager, currency_mgr: CurrencyManager, tower_mgr: TowerManager, wave_mgr: WaveManager):
+func initialize(grid_mgr: GridManager, currency_mgr: CurrencyManager, tower_mgr: TowerManager, wave_mgr: WaveManager, gm: GameManager = null):
 	grid_manager = grid_mgr
 	currency_manager = currency_mgr
 	tower_manager = tower_mgr
 	wave_manager = wave_mgr
+	if gm != null:
+		game_manager = gm
 	# Store reference to ProgramDataPacketManager if available
 	if has_node("../ProgramPacket/ProgramDataPacketManager"):
 		program_data_packet_manager = get_node("../ProgramPacket/ProgramDataPacketManager")
@@ -142,7 +145,8 @@ func activate():
 func _on_placement_timer_timeout():
 	if not is_active:
 		return
-	
+	if game_manager and game_manager.is_game_over():
+		return
 	# Check if we've reached maximum towers
 	if enemy_towers_placed.size() >= max_enemy_towers:
 		return
@@ -154,7 +158,8 @@ func _on_placement_timer_timeout():
 func _on_hacker_spawn_timer_timeout():
 	if not is_active:
 		return
-	
+	if game_manager and game_manager.is_game_over():
+		return
 	# Check if we've reached maximum RivalHackers
 	if rival_hackers_active.size() >= max_rival_hackers:
 		return
@@ -496,6 +501,8 @@ func find_weighted_path(start: Vector2i, end: Vector2i) -> Array[Vector2i]:
 
 # Path repair logic: choose strategy and update path
 func repair_path_after_block():
+	if game_manager and game_manager.is_game_over():
+		return
 	if not grid_manager or not wave_manager:
 		return
 	var path_positions = grid_manager.path_grid_positions
@@ -590,7 +597,9 @@ func find_corridor_limited_path(start: Vector2i, end: Vector2i, allowed_cells: A
 
 # Call repair_path_after_block after blocking a path cell
 func _on_path_block_timer_timeout():
-	if not grid_manager:
+	if not is_active:
+		return
+	if game_manager and game_manager.is_game_over():
 		return
 	var path_positions = grid_manager.path_grid_positions
 	if path_positions.size() <= 2:
@@ -607,18 +616,18 @@ func _on_path_block_timer_timeout():
 		if not grid_manager.is_grid_blocked(grid_pos):
 			# Simulate block
 			grid_manager.set_grid_blocked(grid_pos, true)
-			# Check if a valid path still exists
+			# Try to repair the path
+			repair_path_after_block()
+			# Check if a valid path exists after repair
 			var start = path_positions[0]
 			var end = path_positions[path_positions.size() - 1]
-			var new_path = grid_manager.find_path(start, end)
+			var new_path = grid_manager.find_path_astar(start, end)
 			if new_path.size() > 0:
 				print("RivalHacker: Blocked path cell at ", grid_pos)
-				# Repair the path using one of the strategies
-				repair_path_after_block()
 				blocked = true
 				break
 			else:
-				# Undo block if no path exists
+				# Undo block if no path exists after repair
 				grid_manager.set_grid_blocked(grid_pos, false)
 	if not blocked:
 		print("RivalHacker: No valid path block found (all would block the path)")
@@ -627,7 +636,9 @@ func _on_path_block_timer_timeout():
 
 # Timer callback: block a random non-path cell (for tower placement only)
 func _on_non_path_block_timer_timeout():
-	if not grid_manager:
+	if not is_active:
+		return
+	if game_manager and game_manager.is_game_over():
 		return
 	var grid_size = grid_manager.get_grid_size()
 	var candidates: Array[Vector2i] = []

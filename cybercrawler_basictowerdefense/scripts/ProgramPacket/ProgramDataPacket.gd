@@ -83,11 +83,119 @@ func create_health_bar():
 	add_child(health_bar)
 
 func set_path(new_path: Array[Vector2]):
-	"""Set the path for the program data packet to follow"""
-	path_points = new_path
-	current_path_index = 0
-	if path_points.size() > 0:
-		target_position = path_points[0]
+	print("[DEBUG][set_path] Called. Old path size: %d, New path size: %d, is_active: %s, is_alive: %s" % [path_points.size(), new_path.size(), str(is_active), str(is_alive)])
+	"""Set the path for the program data packet to follow, keeping percent progress if possible. Robustly handles short paths and edge cases."""
+	print("[ProgramDataPacket] set_path called. Old path size: %d, New path size: %d" % [path_points.size(), new_path.size()])
+	if new_path.size() < 2:
+		print("[ProgramDataPacket] ERROR: New path is too short. Destroying packet.")
+		is_alive = false
+		queue_free()
+		return
+
+	if path_points.size() > 1 and is_active:
+		# Calculate percent progress along old path
+		var old_path = path_points
+		var old_total = _path_total_length(old_path)
+		var idx = clamp(current_path_index, 0, old_path.size() - 2)
+		var old_traveled = _path_distance_traveled(old_path, idx, global_position)
+		var percent = 0.0
+		if old_total > 0.0:
+			percent = clamp(old_traveled / old_total, 0.0, 1.0)
+		print("[ProgramDataPacket] Old path total: %.2f, traveled: %.2f, percent: %.2f" % [old_total, old_traveled, percent])
+
+		# Find position on new path at same percent
+		var new_total = _path_total_length(new_path)
+		var new_target_pos = new_path[0]
+		var new_index = 0
+		if new_total > 0.0:
+			var target_dist = percent * new_total
+			var accum = 0.0
+			var found = false
+			for i in range(new_path.size() - 1):
+				var seg_len = new_path[i].distance_to(new_path[i+1])
+				if accum + seg_len >= target_dist:
+					var seg_percent = (target_dist - accum) / seg_len
+					new_target_pos = new_path[i].lerp(new_path[i+1], seg_percent)
+					new_index = i
+					print("[ProgramDataPacket] Teleporting to segment %d, seg_percent: %.2f, pos: %s" % [i, seg_percent, str(new_target_pos)])
+					found = true
+					break
+				accum += seg_len
+			# If target_dist is at end, snap to last point
+			if not found or target_dist >= new_total:
+				# If path is very short, move to first segment, not all the way to start
+				if new_path.size() <= 2:
+					new_target_pos = new_path[1]
+					new_index = 0
+					print("[ProgramDataPacket] Path very short, moving to first segment instead of start.")
+				else:
+					new_target_pos = new_path[-2]
+					new_index = new_path.size() - 2
+					print("[ProgramDataPacket] Teleporting to near end of new path.")
+
+		path_points = new_path
+		current_path_index = new_index
+		global_position = new_target_pos
+		# Set target_position to the next point, unless at end
+		if current_path_index < path_points.size() - 1:
+			target_position = path_points[current_path_index + 1]
+		else:
+			target_position = path_points[current_path_index]
+		print("[ProgramDataPacket] set_path complete. New index: %d, New pos: %s, Target: %s" % [new_index, str(new_target_pos), str(target_position)])
+		pause_for_path_change(5.0)
+	else:
+		# If not active or no old path, just snap to start
+		path_points = new_path
+		current_path_index = 0
+		if path_points.size() > 0:
+			global_position = path_points[0]
+			target_position = path_points[1] if path_points.size() > 1 else path_points[0]
+			print("[ProgramDataPacket] set_path: Snapped to start of new path.")
+	print("[DEBUG][set_path] After assignment: current_path_index=%d, global_position=%s, target_position=%s, path_points.size()=%d" % [current_path_index, str(global_position), str(target_position), path_points.size()])
+
+# Helper: total length of a path
+func _path_total_length(path: Array[Vector2]) -> float:
+	var total = 0.0
+	for i in range(path.size() - 1):
+		total += path[i].distance_to(path[i+1])
+	return total
+
+# Helper: distance traveled along path up to current position
+func _path_distance_traveled(path: Array[Vector2], idx: int, pos: Vector2) -> float:
+	var dist = 0.0
+	for i in range(idx):
+		dist += path[i].distance_to(path[i+1])
+	if idx < path.size():
+		dist += path[idx].distance_to(pos)
+	return dist
+
+# Pauses the packet for a duration (in seconds) before resuming movement
+var _path_pause_timer: Timer = null
+var _was_active_before_pause: bool = false
+
+func pause_for_path_change(duration: float):
+	print("[DEBUG][pause_for_path_change] Called. duration=%.2f, is_active=%s, is_alive=%s" % [duration, str(is_active), str(is_alive)])
+	if _path_pause_timer == null:
+		_path_pause_timer = Timer.new()
+		_path_pause_timer.one_shot = true
+		add_child(_path_pause_timer)
+	else:
+		if _path_pause_timer.is_stopped() == false:
+			print("[DEBUG][pause_for_path_change] Stopping previous timer.")
+			_path_pause_timer.stop()
+		# Disconnect previous connections if any
+		while _path_pause_timer.timeout.is_connected(_on_path_pause_timeout):
+			_path_pause_timer.timeout.disconnect(_on_path_pause_timeout)
+	_path_pause_timer.wait_time = duration
+	_path_pause_timer.timeout.connect(_on_path_pause_timeout)
+	print("[DEBUG][pause_for_path_change] Timer started. is_active set to false.")
+	is_active = false
+	_path_pause_timer.start()
+
+func _on_path_pause_timeout():
+	print("[DEBUG][_on_path_pause_timeout] Timer fired. Resuming packet movement.")
+	is_active = true
+	print("[DEBUG][_on_path_pause_timeout] is_active now: %s" % str(is_active))
 
 func activate():
 	"""Activate the program data packet to start moving"""
@@ -95,8 +203,10 @@ func activate():
 	print("Program data packet activated!")
 
 func _physics_process(delta):
+	print("[DEBUG][_physics_process] Moving. current_path_index=%d, global_position=%s, target_position=%s" % [current_path_index, str(global_position), str(target_position)])
 	# Changed back to _physics_process for consistent movement with fixed timestep (Copilot review fix)
 	if not is_alive or not is_active or path_points.size() == 0:
+		print("[DEBUG][_physics_process] Skipping. is_alive=%s, is_active=%s, path_points.size()=%d" % [str(is_alive), str(is_active), path_points.size()])
 		return
 	
 	# Check if game is over (get from MainController)
@@ -107,13 +217,7 @@ func _physics_process(delta):
 	move_along_path(delta)
 
 func get_main_controller():
-	# Navigate up the tree to find MainController
-	var current_node = self
-	while current_node:
-		if current_node is MainController:
-			return current_node
-		current_node = current_node.get_parent()
-	return null
+	return get_tree().get_first_node_in_group("main_controller")
 
 func move_along_path(delta):
 	var direction = (target_position - global_position).normalized()

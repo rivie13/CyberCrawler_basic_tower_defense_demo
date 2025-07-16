@@ -35,6 +35,8 @@ var used_initial_layout: bool = false  # Track if initial layout has been used
 
 func _ready():
 	setup_enemy_spawning()
+	# Add MainController to the group
+	add_to_group("main_controller")
 
 func initialize(grid_ref: Node):
 	grid_manager = grid_ref
@@ -72,39 +74,76 @@ func _handle_enemies_on_path_change():
 			enemy.pause()
 
 	# Show recalculating message
-	var main_controller = get_tree().get_root().get_node("MainController")
+	var main_controller = get_tree().get_first_node_in_group("main_controller")
 	if main_controller:
 		main_controller.show_temp_message("Path changed! Enemies recalculating...", 1.5)
 
-	# Teleport off-path enemies to start of new path
-	for enemy in enemies_alive:
+	# Identify and remove enemies currently on the path
+	var enemies_to_recycle = []
+	for enemy in enemies_alive.duplicate():
 		if is_instance_valid(enemy):
-			var on_path = false
-			if enemy_path.size() > 0:
-				# Check if enemy is close to any path point
-				for pt in enemy_path:
-					if enemy.global_position.distance_to(pt) < 16.0:
-						on_path = true
-						break
-			if not on_path and enemy_path.size() > 0:
-				enemy.global_position = enemy_path[0]
+			# Check if enemy is close to any point on the path (within half a grid cell)
+			for path_point in enemy_path:
+				if enemy.global_position.distance_to(path_point) < grid_manager.GRID_SIZE * 0.5:
+					enemies_to_recycle.append(enemy)
+					break
+	# Remove/destroy these enemies
+	for enemy in enemies_to_recycle:
+		if is_instance_valid(enemy):
+			enemies_alive.erase(enemy)
+			enemy.queue_free()
+
+	# Spawn the same number of new enemies at the back of the queue (off-screen)
+	var num_to_spawn = enemies_to_recycle.size()
+	var spacing = 32.0
+	if enemy_path.size() > 1:
+		var start = enemy_path[0]
+		var next = enemy_path[1]
+		var direction = (next - start).normalized()
+		var offscreen_offset = 5 * grid_manager.GRID_SIZE * (enemies_alive.size() + num_to_spawn)
+		for i in range(num_to_spawn):
+			var enemy = ENEMY_SCENE.instantiate()
+			enemy.set_path(enemy_path)
+			var pos = start - direction * (offscreen_offset + i * spacing)
+			enemy.global_position = pos
+			enemy.current_path_index = 0
+			enemy.target_position = enemy_path[0]
+			# Connect enemy signals
+			enemy.enemy_died.connect(_on_enemy_died)
+			enemy.enemy_reached_end.connect(_on_enemy_reached_end)
+			enemies_alive.append(enemy)
+			add_child(enemy)
+
+	# Move all remaining enemies off-screen behind the start of the path, spaced out in a queue
+	var enemies_count = enemies_alive.size()
+	if enemy_path.size() > 1:
+		var start = enemy_path[0]
+		var next = enemy_path[1]
+		var direction = (next - start).normalized()
+		var offscreen_offset = 5 * grid_manager.GRID_SIZE * enemies_count
+		for i in range(enemies_count):
+			var enemy = enemies_alive[i]
+			if is_instance_valid(enemy):
+				var pos = start - direction * (offscreen_offset + i * spacing)
+				enemy.global_position = pos
 				enemy.current_path_index = 0
 				enemy.target_position = enemy_path[0]
 				enemy.set_path(enemy_path)
 
-	# Resume all enemies (after short delay for message)
-	# Use a timer to resume after 1.5s
-	var timer = Timer.new()
-	timer.wait_time = 1.5
-	timer.one_shot = true
-	timer.timeout.connect(func():
-		for enemy in enemies_alive:
-			if is_instance_valid(enemy):
-				enemy.resume()
-			# Remove timer after use
-		timer.queue_free()
-	)
-	add_child(timer)
+	# Stagger resume for each enemy
+	var resume_delay = 0.1
+	for i in range(enemies_count):
+		var enemy = enemies_alive[i]
+		if is_instance_valid(enemy):
+			var timer = Timer.new()
+			timer.wait_time = 0.5 + i * resume_delay
+			timer.one_shot = true
+			timer.timeout.connect(func():
+				if is_instance_valid(enemy):
+					enemy.resume()
+				timer.queue_free()
+			)
+			add_child(timer)
 
 func setup_enemy_spawning():
 	# Create enemy spawn timer

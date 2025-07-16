@@ -79,13 +79,7 @@ func _physics_process(delta):
 	move_along_path(delta)
 
 func get_main_controller():
-	# Navigate up the tree to find MainController
-	var current_node = self
-	while current_node:
-		if current_node is MainController:
-			return current_node
-		current_node = current_node.get_parent()
-	return null
+	return get_tree().get_first_node_in_group("main_controller")
 
 func move_along_path(_delta):
 	# CRITICAL: Enemies must ALWAYS follow their path to the end to damage the player
