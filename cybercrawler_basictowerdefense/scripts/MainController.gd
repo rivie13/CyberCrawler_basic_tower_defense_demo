@@ -38,6 +38,7 @@ var selected_tower_type: String = BASIC_TOWER  # Default to basic tower
 var current_click_mode: String = MODE_BUILD_TOWERS  # Default to tower building mode
 
 func _ready():
+	add_to_group("main_controller")
 	setup_managers()
 	initialize_systems()
 	setup_ui()
@@ -65,15 +66,15 @@ func setup_managers():
 	add_child(freeze_mine_manager)
 
 func initialize_systems():
-	# Initialize GridManager with the GridContainer from the scene
+	# Initialize GridManager with the GridContainer from the scene and inject GameManager
 	var grid_container = $GridContainer
-	grid_manager.initialize_with_container(grid_container)
+	grid_manager.initialize_with_container(grid_container, game_manager)
 	
 	# Initialize managers with references to each other
 	wave_manager.initialize(grid_manager)
 	tower_manager.initialize(grid_manager, currency_manager, wave_manager)
 	game_manager.initialize(wave_manager, currency_manager, tower_manager)
-	rival_hacker_manager.initialize(grid_manager, currency_manager, tower_manager, wave_manager)
+	rival_hacker_manager.initialize(grid_manager, currency_manager, tower_manager, wave_manager, game_manager)
 	program_data_packet_manager.initialize(grid_manager, game_manager, wave_manager)
 	freeze_mine_manager.initialize(grid_manager, currency_manager)
 	
@@ -487,3 +488,21 @@ func _on_freeze_mine_triggered(mine: FreezeMine):
 func _on_freeze_mine_depleted(mine: FreezeMine):
 	print("MainController: Freeze mine depleted at ", mine.grid_position)
 	update_info_label()
+
+# Utility: Show a temporary message in the InfoLabel
+func show_temp_message(message: String, duration: float = 1.5):
+	var info_label = $UI/InfoLabel
+	if info_label:
+		var prev_text = info_label.text
+		info_label.text = message
+		info_label.modulate = WARNING_COLOR
+		# Restore previous text after duration
+		var timer = Timer.new()
+		timer.wait_time = duration
+		timer.one_shot = true
+		timer.timeout.connect(func():
+			info_label.text = prev_text
+			info_label.modulate = Color.WHITE
+			timer.queue_free()
+		)
+		add_child(timer)

@@ -29,13 +29,121 @@ var grid_manager: Node
 var grid_layout: GridLayout
 var selected_layout_type: GridLayout.LayoutType
 
+var path_start: Vector2i = Vector2i.ZERO  # Start grid position for path
+var path_end: Vector2i = Vector2i.ZERO    # End grid position for path
+var used_initial_layout: bool = false  # Track if initial layout has been used
+
 func _ready():
 	setup_enemy_spawning()
+	# Add MainController to the group
+	add_to_group("main_controller")
 
 func initialize(grid_ref: Node):
 	grid_manager = grid_ref
 	grid_layout = GridLayout.new(grid_manager)
+	# Only randomize layout type once, if not already set
+	if selected_layout_type == null:
+		var layout_types = [
+			GridLayout.LayoutType.STRAIGHT_LINE,
+			GridLayout.LayoutType.L_SHAPED,
+			GridLayout.LayoutType.S_CURVED,
+			GridLayout.LayoutType.ZIGZAG
+		]
+		selected_layout_type = layout_types[randi() % layout_types.size()]
+		print("WaveManager: Selected random layout type: ", selected_layout_type)
 	create_enemy_path()
+	# NEW: Listen for grid block changes
+	if grid_manager.has_signal("grid_blocked_changed"):
+		grid_manager.grid_blocked_changed.connect(_on_grid_blocked_changed)
+
+# NEW: Handle grid block changes
+func _on_grid_blocked_changed(grid_pos: Vector2i, blocked: bool):
+	create_enemy_path()
+	# Enhanced: Pause, reposition, and resume enemies on path change
+	_handle_enemies_on_path_change()
+	# Update all active enemies with the new path
+	for enemy in enemies_alive:
+		if is_instance_valid(enemy):
+			enemy.set_path(enemy_path)
+
+# NEW: Enhanced path change handling
+func _handle_enemies_on_path_change():
+	# Pause all enemies
+	for enemy in enemies_alive:
+		if is_instance_valid(enemy):
+			enemy.pause()
+
+	# Show recalculating message
+	var main_controller = get_tree().get_first_node_in_group("main_controller")
+	if main_controller:
+		main_controller.show_temp_message("Path changed! Enemies recalculating...", 1.5)
+
+	# Identify and remove enemies currently on the path
+	var enemies_to_recycle = []
+	for enemy in enemies_alive.duplicate():
+		if is_instance_valid(enemy):
+			# Check if enemy is close to any point on the path (within half a grid cell)
+			for path_point in enemy_path:
+				if enemy.global_position.distance_to(path_point) < grid_manager.GRID_SIZE * 0.5:
+					enemies_to_recycle.append(enemy)
+					break
+	# Remove/destroy these enemies
+	for enemy in enemies_to_recycle:
+		if is_instance_valid(enemy):
+			enemies_alive.erase(enemy)
+			enemy.queue_free()
+
+	# Spawn the same number of new enemies at the back of the queue (off-screen)
+	var num_to_spawn = enemies_to_recycle.size()
+	var spacing = 32.0
+	if enemy_path.size() > 1:
+		var start = enemy_path[0]
+		var next = enemy_path[1]
+		var direction = (next - start).normalized()
+		var offscreen_offset = 5 * grid_manager.GRID_SIZE * (enemies_alive.size() + num_to_spawn)
+		for i in range(num_to_spawn):
+			var enemy = ENEMY_SCENE.instantiate()
+			enemy.set_path(enemy_path)
+			var pos = start - direction * (offscreen_offset + i * spacing)
+			enemy.global_position = pos
+			enemy.current_path_index = 0
+			enemy.target_position = enemy_path[0]
+			# Connect enemy signals
+			enemy.enemy_died.connect(_on_enemy_died)
+			enemy.enemy_reached_end.connect(_on_enemy_reached_end)
+			enemies_alive.append(enemy)
+			add_child(enemy)
+
+	# Move all remaining enemies off-screen behind the start of the path, spaced out in a queue
+	var enemies_count = enemies_alive.size()
+	if enemy_path.size() > 1:
+		var start = enemy_path[0]
+		var next = enemy_path[1]
+		var direction = (next - start).normalized()
+		var offscreen_offset = 5 * grid_manager.GRID_SIZE * enemies_count
+		for i in range(enemies_count):
+			var enemy = enemies_alive[i]
+			if is_instance_valid(enemy):
+				var pos = start - direction * (offscreen_offset + i * spacing)
+				enemy.global_position = pos
+				enemy.current_path_index = 0
+				enemy.target_position = enemy_path[0]
+				enemy.set_path(enemy_path)
+
+	# Stagger resume for each enemy
+	var resume_delay = 0.1
+	for i in range(enemies_count):
+		var enemy = enemies_alive[i]
+		if is_instance_valid(enemy):
+			var timer = Timer.new()
+			timer.wait_time = 0.5 + i * resume_delay
+			timer.one_shot = true
+			timer.timeout.connect(func():
+				if is_instance_valid(enemy):
+					enemy.resume()
+				timer.queue_free()
+			)
+			add_child(timer)
 
 func setup_enemy_spawning():
 	# Create enemy spawn timer
@@ -52,23 +160,38 @@ func setup_enemy_spawning():
 	add_child(wave_timer)
 
 func create_enemy_path():
-	if not grid_layout:
-		push_error("WaveManager: grid_layout not set!")
+	if not grid_layout or not grid_manager:
+		push_error("WaveManager: grid_layout or grid_manager not set!")
 		return
-	
-	# Randomly select a layout type for variety (only select once)
-	var layout_types = [
-		GridLayout.LayoutType.STRAIGHT_LINE,
-		GridLayout.LayoutType.L_SHAPED,
-		GridLayout.LayoutType.S_CURVED,
-		GridLayout.LayoutType.ZIGZAG
-	]
-	selected_layout_type = layout_types[randi() % layout_types.size()]
-	
-	print("WaveManager: Selected random layout type: ", selected_layout_type)
-	
-	# Use GridLayout to create the enemy path with selected layout
-	enemy_path = grid_layout.create_path(selected_layout_type)
+
+	var grid_path = []
+	if not used_initial_layout:
+		# Use initial layout type for the very first path
+		grid_path = grid_layout.get_path_grid_positions(selected_layout_type)
+		if grid_path.size() == 0:
+			push_error("WaveManager: No grid path available!")
+			return
+		# Store start and end for future A*
+		path_start = grid_path[0]
+		path_end = grid_path[grid_path.size() - 1]
+		used_initial_layout = true
+	else:
+		# Use A* for all subsequent path recalculations
+		if path_start == Vector2i.ZERO or path_end == Vector2i.ZERO:
+			push_error("WaveManager: path_start or path_end not set!")
+			return
+		grid_path = grid_manager.find_path_astar(path_start, path_end)
+		if grid_path.size() == 0:
+			push_error("WaveManager: No valid A* path available!")
+			return
+
+	# Convert grid path to world positions for enemy movement
+	enemy_path = []
+	for grid_pos in grid_path:
+		enemy_path.append(grid_manager.grid_to_world(grid_pos))
+
+	# Update grid visualization to match the actual path
+	grid_manager.set_path_positions(grid_path)
 
 func get_path_grid_positions() -> Array[Vector2i]:
 	if not grid_layout:

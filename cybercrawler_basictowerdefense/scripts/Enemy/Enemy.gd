@@ -15,6 +15,7 @@ var target_position: Vector2
 
 # State
 var is_alive: bool = true
+var paused: bool = false  # NEW: Controls whether enemy is paused
 
 # Signals
 signal enemy_died(enemy: Enemy)
@@ -59,8 +60,14 @@ func set_path(new_path: Array[Vector2]):
 	if path_points.size() > 0:
 		target_position = path_points[0]
 
+func pause():
+	paused = true
+
+func resume():
+	paused = false
+
 func _physics_process(delta):
-	if not is_alive or path_points.size() == 0:
+	if not is_alive or path_points.size() == 0 or paused:
 		return
 	
 	# Check if game is over (get from MainController)
@@ -72,13 +79,7 @@ func _physics_process(delta):
 	move_along_path(delta)
 
 func get_main_controller():
-	# Navigate up the tree to find MainController
-	var current_node = self
-	while current_node:
-		if current_node is MainController:
-			return current_node
-		current_node = current_node.get_parent()
-	return null
+	return get_tree().get_first_node_in_group("main_controller")
 
 func move_along_path(_delta):
 	# CRITICAL: Enemies must ALWAYS follow their path to the end to damage the player
@@ -93,6 +94,8 @@ func move_along_path(_delta):
 	
 	# Check if reached current target
 	if distance_to_target < 10.0:
+		# SNAP to the exact waypoint to prevent drifting off path
+		global_position = target_position
 		current_path_index += 1
 		
 		# Check if reached end of path

@@ -130,13 +130,7 @@ func create_freeze_effect_visual():
 	tween.tween_callback(freeze_effect.queue_free)
 
 func get_main_controller():
-	# Navigate up the tree to find MainController
-	var current_node = self
-	while current_node:
-		if current_node is MainController:
-			return current_node
-		current_node = current_node.get_parent()
-	return null
+	return get_tree().get_first_node_in_group("main_controller")
 
 func can_be_placed_at(grid_pos: Vector2i, grid_manager: GridManager) -> bool:
 	# Check if position is valid and not occupied

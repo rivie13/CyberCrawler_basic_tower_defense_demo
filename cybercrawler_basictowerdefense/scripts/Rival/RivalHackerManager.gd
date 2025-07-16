@@ -30,6 +30,14 @@ var hacker_spawn_timer: Timer
 var enemy_towers_placed: Array = []
 var rival_hackers_active: Array[RivalHacker] = []
 
+# Add a timer for path blocking
+var path_block_timer: Timer
+@export var path_block_interval: float = 30.0  # Time between path blocks (was 6.0)
+
+# Add a timer for non-path blocking (tower placement blocking)
+var non_path_block_timer: Timer
+@export var non_path_block_interval: float = 10.0
+
 # AI strategy parameters
 var preferred_grid_zones: Array[Vector2i] = []  # Areas AI prefers to place towers
 var player_threat_level: int = 0  # Tracks how threatening player is
@@ -39,6 +47,16 @@ var grid_manager: GridManager
 var currency_manager: CurrencyManager
 var tower_manager: TowerManager
 var wave_manager: WaveManager
+var game_manager: GameManager = null
+
+# Detour points for adversarial path repair
+var detour_points: Array[Vector2i] = []
+
+# Weights for adversarial pathfinding
+var cell_weights: Dictionary = {}
+
+# Reference to ProgramDataPacketManager
+var program_data_packet_manager: Node = null
 
 func _ready():
 	setup_timers()
@@ -58,23 +76,38 @@ func setup_timers():
 	hacker_spawn_timer.autostart = false
 	add_child(hacker_spawn_timer)
 	
+	# Timer for path blocking
+	path_block_timer = Timer.new()
+	path_block_timer.wait_time = path_block_interval
+	path_block_timer.timeout.connect(_on_path_block_timer_timeout)
+	path_block_timer.autostart = false
+	add_child(path_block_timer)
+
+	# Timer for non-path blocking
+	non_path_block_timer = Timer.new()
+	non_path_block_timer.wait_time = non_path_block_interval
+	non_path_block_timer.timeout.connect(_on_non_path_block_timer_timeout)
+	non_path_block_timer.autostart = false
+	add_child(non_path_block_timer)
+	
 	# Timer for initial activation delay - removed (now using alert-based activation)
 
-func initialize(grid_mgr: GridManager, currency_mgr: CurrencyManager, tower_mgr: TowerManager, wave_mgr: WaveManager):
+func initialize(grid_mgr: GridManager, currency_mgr: CurrencyManager, tower_mgr: TowerManager, wave_mgr: WaveManager, gm: GameManager = null):
 	grid_manager = grid_mgr
 	currency_manager = currency_mgr
 	tower_manager = tower_mgr
 	wave_manager = wave_mgr
-	
-	# Set up preferred zones (enemy side of the grid)
+	if gm != null:
+		game_manager = gm
+	# Store reference to ProgramDataPacketManager if available
+	if has_node("../ProgramPacket/ProgramDataPacketManager"):
+		program_data_packet_manager = get_node("../ProgramPacket/ProgramDataPacketManager")
 	setup_preferred_zones()
-	
-	# Initialize alert system
 	setup_alert_system()
-	
-	# Connect to tower manager to monitor player actions
 	if tower_manager:
 		tower_manager.tower_placed.connect(_on_player_tower_placed)
+	setup_detour_points()
+	setup_cell_weights()
 
 func setup_preferred_zones():
 	# Define zones where the AI prefers to place towers
@@ -103,19 +136,17 @@ func setup_alert_system():
 func activate():
 	if is_active:
 		return
-	
 	print("RivalHacker: Starting activation sequence...")
-	
-	# Start alert system monitoring immediately
 	if alert_system:
 		alert_system.start_monitoring()
-	
 	print("RivalHacker: Alert system monitoring started - waiting for alerts to trigger tower placement")
+	# Removed: Do not start path_block_timer or non_path_block_timer here
 
 func _on_placement_timer_timeout():
 	if not is_active:
 		return
-	
+	if game_manager and game_manager.is_game_over():
+		return
 	# Check if we've reached maximum towers
 	if enemy_towers_placed.size() >= max_enemy_towers:
 		return
@@ -127,7 +158,8 @@ func _on_placement_timer_timeout():
 func _on_hacker_spawn_timer_timeout():
 	if not is_active:
 		return
-	
+	if game_manager and game_manager.is_game_over():
+		return
 	# Check if we've reached maximum RivalHackers
 	if rival_hackers_active.size() >= max_rival_hackers:
 		return
@@ -338,6 +370,11 @@ func _on_alert_triggered(alert_type: String, severity: float):
 		is_active = true
 		placement_timer.start()
 		hacker_spawn_timer.start()
+		# Start path and non-path block timers ONLY after alert triggers
+		if path_block_timer:
+			path_block_timer.start()
+		if non_path_block_timer:
+			non_path_block_timer.start()
 		rival_hacker_activated.emit()
 		print("RivalHacker: FIRST ALERT TRIGGERED - Now active and placing enemy towers and spawning hackers!")
 	
@@ -404,3 +441,216 @@ func increase_aggression_level(amount: float):
 	var speed_reduction = amount * 1.2
 	placement_timer.wait_time = max(0.5, placement_timer.wait_time - speed_reduction)
 	print("RivalHacker: Increasing aggression level by ", amount)
+
+# Add a method to set up detour points (corners, strategic points)
+func setup_detour_points():
+	if not grid_manager:
+		return
+	detour_points.clear()
+	var grid_size = grid_manager.get_grid_size()
+	# Example: corners and center
+	detour_points.append(Vector2i(0, 0))
+	detour_points.append(Vector2i(grid_size.x - 1, 0))
+	detour_points.append(Vector2i(0, grid_size.y - 1))
+	detour_points.append(Vector2i(grid_size.x - 1, grid_size.y - 1))
+	detour_points.append(Vector2i(int(grid_size.x / 2), int(grid_size.y / 2)))
+	# Add more as needed (e.g., near enemy towers)
+
+# Add a method to set up cell weights (e.g., near enemy towers)
+func setup_cell_weights():
+	cell_weights.clear()
+	if not grid_manager or not tower_manager:
+		return
+	var towers = tower_manager.get_towers()
+	for tower in towers:
+		if is_instance_valid(tower):
+			var grid_pos = tower.get_grid_position()
+			cell_weights[grid_pos] = 10  # High cost for pathfinding
+	# Add more logic for other "bad" cells if needed
+
+# Weighted pathfinding (adversarial): returns a path from start to end, preferring high-cost cells
+func find_weighted_path(start: Vector2i, end: Vector2i) -> Array[Vector2i]:
+	var open_set = [start]
+	var came_from = {}
+	var g_score = {}
+	var f_score = {}
+	g_score[start] = 0
+	f_score[start] = start.distance_to(end)
+	while open_set.size() > 0:
+		open_set.sort_custom(func(a, b): return f_score.get(a, INF) < f_score.get(b, INF))
+		var current = open_set[0]
+		if current == end:
+			var path: Array[Vector2i] = [current]
+			while current in came_from:
+				current = came_from[current]
+				path.insert(0, current)
+			return path
+		open_set.remove_at(0)
+		for neighbor in grid_manager.get_neighbors(current):
+			if grid_manager.is_grid_blocked(neighbor) or grid_manager.is_grid_occupied(neighbor):
+				continue
+			var weight = cell_weights.get(neighbor, 1)
+			var tentative_g = g_score.get(current, INF) + weight
+			if tentative_g < g_score.get(neighbor, INF):
+				came_from[neighbor] = current
+				g_score[neighbor] = tentative_g
+				f_score[neighbor] = tentative_g + neighbor.distance_to(end)
+				if neighbor not in open_set:
+					open_set.append(neighbor)
+	return [] as Array[Vector2i]
+
+# Path repair logic: choose strategy and update path
+func repair_path_after_block():
+	if game_manager and game_manager.is_game_over():
+		return
+	if not grid_manager or not wave_manager:
+		return
+	var path_positions = grid_manager.path_grid_positions
+	if path_positions.size() <= 2:
+		return
+	var start = path_positions[0]
+	var end = path_positions[path_positions.size() - 1]
+	var block_indices = []
+	for i in range(path_positions.size()):
+		if grid_manager.is_grid_blocked(path_positions[i]):
+			block_indices.append(i)
+	if block_indices.size() == 0:
+		return
+	# For now, only handle single block for simplicity
+	var block_idx = block_indices[0]
+	# Guard against invalid slice bounds
+	if block_idx <= 0 or block_idx >= path_positions.size() - 1:
+		return
+	var seg1 = path_positions.slice(0, block_idx)
+	var seg2 = path_positions.slice(block_idx + 1, path_positions.size())
+
+	# Corridor-limited detour logic
+	var max_corridor_width = 3
+	var corridor_width = 1
+	var connector: Array[Vector2i] = []
+	while corridor_width <= max_corridor_width and connector.size() == 0:
+		var corridor_cells = get_corridor_cells_around_path(path_positions, corridor_width)
+		connector = find_corridor_limited_path(seg1[seg1.size() - 1], seg2[0], corridor_cells)
+		corridor_width += 1
+
+	if connector.size() > 0:
+		var new_path = seg1 + connector + seg2
+		grid_manager.set_path_positions(new_path)
+		wave_manager.enemy_path = []
+		for grid_pos in new_path:
+			wave_manager.enemy_path.append(grid_manager.grid_to_world(grid_pos))
+		# Update packet path as well
+		if program_data_packet_manager:
+			program_data_packet_manager.create_packet_path()
+		print("RivalHacker: Path repaired using corridor-limited detour (width: ", corridor_width-1, ")")
+	else:
+		print("RivalHacker: Failed to repair path within corridor limits!")
+
+# Helper: Get all grid cells within 'width' cells of any cell in the path
+func get_corridor_cells_around_path(path: Array[Vector2i], width: int) -> Array[Vector2i]:
+	var corridor: Array[Vector2i] = []
+	var grid_size = grid_manager.get_grid_size()
+	var seen = {}
+	for path_cell in path:
+		for dx in range(-width, width+1):
+			for dy in range(-width, width+1):
+				var cell = path_cell + Vector2i(dx, dy)
+				if grid_manager.is_valid_grid_position(cell) and not seen.has(cell):
+					corridor.append(cell)
+					seen[cell] = true
+	return corridor
+
+# Helper: Find a path between two points, only using allowed_cells
+func find_corridor_limited_path(start: Vector2i, end: Vector2i, allowed_cells: Array[Vector2i]) -> Array[Vector2i]:
+	var allowed_set = {}
+	for cell in allowed_cells:
+		allowed_set[cell] = true
+	var open_set = [start]
+	var came_from = {}
+	var g_score = {}
+	var f_score = {}
+	g_score[start] = 0
+	f_score[start] = start.distance_to(end)
+	while open_set.size() > 0:
+		open_set.sort_custom(func(a, b): return f_score.get(a, INF) < f_score.get(b, INF))
+		var current = open_set[0]
+		if current == end:
+			var path: Array[Vector2i] = [current]
+			while current in came_from:
+				current = came_from[current]
+				path.insert(0, current)
+			return path
+		open_set.remove_at(0)
+		for neighbor in grid_manager.get_neighbors(current):
+			if not allowed_set.has(neighbor):
+				continue
+			if grid_manager.is_grid_blocked(neighbor) or grid_manager.is_grid_occupied(neighbor):
+				continue
+			var tentative_g = g_score.get(current, INF) + 1
+			if tentative_g < g_score.get(neighbor, INF):
+				came_from[neighbor] = current
+				g_score[neighbor] = tentative_g
+				f_score[neighbor] = tentative_g + neighbor.distance_to(end)
+				if neighbor not in open_set:
+					open_set.append(neighbor)
+	return [] as Array[Vector2i]
+
+# Call repair_path_after_block after blocking a path cell
+func _on_path_block_timer_timeout():
+	if not is_active:
+		return
+	if game_manager and game_manager.is_game_over():
+		return
+	var path_positions = grid_manager.path_grid_positions
+	if path_positions.size() <= 2:
+		return  # Not enough path to block
+	# Exclude start/end
+	var blockable = path_positions.slice(1, path_positions.size() - 1)
+	if blockable.size() == 0:
+		return
+	# Shuffle blockable cells to try multiple options
+	var shuffled = blockable.duplicate()
+	shuffled.shuffle()
+	var blocked = false
+	for grid_pos in shuffled:
+		if not grid_manager.is_grid_blocked(grid_pos):
+			# Simulate block
+			grid_manager.set_grid_blocked(grid_pos, true)
+			# Try to repair the path
+			repair_path_after_block()
+			# Check if a valid path exists after repair
+			var start = path_positions[0]
+			var end = path_positions[path_positions.size() - 1]
+			var new_path = grid_manager.find_path_astar(start, end)
+			if new_path.size() > 0:
+				print("RivalHacker: Blocked path cell at ", grid_pos)
+				blocked = true
+				break
+			else:
+				# Undo block if no path exists after repair
+				grid_manager.set_grid_blocked(grid_pos, false)
+	if not blocked:
+		print("RivalHacker: No valid path block found (all would block the path)")
+	# Restart timer
+	path_block_timer.start()
+
+# Timer callback: block a random non-path cell (for tower placement only)
+func _on_non_path_block_timer_timeout():
+	if not is_active:
+		return
+	if game_manager and game_manager.is_game_over():
+		return
+	var grid_size = grid_manager.get_grid_size()
+	var candidates: Array[Vector2i] = []
+	for y in range(grid_size.y):
+		for x in range(grid_size.x):
+			var pos = Vector2i(x, y)
+			if not grid_manager.is_on_enemy_path(pos) and not grid_manager.is_grid_occupied(pos) and not grid_manager.is_grid_blocked(pos):
+				candidates.append(pos)
+	if candidates.size() == 0:
+		return
+	var idx = randi() % candidates.size()
+	var grid_pos = candidates[idx]
+	grid_manager.set_grid_blocked(grid_pos, true)
+	print("RivalHacker: Blocked non-path cell at ", grid_pos)
+	non_path_block_timer.start()
