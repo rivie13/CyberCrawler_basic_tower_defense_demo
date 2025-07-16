@@ -188,38 +188,44 @@ func is_grid_blocked(grid_pos: Vector2i) -> bool:
 func set_grid_blocked(grid_pos: Vector2i, blocked: bool):
 	if game_manager and game_manager.is_game_over():
 		return
-	# Only allow blocking if it will block at least one cell on the current path, and path remains solvable
 	if is_valid_grid_position(grid_pos):
-		var was_on_path = grid_pos in path_grid_positions
-		blocked_grid_data[grid_pos.y][grid_pos.x] = blocked
-		# After blocking, check if at least one path cell is now blocked
-		var path_blocked = false
+		update_blocked_grid_data(grid_pos, blocked)
+		if not ensure_path_solvability(grid_pos, blocked):
+			return
+		emit_grid_blocked_signal(grid_pos, blocked)
+
+func update_blocked_grid_data(grid_pos: Vector2i, blocked: bool):
+	blocked_grid_data[grid_pos.y][grid_pos.x] = blocked
+
+func ensure_path_solvability(grid_pos: Vector2i, blocked: bool) -> bool:
+	var path_blocked = false
+	var candidates = []
+	var to_block = null
+	for pos in path_grid_positions:
+		if blocked_grid_data[pos.y][pos.x]:
+			path_blocked = true
+			break
+
+	if blocked and not path_blocked:
 		for pos in path_grid_positions:
-			if blocked_grid_data[pos.y][pos.x]:
-				path_blocked = true
-				break
-		# If not, force a block on a random path cell (other than start/end) that is not already blocked
-		var candidates = []
-		var to_block = null
-		if blocked and not path_blocked:
-			for pos in path_grid_positions:
-				if not blocked_grid_data[pos.y][pos.x] and pos != path_grid_positions[0] and pos != path_grid_positions[-1]:
-					candidates.append(pos)
-			if candidates.size() > 0:
-				to_block = candidates[randi() % candidates.size()]
-				blocked_grid_data[to_block.y][to_block.x] = true
-		# Ensure path is still solvable
-		var start = path_grid_positions[0]
-		var end = path_grid_positions[-1]
-		var new_path = find_path_astar(start, end)
-		if new_path.size() == 0:
-			# Undo the block(s) if path is unsolvable
-			blocked_grid_data[grid_pos.y][grid_pos.x] = false
-			if blocked and not path_blocked and candidates.size() > 0 and to_block != null:
-				blocked_grid_data[to_block.y][to_block.x] = false
-			return # Do not emit signal or update
-		# Emit signal when a cell is blocked/unblocked
-		grid_blocked_changed.emit(grid_pos, blocked)
+			if not blocked_grid_data[pos.y][pos.x] and pos != path_grid_positions[0] and pos != path_grid_positions[-1]:
+				candidates.append(pos)
+		if candidates.size() > 0:
+			to_block = candidates[randi() % candidates.size()]
+			blocked_grid_data[to_block.y][to_block.x] = true
+
+	var start = path_grid_positions[0]
+	var end = path_grid_positions[-1]
+	var new_path = find_path_astar(start, end)
+	if new_path.size() == 0:
+		blocked_grid_data[grid_pos.y][grid_pos.x] = false
+		if blocked and not path_blocked and candidates.size() > 0 and to_block != null:
+			blocked_grid_data[to_block.y][to_block.x] = false
+		return false
+	return true
+
+func emit_grid_blocked_signal(grid_pos: Vector2i, blocked: bool):
+	grid_blocked_changed.emit(grid_pos, blocked)
 
 func _draw():
 	# Draw hover highlight

@@ -605,7 +605,7 @@ func _on_path_block_timer_timeout():
 	if path_positions.size() <= 2:
 		return  # Not enough path to block
 	# Exclude start/end
-	var blockable = path_positions.slice(1, path_positions.size() - 2)
+	var blockable = path_positions.slice(1, path_positions.size() - 1)
 	if blockable.size() == 0:
 		return
 	# Shuffle blockable cells to try multiple options
