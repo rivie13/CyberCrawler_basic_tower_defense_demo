@@ -515,7 +515,7 @@ func repair_path_after_block():
 	if block_idx <= 0 or block_idx >= path_positions.size() - 1:
 		return
 	var seg1 = path_positions.slice(0, block_idx)
-	var seg2 = path_positions.slice(block_idx + 1, path_positions.size() - block_idx - 1)
+	var seg2 = path_positions.slice(block_idx + 1, path_positions.size())
 
 	# Corridor-limited detour logic
 	var max_corridor_width = 3

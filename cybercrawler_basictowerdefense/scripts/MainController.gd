@@ -487,3 +487,21 @@ func _on_freeze_mine_triggered(mine: FreezeMine):
 func _on_freeze_mine_depleted(mine: FreezeMine):
 	print("MainController: Freeze mine depleted at ", mine.grid_position)
 	update_info_label()
+
+# Utility: Show a temporary message in the InfoLabel
+func show_temp_message(message: String, duration: float = 1.5):
+	var info_label = $UI/InfoLabel
+	if info_label:
+		var prev_text = info_label.text
+		info_label.text = message
+		info_label.modulate = WARNING_COLOR
+		# Restore previous text after duration
+		var timer = Timer.new()
+		timer.wait_time = duration
+		timer.one_shot = true
+		timer.timeout.connect(func():
+			info_label.text = prev_text
+			info_label.modulate = Color.WHITE
+			timer.queue_free()
+		)
+		add_child(timer)

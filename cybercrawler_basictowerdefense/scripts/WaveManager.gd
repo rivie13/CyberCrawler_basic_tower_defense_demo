@@ -29,12 +29,26 @@ var grid_manager: Node
 var grid_layout: GridLayout
 var selected_layout_type: GridLayout.LayoutType
 
+var path_start: Vector2i = Vector2i.ZERO  # Start grid position for path
+var path_end: Vector2i = Vector2i.ZERO    # End grid position for path
+var used_initial_layout: bool = false  # Track if initial layout has been used
+
 func _ready():
 	setup_enemy_spawning()
 
 func initialize(grid_ref: Node):
 	grid_manager = grid_ref
 	grid_layout = GridLayout.new(grid_manager)
+	# Only randomize layout type once, if not already set
+	if selected_layout_type == null:
+		var layout_types = [
+			GridLayout.LayoutType.STRAIGHT_LINE,
+			GridLayout.LayoutType.L_SHAPED,
+			GridLayout.LayoutType.S_CURVED,
+			GridLayout.LayoutType.ZIGZAG
+		]
+		selected_layout_type = layout_types[randi() % layout_types.size()]
+		print("WaveManager: Selected random layout type: ", selected_layout_type)
 	create_enemy_path()
 	# NEW: Listen for grid block changes
 	if grid_manager.has_signal("grid_blocked_changed"):
@@ -43,10 +57,54 @@ func initialize(grid_ref: Node):
 # NEW: Handle grid block changes
 func _on_grid_blocked_changed(grid_pos: Vector2i, blocked: bool):
 	create_enemy_path()
+	# Enhanced: Pause, reposition, and resume enemies on path change
+	_handle_enemies_on_path_change()
 	# Update all active enemies with the new path
 	for enemy in enemies_alive:
 		if is_instance_valid(enemy):
 			enemy.set_path(enemy_path)
+
+# NEW: Enhanced path change handling
+func _handle_enemies_on_path_change():
+	# Pause all enemies
+	for enemy in enemies_alive:
+		if is_instance_valid(enemy):
+			enemy.pause()
+
+	# Show recalculating message
+	var main_controller = get_tree().get_root().get_node("MainController")
+	if main_controller:
+		main_controller.show_temp_message("Path changed! Enemies recalculating...", 1.5)
+
+	# Teleport off-path enemies to start of new path
+	for enemy in enemies_alive:
+		if is_instance_valid(enemy):
+			var on_path = false
+			if enemy_path.size() > 0:
+				# Check if enemy is close to any path point
+				for pt in enemy_path:
+					if enemy.global_position.distance_to(pt) < 16.0:
+						on_path = true
+						break
+			if not on_path and enemy_path.size() > 0:
+				enemy.global_position = enemy_path[0]
+				enemy.current_path_index = 0
+				enemy.target_position = enemy_path[0]
+				enemy.set_path(enemy_path)
+
+	# Resume all enemies (after short delay for message)
+	# Use a timer to resume after 1.5s
+	var timer = Timer.new()
+	timer.wait_time = 1.5
+	timer.one_shot = true
+	timer.timeout.connect(func():
+		for enemy in enemies_alive:
+			if is_instance_valid(enemy):
+				enemy.resume()
+			# Remove timer after use
+		timer.queue_free()
+	)
+	add_child(timer)
 
 func setup_enemy_spawning():
 	# Create enemy spawn timer
@@ -67,22 +125,26 @@ func create_enemy_path():
 		push_error("WaveManager: grid_layout or grid_manager not set!")
 		return
 
-	# Randomly select a layout type for variety (only select once)
-	var layout_types = [
-		GridLayout.LayoutType.STRAIGHT_LINE,
-		GridLayout.LayoutType.L_SHAPED,
-		GridLayout.LayoutType.S_CURVED,
-		GridLayout.LayoutType.ZIGZAG
-	]
-	selected_layout_type = layout_types[randi() % layout_types.size()]
-
-	print("WaveManager: Selected random layout type: ", selected_layout_type)
-
-	# Use GridLayout to get grid positions for the path
-	var grid_path = grid_layout.get_path_grid_positions(selected_layout_type)
-	if grid_path.size() == 0:
-		push_error("WaveManager: No grid path available!")
-		return
+	var grid_path = []
+	if not used_initial_layout:
+		# Use initial layout type for the very first path
+		grid_path = grid_layout.get_path_grid_positions(selected_layout_type)
+		if grid_path.size() == 0:
+			push_error("WaveManager: No grid path available!")
+			return
+		# Store start and end for future A*
+		path_start = grid_path[0]
+		path_end = grid_path[grid_path.size() - 1]
+		used_initial_layout = true
+	else:
+		# Use A* for all subsequent path recalculations
+		if path_start == Vector2i.ZERO or path_end == Vector2i.ZERO:
+			push_error("WaveManager: path_start or path_end not set!")
+			return
+		grid_path = grid_manager.find_path_astar(path_start, path_end)
+		if grid_path.size() == 0:
+			push_error("WaveManager: No valid A* path available!")
+			return
 
 	# Convert grid path to world positions for enemy movement
 	enemy_path = []

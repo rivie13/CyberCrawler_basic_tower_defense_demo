@@ -15,6 +15,7 @@ var target_position: Vector2
 
 # State
 var is_alive: bool = true
+var paused: bool = false  # NEW: Controls whether enemy is paused
 
 # Signals
 signal enemy_died(enemy: Enemy)
@@ -59,8 +60,14 @@ func set_path(new_path: Array[Vector2]):
 	if path_points.size() > 0:
 		target_position = path_points[0]
 
+func pause():
+	paused = true
+
+func resume():
+	paused = false
+
 func _physics_process(delta):
-	if not is_alive or path_points.size() == 0:
+	if not is_alive or path_points.size() == 0 or paused:
 		return
 	
 	# Check if game is over (get from MainController)
