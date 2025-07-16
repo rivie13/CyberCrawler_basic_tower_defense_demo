@@ -42,21 +42,36 @@ func initialize(grid_mgr: GridManager, game_mgr: GameManager, wave_mgr: WaveMana
 	# Generate the packet path (opposite direction from enemies)
 	create_packet_path()
 
+	# NEW: Listen for grid block changes
+	if grid_manager.has_signal("grid_blocked_changed"):
+		grid_manager.grid_blocked_changed.connect(_on_grid_blocked_changed)
+
 func create_packet_path():
 	"""Create the path for the program data packet (opposite direction from enemies)"""
-	if not wave_manager:
-		print("ProgramDataPacketManager: Cannot create path - no wave manager")
+	if not wave_manager or not grid_manager:
+		print("ProgramDataPacketManager: Cannot create path - missing manager")
 		return
-	
-	# Get the current enemy path from the wave manager
-	var enemy_path = wave_manager.get_enemy_path()
-	if enemy_path.size() == 0:
-		print("ProgramDataPacketManager: No enemy path available")
+
+	# Get the current enemy path grid positions from the wave manager's layout
+	var grid_layout = wave_manager.grid_layout
+	var selected_layout_type = wave_manager.selected_layout_type
+	if not grid_layout or selected_layout_type == null:
+		print("ProgramDataPacketManager: No grid layout or layout type available")
 		return
-	
-	# Reverse the path so packet travels from user entry to enemy entry
-	packet_path = enemy_path.duplicate()
-	packet_path.reverse()
+
+	var grid_path = grid_layout.get_path_grid_positions(selected_layout_type)
+	if grid_path.size() == 0:
+		print("ProgramDataPacketManager: No grid path available")
+		return
+
+	# Reverse the path for the packet
+	var reversed_path = grid_path.duplicate()
+	reversed_path.reverse()
+
+	# Convert grid path to world positions for packet movement
+	packet_path = []
+	for grid_pos in reversed_path:
+		packet_path.append(grid_manager.grid_to_world(grid_pos))
 	
 	print("ProgramDataPacketManager: Created packet path with ", packet_path.size(), " points")
 
@@ -164,3 +179,10 @@ func get_program_data_packet() -> ProgramDataPacket:
 func is_packet_alive() -> bool:
 	"""Check if the packet is alive"""
 	return program_data_packet != null and program_data_packet.is_alive 
+
+# NEW: Handle grid block changes
+func _on_grid_blocked_changed(grid_pos: Vector2i, blocked: bool):
+	create_packet_path()
+	# Update the active program_data_packet with the new path
+	if program_data_packet and is_packet_spawned and program_data_packet.is_alive:
+		program_data_packet.set_path(packet_path) 

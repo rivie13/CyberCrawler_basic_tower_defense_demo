@@ -36,6 +36,17 @@ func initialize(grid_ref: Node):
 	grid_manager = grid_ref
 	grid_layout = GridLayout.new(grid_manager)
 	create_enemy_path()
+	# NEW: Listen for grid block changes
+	if grid_manager.has_signal("grid_blocked_changed"):
+		grid_manager.grid_blocked_changed.connect(_on_grid_blocked_changed)
+
+# NEW: Handle grid block changes
+func _on_grid_blocked_changed(grid_pos: Vector2i, blocked: bool):
+	create_enemy_path()
+	# Update all active enemies with the new path
+	for enemy in enemies_alive:
+		if is_instance_valid(enemy):
+			enemy.set_path(enemy_path)
 
 func setup_enemy_spawning():
 	# Create enemy spawn timer
@@ -52,10 +63,10 @@ func setup_enemy_spawning():
 	add_child(wave_timer)
 
 func create_enemy_path():
-	if not grid_layout:
-		push_error("WaveManager: grid_layout not set!")
+	if not grid_layout or not grid_manager:
+		push_error("WaveManager: grid_layout or grid_manager not set!")
 		return
-	
+
 	# Randomly select a layout type for variety (only select once)
 	var layout_types = [
 		GridLayout.LayoutType.STRAIGHT_LINE,
@@ -64,11 +75,22 @@ func create_enemy_path():
 		GridLayout.LayoutType.ZIGZAG
 	]
 	selected_layout_type = layout_types[randi() % layout_types.size()]
-	
+
 	print("WaveManager: Selected random layout type: ", selected_layout_type)
-	
-	# Use GridLayout to create the enemy path with selected layout
-	enemy_path = grid_layout.create_path(selected_layout_type)
+
+	# Use GridLayout to get grid positions for the path
+	var grid_path = grid_layout.get_path_grid_positions(selected_layout_type)
+	if grid_path.size() == 0:
+		push_error("WaveManager: No grid path available!")
+		return
+
+	# Convert grid path to world positions for enemy movement
+	enemy_path = []
+	for grid_pos in grid_path:
+		enemy_path.append(grid_manager.grid_to_world(grid_pos))
+
+	# Update grid visualization to match the actual path
+	grid_manager.set_path_positions(grid_path)
 
 func get_path_grid_positions() -> Array[Vector2i]:
 	if not grid_layout:

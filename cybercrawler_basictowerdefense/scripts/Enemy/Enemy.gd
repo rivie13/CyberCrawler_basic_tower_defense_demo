@@ -93,6 +93,8 @@ func move_along_path(_delta):
 	
 	# Check if reached current target
 	if distance_to_target < 10.0:
+		# SNAP to the exact waypoint to prevent drifting off path
+		global_position = target_position
 		current_path_index += 1
 		
 		# Check if reached end of path
