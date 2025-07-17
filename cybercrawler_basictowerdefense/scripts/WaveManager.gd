@@ -29,8 +29,9 @@ var grid_manager: Node
 var grid_layout: GridLayout
 var selected_layout_type: GridLayout.LayoutType
 
-var path_start: Vector2i = Vector2i.ZERO  # Start grid position for path
-var path_end: Vector2i = Vector2i.ZERO    # End grid position for path
+# Replace Vector2i.ZERO sentinels with nullable variables
+var path_start: Variant = null  # Start grid position for path, null if unset
+var path_end: Variant = null    # End grid position for path, null if unset
 var used_initial_layout: bool = false  # Track if initial layout has been used
 
 func _ready():
@@ -68,33 +69,41 @@ func _on_grid_blocked_changed(grid_pos: Vector2i, blocked: bool):
 
 # NEW: Enhanced path change handling
 func _handle_enemies_on_path_change():
-	# Pause all enemies
+	_pause_enemies()
+	_show_recalculating_message()
+	var enemies_to_recycle = _identify_enemies_to_recycle()
+	_remove_enemies(enemies_to_recycle)
+	_spawn_replacement_enemies(enemies_to_recycle.size())
+	_reposition_remaining_enemies()
+	_stagger_resume_enemies()
+
+func _pause_enemies():
 	for enemy in enemies_alive:
 		if is_instance_valid(enemy):
 			enemy.pause()
 
-	# Show recalculating message
+func _show_recalculating_message():
 	var main_controller = get_tree().get_first_node_in_group("main_controller")
 	if main_controller:
 		main_controller.show_temp_message("Path changed! Enemies recalculating...", 1.5)
 
-	# Identify and remove enemies currently on the path
+func _identify_enemies_to_recycle() -> Array:
 	var enemies_to_recycle = []
 	for enemy in enemies_alive.duplicate():
 		if is_instance_valid(enemy):
-			# Check if enemy is close to any point on the path (within half a grid cell)
 			for path_point in enemy_path:
 				if enemy.global_position.distance_to(path_point) < grid_manager.GRID_SIZE * 0.5:
 					enemies_to_recycle.append(enemy)
 					break
-	# Remove/destroy these enemies
+	return enemies_to_recycle
+
+func _remove_enemies(enemies_to_recycle: Array):
 	for enemy in enemies_to_recycle:
 		if is_instance_valid(enemy):
 			enemies_alive.erase(enemy)
 			enemy.queue_free()
 
-	# Spawn the same number of new enemies at the back of the queue (off-screen)
-	var num_to_spawn = enemies_to_recycle.size()
+func _spawn_replacement_enemies(num_to_spawn: int):
 	var spacing = 32.0
 	if enemy_path.size() > 1:
 		var start = enemy_path[0]
@@ -114,8 +123,9 @@ func _handle_enemies_on_path_change():
 			enemies_alive.append(enemy)
 			add_child(enemy)
 
-	# Move all remaining enemies off-screen behind the start of the path, spaced out in a queue
+func _reposition_remaining_enemies():
 	var enemies_count = enemies_alive.size()
+	var spacing = 32.0
 	if enemy_path.size() > 1:
 		var start = enemy_path[0]
 		var next = enemy_path[1]
@@ -130,17 +140,19 @@ func _handle_enemies_on_path_change():
 				enemy.target_position = enemy_path[0]
 				enemy.set_path(enemy_path)
 
-	# Stagger resume for each enemy
+func _stagger_resume_enemies():
+	var enemies_count = enemies_alive.size()
 	var resume_delay = 0.1
 	for i in range(enemies_count):
 		var enemy = enemies_alive[i]
 		if is_instance_valid(enemy):
+			var current_enemy = enemy  # Local copy for closure
 			var timer = Timer.new()
 			timer.wait_time = 0.5 + i * resume_delay
 			timer.one_shot = true
 			timer.timeout.connect(func():
-				if is_instance_valid(enemy):
-					enemy.resume()
+				if is_instance_valid(current_enemy):
+					current_enemy.resume()
 				timer.queue_free()
 			)
 			add_child(timer)
@@ -177,7 +189,7 @@ func create_enemy_path():
 		used_initial_layout = true
 	else:
 		# Use A* for all subsequent path recalculations
-		if path_start == Vector2i.ZERO or path_end == Vector2i.ZERO:
+		if path_start == null or path_end == null:
 			push_error("WaveManager: path_start or path_end not set!")
 			return
 		grid_path = grid_manager.find_path_astar(path_start, path_end)
