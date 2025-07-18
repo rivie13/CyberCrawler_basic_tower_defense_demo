@@ -54,7 +54,7 @@ jobs:
         ls -la tests/
         echo ""
         echo "🎯 Running GUT with coverage validation..."
-        godot --headless --script addons/gut/gut_cmdln.gd -gconfig_file=.gutconfig.json -gshould_exit=true -gprint_to_console=true -gjunit_xml_file=test_results.xml
+        godot --headless --script addons/gut/gut_cmdln.gd -gconfig=.gutconfig.json -gexit -glog=1 -gjunit_xml_file=test_results.xml
         EXIT_CODE=$?
         echo ""
         echo "🔍 GUT exit code: $EXIT_CODE"
