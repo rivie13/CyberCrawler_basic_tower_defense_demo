@@ -1,0 +1,51 @@
+name: Automated Testing
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Godot
+      uses: lihop/setup-godot@v2
+      with:
+        version: "4.4.1"
+        
+    - name: Import project
+      run: |
+        cd cybercrawler_basictowerdefense
+        godot --headless --import --quit
+        
+    - name: Run unit tests
+      run: |
+        cd cybercrawler_basictowerdefense
+        godot --headless --script addons/gut/gut_cmdln.gd -gdir=tests/unit -gprint_to_console -gexit
+        
+    - name: Run integration tests
+      run: |
+        cd cybercrawler_basictowerdefense
+        godot --headless --script addons/gut/gut_cmdln.gd -gdir=tests/integration -gprint_to_console -gexit
+        
+    - name: Run system tests
+      run: |
+        cd cybercrawler_basictowerdefense
+        godot --headless --script addons/gut/gut_cmdln.gd -gdir=tests/system -gprint_to_console -gexit
+        
+    - name: Generate test report
+      run: |
+        cd cybercrawler_basictowerdefense
+        godot --headless --script addons/gut/gut_cmdln.gd -gdir=tests -gprint_to_console -gexit -gxml_export_file=test_results.xml
+        
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: cybercrawler_basictowerdefense/test_results.xml 
