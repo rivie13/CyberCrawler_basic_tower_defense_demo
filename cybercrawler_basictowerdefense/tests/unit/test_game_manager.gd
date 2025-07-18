@@ -44,9 +44,10 @@ func test_initialize_sets_references():
 
 func test_ready_initializes_timer():
 	# Test that _ready() initializes the timer
-	var initial_time = game_manager.game_session_start_time
+	# Reset timer to 0 to test proper initialization
+	game_manager.game_session_start_time = 0
 	game_manager._ready()
-	assert_gt(game_manager.game_session_start_time, initial_time, "Timer should be initialized in _ready()")
+	assert_gt(game_manager.game_session_start_time, 0, "Timer should be initialized to current time in _ready()")
 
 func test_get_session_time():
 	# Test session time calculation
