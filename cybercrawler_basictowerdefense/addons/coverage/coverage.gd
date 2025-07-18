@@ -297,7 +297,7 @@ class ScriptCoverageCollector:
 		)
 
 	func _interpolate_coverage(coverage_script_path: String, script: GDScript, _id: int) -> String:
-		var collector_var := "__cl__"
+		var collector_var := "__cl__" + str(_id)
 		var lines := script.source_code.split("\n")
 		var indent_stack := []
 		var ld_stack := []
@@ -749,6 +749,10 @@ func _list_scripts_recursive(path: String, list := []) -> Array:
 		next = d.get_next()
 	d.list_dir_end()
 	return list
+
+
+
+
 
 
 static func finalize(print_verbosity := 0) -> void:
