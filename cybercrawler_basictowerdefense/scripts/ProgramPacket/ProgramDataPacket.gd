@@ -6,7 +6,7 @@ const COLLISION_THRESHOLD: float = 40.0
 const TARGET_REACH_THRESHOLD: float = 10.0
 
 # Debug mode flag for conditional logging
-const DEBUG_MODE := false
+const DEBUG_MODE := true
 
 # Program data packet properties
 @export var speed: float = 80.0  # Slightly slower than enemies

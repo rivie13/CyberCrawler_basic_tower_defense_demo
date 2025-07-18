@@ -59,6 +59,51 @@ var program_data_packet_manager: Node = null
 func _ready():
 	setup_timers()
 
+func get_randomized_grid_action_interval() -> float:
+	# Return a random interval between 30-45 seconds as requested
+	return randf_range(30.0, 45.0)
+
+func _perform_comprehensive_grid_action():
+	# Comprehensive grid action that ensures at least one path cell is blocked
+	# plus potentially additional path/non-path cells
+	var changes_made = false
+	
+	print("RivalHacker: Starting comprehensive grid action...")
+	
+	# STEP 1: Always try to block at least one path cell (user requirement)
+	var path_blocked = _attempt_strategic_path_block()
+	if path_blocked:
+		changes_made = true
+		print("RivalHacker: Successfully blocked path cell")
+	
+	# STEP 2: Randomly block additional cells (25% chance each)
+	var additional_actions = randi() % 4  # 0-3 additional actions
+	for i in range(additional_actions):
+		var action_type = randi() % 3  # 0 = path block, 1 = non-path block, 2 = unblock
+		match action_type:
+			0:
+				if _attempt_strategic_path_block():
+					print("RivalHacker: Blocked additional path cell")
+					changes_made = true
+			1:
+				if _attempt_strategic_non_path_block():
+					print("RivalHacker: Blocked additional non-path cell")
+					changes_made = true
+			2:
+				if _attempt_strategic_unblock():
+					print("RivalHacker: Unblocked a cell")
+					changes_made = true
+	
+	# STEP 3: Force path recalculation if any changes were made
+	if changes_made:
+		_force_path_recalculation()
+		print("RivalHacker: Grid modifications complete - path recalculated")
+	else:
+		print("RivalHacker: No grid modifications made this cycle")
+	
+	# Increment action sequence for tracking
+	action_sequence += 1
+
 func setup_timers():
 	# Timer for tower placement attempts
 	placement_timer = Timer.new()
@@ -587,31 +632,22 @@ func find_corridor_limited_path(start: Vector2i, end: Vector2i, allowed_cells: A
 # Single intelligent timer that handles both blocking and unblocking
 func _on_grid_action_timer_timeout():
 	if not is_active:
+		print("RivalHacker: Grid action timer timeout but not active")
 		return
 	if game_manager and game_manager.is_game_over():
+		print("RivalHacker: Grid action timer timeout but game over")
 		return
 	
-	# Action sequence: 0 = always block path first, then random actions
-	if action_sequence == 0:
-		# Always block a path cell first
-		_attempt_path_block()
-		action_sequence = 1
-	else:
-		# Random choice between path block, non-path block, and unblock
-		var choice = randi() % 4  # 0-3: 50% chance to block (path or non-path), 25% chance to unblock
-		if choice < 2:
-			# 50% chance: Block something (path or non-path)
-			var block_choice = randi() % 2  # 50/50 between path and non-path
-			if block_choice == 0:
-				_attempt_path_block()
-			else:
-				_attempt_non_path_block()
-		else:
-			# 25% chance: Unblock something
-			_attempt_unblock_random()
+	print("RivalHacker: Grid action timer timeout - performing grid modification (sequence: ", action_sequence, ")")
 	
-	# Restart timer
+	# Always perform a comprehensive grid action that can include multiple changes
+	_perform_comprehensive_grid_action()
+	
+	# Restart timer with new randomized interval
+	var next_interval = get_randomized_grid_action_interval()
+	grid_action_timer.wait_time = next_interval
 	grid_action_timer.start()
+	print("RivalHacker: Next grid action scheduled in ", next_interval, " seconds")
 
 # Attempt to block a path cell (from original _on_path_block_timer_timeout)
 func _attempt_path_block():
@@ -688,3 +724,93 @@ func _attempt_unblock_random():
 	
 	# Remove from tracker regardless
 	blocked_cells_tracker.remove_at(idx)
+
+# Strategic versions of blocking functions for comprehensive grid action
+func _attempt_strategic_path_block() -> bool:
+	# More aggressive path blocking that ensures at least one path cell is blocked
+	var path_positions = grid_manager.path_grid_positions
+	if path_positions.size() <= 2:
+		return false
+	
+	# Exclude start/end and try to block a middle path cell
+	var blockable = path_positions.slice(1, path_positions.size() - 1)
+	if blockable.size() == 0:
+		return false
+	
+	# Try up to 3 random path cells
+	for attempt in range(3):
+		var idx = randi() % blockable.size()
+		var grid_pos = blockable[idx]
+		
+		if not grid_manager.is_grid_blocked(grid_pos):
+			grid_manager.set_grid_blocked(grid_pos, true)
+			blocked_cells_tracker.append(grid_pos)
+			print("RivalHacker: Strategically blocked path cell at ", grid_pos)
+			return true
+	
+	return false
+
+func _attempt_strategic_non_path_block() -> bool:
+	# Block a non-path cell strategically
+	var grid_size = grid_manager.get_grid_size()
+	var candidates: Array[Vector2i] = []
+	
+	for y in range(grid_size.y):
+		for x in range(grid_size.x):
+			var pos = Vector2i(x, y)
+			if not grid_manager.is_on_enemy_path(pos) and not grid_manager.is_grid_occupied(pos) and not grid_manager.is_grid_blocked(pos):
+				candidates.append(pos)
+	
+	if candidates.size() > 0:
+		var idx = randi() % candidates.size()
+		var grid_pos = candidates[idx]
+		grid_manager.set_grid_blocked(grid_pos, true)
+		blocked_cells_tracker.append(grid_pos)
+		print("RivalHacker: Strategically blocked non-path cell at ", grid_pos)
+		return true
+	
+	return false
+
+func _attempt_strategic_unblock() -> bool:
+	# Unblock a previously blocked cell
+	if blocked_cells_tracker.size() > 0:
+		var idx = randi() % blocked_cells_tracker.size()
+		var grid_pos = blocked_cells_tracker[idx]
+		
+		if grid_manager.is_grid_blocked(grid_pos):
+			grid_manager.set_grid_blocked(grid_pos, false)
+			print("RivalHacker: Strategically unblocked cell at ", grid_pos)
+		
+		blocked_cells_tracker.remove_at(idx)
+		return true
+	
+	return false
+
+func _force_path_recalculation():
+	# Force the path to be recalculated after grid modifications
+	if not grid_manager or not wave_manager:
+		return
+	
+	var path_positions = grid_manager.path_grid_positions
+	if path_positions.size() < 2:
+		return
+		
+	var start = path_positions[0]
+	var end = path_positions[path_positions.size() - 1]
+	
+	# Try to find a new path with current blocks
+	var new_path = grid_manager.find_path_astar(start, end)
+	if new_path.size() > 0:
+		# Update the path
+		grid_manager.set_path_positions(new_path)
+		wave_manager.enemy_path = []
+		for grid_pos in new_path:
+			wave_manager.enemy_path.append(grid_manager.grid_to_world(grid_pos))
+		
+		# Update packet path as well
+		if program_data_packet_manager:
+			program_data_packet_manager.create_packet_path()
+		
+		print("RivalHacker: Path recalculated successfully with ", new_path.size(), " cells")
+	else:
+		print("RivalHacker: Warning - Could not find valid path after modifications")
