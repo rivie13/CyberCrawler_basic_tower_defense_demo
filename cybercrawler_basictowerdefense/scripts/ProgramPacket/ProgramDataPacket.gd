@@ -189,25 +189,30 @@ var _was_active_before_pause: bool = false
 func pause_for_path_change(duration: float):
 	if DEBUG_MODE:
 		print("[DEBUG][pause_for_path_change] Called. duration=%.2f, is_active=%s, is_alive=%s" % [duration, str(is_active), str(is_alive)])
+	
+	# Store current state
 	_was_active_before_pause = is_active
-	if _path_pause_timer == null:
-		_path_pause_timer = Timer.new()
-		_path_pause_timer.one_shot = true
-		add_child(_path_pause_timer)
-	else:
-		if _path_pause_timer.is_stopped() == false:
-			if DEBUG_MODE:
-				print("[DEBUG][pause_for_path_change] Stopping previous timer.")
-			_path_pause_timer.stop()
-		# Disconnect previous connections if any
-		while _path_pause_timer.timeout.is_connected(_on_path_pause_timeout):
+	
+	# Clean up existing timer properly
+	if _path_pause_timer != null:
+		if _path_pause_timer.timeout.is_connected(_on_path_pause_timeout):
 			_path_pause_timer.timeout.disconnect(_on_path_pause_timeout)
+		_path_pause_timer.stop()
+		_path_pause_timer.queue_free()
+	
+	# Create new timer
+	_path_pause_timer = Timer.new()
+	_path_pause_timer.one_shot = true
 	_path_pause_timer.wait_time = duration
 	_path_pause_timer.timeout.connect(_on_path_pause_timeout)
-	if DEBUG_MODE:
-		print("[DEBUG][pause_for_path_change] Timer started. is_active set to false. _was_active_before_pause=%s" % str(_was_active_before_pause))
+	add_child(_path_pause_timer)
+	
+	# Pause movement
 	is_active = false
 	_path_pause_timer.start()
+	
+	if DEBUG_MODE:
+		print("[DEBUG][pause_for_path_change] Timer started. is_active set to false. _was_active_before_pause=%s" % str(_was_active_before_pause))
 
 func _on_path_pause_timeout():
 	if DEBUG_MODE:
