@@ -275,13 +275,10 @@ func _fail_tests(reason: String):
 	print("🚫 COVERAGE VALIDATION FAILED: %s" % reason)
 	print("❌ Tests will be FAILED due to insufficient coverage!")
 	
-	# According to GUT documentation, pre-run hooks can abort the run
-	# The easiest way is to just crash/exit immediately
+	# Push error for logging
 	push_error("COVERAGE VALIDATION FAILED: " + reason)
 	
-	# Force immediate exit to prevent tests from running
-	if gut and gut.get_tree():
-		gut.get_tree().quit(1)
-	else:
-		# Fallback if tree is not available
-		OS.crash("Coverage validation failed") 
+	# Use proper GUT abort mechanism to stop test execution
+	# This will cause GUT to quit after the run() method finishes
+	# and prevent any tests from running
+	abort() 
