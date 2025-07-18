@@ -184,10 +184,12 @@ func _on_grid_blocked_changed(grid_pos: Vector2i, blocked: bool):
 	
 	# Wait a frame to ensure WaveManager has updated its path first
 	await get_tree().process_frame
+	# Add a small additional delay to ensure system stability
+	await get_tree().create_timer(0.1).timeout
 	
 	create_packet_path()
 	# Update the active program_data_packet with the new path and pause for 5 seconds
 	if program_data_packet and is_packet_spawned and program_data_packet.is_alive:
 		print("ProgramDataPacketManager: Updating packet path with ", packet_path.size(), " points")
 		program_data_packet.set_path(packet_path)
-		program_data_packet.pause_for_path_change(5.0) 
+		program_data_packet.pause_for_path_change(3.0) 

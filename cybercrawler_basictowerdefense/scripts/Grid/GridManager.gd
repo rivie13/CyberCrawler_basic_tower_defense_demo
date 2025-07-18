@@ -90,10 +90,11 @@ func draw_grid():
 func set_path_positions(positions: Array[Vector2i]):
 	if game_manager and game_manager.is_game_over():
 		return
-	# NEW: Only set reroute_occurred to true if previous path exists and is different from new path
-	if previous_path_grid_positions.size() > 0 and previous_path_grid_positions != positions:
+	# Check if current path is different from new path
+	if path_grid_positions.size() > 0 and path_grid_positions != positions:
 		reroute_occurred = true
-	previous_path_grid_positions = path_grid_positions.duplicate()
+		# Store the current path as the previous path to be visualized
+		previous_path_grid_positions = path_grid_positions.duplicate()
 	path_grid_positions = positions
 	draw_enemy_path()
 
@@ -138,6 +139,14 @@ func draw_enemy_path():
 		path_tile.z_index = -1
 		grid_container.add_child(path_tile)
 		path_visual_elements.append(path_tile)
+
+	# Schedule a reset of the reroute flag after the visualization has been drawn
+	if reroute_occurred:
+		call_deferred("_reset_reroute_flag")
+
+func _reset_reroute_flag():
+	"""Reset the reroute flag after the visualization has been drawn"""
+	reroute_occurred = false
 
 func handle_mouse_hover(global_pos: Vector2):
 	var new_hover_pos = world_to_grid(global_pos)
