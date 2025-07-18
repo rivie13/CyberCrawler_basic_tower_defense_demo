@@ -68,13 +68,11 @@ func _on_grid_blocked_changed(grid_pos: Vector2i, blocked: bool):
 
 # NEW: Enhanced path change handling
 func _handle_enemies_on_path_change():
+	# SIMPLIFIED: Just pause, update paths, and resume enemies without complex repositioning
 	_pause_enemies()
 	_show_recalculating_message()
-	var enemies_to_recycle = _identify_enemies_to_recycle()
-	_remove_enemies(enemies_to_recycle)
-	_spawn_replacement_enemies(enemies_to_recycle.size())
-	_reposition_remaining_enemies()
-	_stagger_resume_enemies()
+	_update_enemy_paths_simple()
+	_resume_enemies_simple()
 
 func _pause_enemies():
 	for enemy in enemies_alive:
@@ -86,75 +84,58 @@ func _show_recalculating_message():
 	if main_controller:
 		main_controller.show_temp_message("Path changed! Enemies recalculating...", 1.5)
 
-func _identify_enemies_to_recycle() -> Array:
-	var enemies_to_recycle = []
-	for enemy in enemies_alive.duplicate():
+# SIMPLIFIED: Just update paths and let enemies naturally follow the new route
+func _update_enemy_paths_simple():
+	for enemy in enemies_alive:
 		if is_instance_valid(enemy):
-			for path_point in enemy_path:
-				if enemy.global_position.distance_to(path_point) < grid_manager.GRID_SIZE * 0.5:
-					enemies_to_recycle.append(enemy)
-					break
-	return enemies_to_recycle
+			enemy.set_path(enemy_path)
+			# Find the closest path point and set it as the new target
+			var closest_distance = INF
+			var closest_index = 0
+			for i in range(enemy_path.size()):
+				var distance = enemy.global_position.distance_to(enemy_path[i])
+				if distance < closest_distance:
+					closest_distance = distance
+					closest_index = i
+			
+			# Set the enemy to head toward the closest path point
+			enemy.current_path_index = closest_index
+			enemy.target_position = enemy_path[closest_index]
+
+# SIMPLIFIED: Resume all enemies at once to maintain formation
+func _resume_enemies_simple():
+	# Small delay to let path visualization update
+	var timer = Timer.new()
+	timer.wait_time = 0.2
+	timer.one_shot = true
+	timer.timeout.connect(func():
+		for enemy in enemies_alive:
+			if is_instance_valid(enemy):
+				enemy.resume()
+		timer.queue_free()
+	)
+	add_child(timer)
+
+# DEPRECATED: These functions are replaced by the simplified system above
+func _identify_enemies_to_recycle() -> Array:
+	# This function is no longer used - keeping for compatibility
+	return []
 
 func _remove_enemies(enemies_to_recycle: Array):
-	for enemy in enemies_to_recycle:
-		if is_instance_valid(enemy):
-			enemies_alive.erase(enemy)
-			enemy.queue_free()
+	# This function is no longer used - keeping for compatibility
+	pass
 
 func _spawn_replacement_enemies(num_to_spawn: int):
-	var spacing = 32.0
-	if enemy_path.size() > 1:
-		var start = enemy_path[0]
-		var next = enemy_path[1]
-		var direction = (next - start).normalized()
-		var offscreen_offset = 5 * grid_manager.GRID_SIZE * (enemies_alive.size() + num_to_spawn)
-		for i in range(num_to_spawn):
-			var enemy = ENEMY_SCENE.instantiate()
-			enemy.set_path(enemy_path)
-			var pos = start - direction * (offscreen_offset + i * spacing)
-			enemy.global_position = pos
-			enemy.current_path_index = 0
-			enemy.target_position = enemy_path[0]
-			# Connect enemy signals
-			enemy.enemy_died.connect(_on_enemy_died)
-			enemy.enemy_reached_end.connect(_on_enemy_reached_end)
-			enemies_alive.append(enemy)
-			add_child(enemy)
+	# This function is no longer used - keeping for compatibility
+	pass
 
 func _reposition_remaining_enemies():
-	var enemies_count = enemies_alive.size()
-	var spacing = 32.0
-	if enemy_path.size() > 1:
-		var start = enemy_path[0]
-		var next = enemy_path[1]
-		var direction = (next - start).normalized()
-		var offscreen_offset = 5 * grid_manager.GRID_SIZE * enemies_count
-		for i in range(enemies_count):
-			var enemy = enemies_alive[i]
-			if is_instance_valid(enemy):
-				var pos = start - direction * (offscreen_offset + i * spacing)
-				enemy.global_position = pos
-				enemy.current_path_index = 0
-				enemy.target_position = enemy_path[0]
-				enemy.set_path(enemy_path)
+	# This function is no longer used - keeping for compatibility
+	pass
 
 func _stagger_resume_enemies():
-	var enemies_count = enemies_alive.size()
-	var resume_delay = 0.1
-	for i in range(enemies_count):
-		var enemy = enemies_alive[i]
-		if is_instance_valid(enemy):
-			var current_enemy = enemy  # Local copy for closure
-			var timer = Timer.new()
-			timer.wait_time = 0.5 + i * resume_delay
-			timer.one_shot = true
-			timer.timeout.connect(func():
-				if is_instance_valid(current_enemy):
-					current_enemy.resume()
-				timer.queue_free()
-			)
-			add_child(timer)
+	# This function is no longer used - keeping for compatibility
+	pass
 
 func setup_enemy_spawning():
 	# Create enemy spawn timer
@@ -226,19 +207,20 @@ func start_wave():
 	if wave_active or current_wave > max_waves:
 		return
 	
+	# DISABLED: Layout changes now handled by RivalHackerManager only
 	# Every 3 waves, randomly select a new layout type for strategic variety
-	if current_wave % 3 == 0 and current_wave > 1:
-		var layout_types = [
-			GridLayout.LayoutType.STRAIGHT_LINE,
-			GridLayout.LayoutType.L_SHAPED,
-			GridLayout.LayoutType.S_CURVED,
-			GridLayout.LayoutType.ZIGZAG
-		]
-		var new_layout_type = layout_types[randi() % layout_types.size()]
-		if new_layout_type != selected_layout_type:
-			selected_layout_type = new_layout_type
-			print("WaveManager: Changing to new layout type for wave ", current_wave, ": ", selected_layout_type)
-			create_enemy_path()  # Update path with new layout
+	# if current_wave % 3 == 0 and current_wave > 1:
+	#	var layout_types = [
+	#		GridLayout.LayoutType.STRAIGHT_LINE,
+	#		GridLayout.LayoutType.L_SHAPED,
+	#		GridLayout.LayoutType.S_CURVED,
+	#		GridLayout.LayoutType.ZIGZAG
+	#	]
+	#	var new_layout_type = layout_types[randi() % layout_types.size()]
+	#	if new_layout_type != selected_layout_type:
+	#		selected_layout_type = new_layout_type
+	#		print("WaveManager: Changing to new layout type for wave ", current_wave, ": ", selected_layout_type)
+	#		create_enemy_path()  # Update path with new layout
 	
 	wave_active = true
 	enemies_spawned_this_wave = 0
@@ -274,7 +256,18 @@ func _on_wave_timer_timeout():
 func spawn_enemy():
 	var enemy = ENEMY_SCENE.instantiate()
 	enemy.set_path(enemy_path)
-	enemy.global_position = enemy_path[0]
+	
+	# FIXED: Spawn enemies with proper spacing to prevent stacking
+	var spacing = 48.0  # Distance between enemies
+	var spawn_position = enemy_path[0]
+	
+	# Calculate spawn position based on number of enemies already spawned this wave
+	if enemy_path.size() > 1 and enemies_spawned_this_wave > 0:
+		var direction = (enemy_path[0] - enemy_path[1]).normalized()
+		var offset = direction * spacing * enemies_spawned_this_wave
+		spawn_position = enemy_path[0] + offset
+	
+	enemy.global_position = spawn_position
 	
 	# Connect enemy signals
 	enemy.enemy_died.connect(_on_enemy_died)
