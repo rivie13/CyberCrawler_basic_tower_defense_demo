@@ -77,19 +77,22 @@ func _validate_coverage_requirements():
 	var total_lines_tested_files = 0
 	var covered_lines_tested_files = 0
 	
-	# Check per-file coverage (only for files that have tests)
+	# Check per-file coverage (validate ANY file with coverage OR tests)
 	var failing_files = []
 	var file_coverage_details = []
 	
 	for script_path in coverage.coverage_collectors:
-		# Only validate files that have tests
-		if script_path in files_with_tests:
-			var collector = coverage.coverage_collectors[script_path]
-			var script_coverage = collector.coverage_percent()
-			var script_lines = collector.coverage_line_count()
-			var script_covered = collector.coverage_count()
-			var file_name = script_path.get_file()
-			
+		var collector = coverage.coverage_collectors[script_path]
+		var script_coverage = collector.coverage_percent()
+		var script_lines = collector.coverage_line_count()
+		var script_covered = collector.coverage_count()
+		var file_name = script_path.get_file()
+		
+		# Validate files that have tests OR have coverage (code is running)
+		var has_tests = script_path in files_with_tests
+		var has_coverage = script_covered > 0
+		
+		if has_tests or has_coverage:
 			# Add to tested files totals
 			total_lines_tested_files += script_lines
 			covered_lines_tested_files += script_covered
@@ -98,22 +101,24 @@ func _validate_coverage_requirements():
 			var min_lines_required = int(script_lines * 0.5)  # 50% of file
 			
 			var status = "✅" if script_covered >= min_lines_required else "❌"
-			file_coverage_details.append("%s %s (%d/%d lines, %.1f%%, need %d lines)" % [status, file_name, script_covered, script_lines, script_coverage, min_lines_required])
+			var test_status = "📝" if has_tests else "❌"
+			file_coverage_details.append("%s %s %s (%d/%d lines, %.1f%%, need %d lines)" % [status, test_status, file_name, script_covered, script_lines, script_coverage, min_lines_required])
 			
 			if script_covered < min_lines_required:
-				failing_files.append("%s (%d/%d lines, need %d more)" % [file_name, script_covered, script_lines, min_lines_required - script_covered])
+				var reason = "no tests" if not has_tests else "insufficient coverage"
+				failing_files.append("%s (%d/%d lines, need %d more) - %s" % [file_name, script_covered, script_lines, min_lines_required - script_covered, reason])
 	
 	# Calculate total coverage for tested files only
 	var total_coverage_tested_files = 0.0
 	if total_lines_tested_files > 0:
 		total_coverage_tested_files = (float(covered_lines_tested_files) / float(total_lines_tested_files)) * 100.0
 	
-	print("--- Coverage Results (TESTED FILES ONLY) ---")
-	print("Coverage in tested files: %.1f%% (%d/%d lines)" % [total_coverage_tested_files, covered_lines_tested_files, total_lines_tested_files])
+	print("--- Coverage Results (VALIDATED FILES) ---")
+	print("Coverage in validated files: %.1f%% (%d/%d lines)" % [total_coverage_tested_files, covered_lines_tested_files, total_lines_tested_files])
 	
-	# Show file-by-file coverage for tested files
+	# Show file-by-file coverage for validated files
 	if file_coverage_details.size() > 0:
-		print("📁 Files with Tests (Coverage):")
+		print("📁 Files Being Validated (✅=meets coverage, 📝=has tests, ❌=fails):")
 		for detail in file_coverage_details:
 			print("  %s" % detail)
 	
