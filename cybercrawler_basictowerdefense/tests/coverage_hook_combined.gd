@@ -46,13 +46,12 @@ func run():
 		var coverage_count: int = coverage.coverage_count()
 		var total_lines: int = coverage.coverage_line_count()
 		
-		print("\n--- Coverage Summary ---")
-		print("Lines Covered: ", coverage_count)
-		print("Total Lines: ", total_lines)
-		print("Coverage: %.1f%%" % total_coverage)
+		# Use GUT's logging system for cleaner output
+		var logger = gut.get_logger()
+		logger.info("📊 Coverage: %.1f%% (%d/%d lines)" % [total_coverage, coverage_count, total_lines])
 		
-		# Finalize coverage with detailed reporting
-		Coverage.finalize(Coverage.Verbosity.FAILING_FILES)
+		# Finalize coverage with minimal reporting to avoid overflow
+		Coverage.finalize(Coverage.Verbosity.FILENAMES)
 		
 		print("=== Coverage Analysis Complete ===\n")
 		
