@@ -278,6 +278,9 @@ func _fail_tests(reason: String):
 	# Push error for logging
 	push_error("COVERAGE VALIDATION FAILED: " + reason)
 	
+	# Set exit code to 1 (failure) so GitHub Actions will fail the workflow
+	set_exit_code(1)
+	
 	# Use proper GUT abort mechanism to stop test execution
 	# This will cause GUT to quit after the run() method finishes
 	# and prevent any tests from running
