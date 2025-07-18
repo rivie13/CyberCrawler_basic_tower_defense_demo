@@ -15,6 +15,9 @@ func test_display_coverage_results():
 	var coverage_count: int = coverage.coverage_count()
 	var total_lines: int = coverage.coverage_line_count()
 	
+	# Make coverage visible in GUT GUI by including it in the test name/description
+	var coverage_message = "📊 COVERAGE: %.1f%% (%d/%d lines)" % [total_coverage, coverage_count, total_lines]
+	
 	# Use GUT's logging system to display in test panel
 	var logger = gut.get_logger()
 	logger.info("🔥 COVERAGE RESULTS 🔥")
@@ -29,5 +32,8 @@ func test_display_coverage_results():
 	assert_true(coverage_count > 0, "Should have some covered lines")
 	assert_true(total_lines > 0, "Should have some total lines")
 	
-	# Log final summary
-	logger.info("✅ Coverage analysis complete!") 
+	# Log final summary with coverage prominently displayed
+	logger.info("✅ Coverage analysis complete! %s" % coverage_message)
+	
+	# This will make the coverage percentage visible in the test results
+	assert_true(true, "Coverage: %.1f%% (%d/%d lines)" % [total_coverage, coverage_count, total_lines]) 
