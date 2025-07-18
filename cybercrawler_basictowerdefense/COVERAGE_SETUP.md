@@ -1,199 +1,191 @@
-# Code Coverage Validation System
+# Code Coverage System
 
-This project includes a **smart** code coverage validation system that only validates files that actually have tests, ensuring tests are actually covering the code before allowing them to pass.
+This project includes a comprehensive code coverage system that validates test coverage during the pre-run phase of testing, ensuring quality test coverage before tests even execute.
 
 ## How It Works
 
-### Smart Coverage Requirements
+The coverage system is implemented as a **pre-run hook** that initializes coverage instrumentation and immediately validates coverage requirements. This ensures that coverage issues are caught before any tests run.
+
+### Coverage Requirements
 - **Total Coverage**: 75% minimum (ONLY when 90% of code has tests)
-- **Per-File Coverage**: 50% minimum (ONLY for files that have tests)
-- **Minimum Lines**: 100 lines must be covered (ONLY in tested files)
+- **Per-File Coverage**: 50% of file OR 100 lines minimum, whichever is LESS (ONLY for files that have tests or code execution)
+- **Minimum Lines**: For files with tests, must cover 50% of file OR 100 lines, whichever is less
 - **Test Coverage Threshold**: 90% of code must have tests before requiring 75% total coverage
 
 ### Key Features
-- **Files without tests are IGNORED** in validation
-- **75% total coverage requirement is WAIVED** until 90% of code has tests
-- **Only validates files that actually have corresponding test files**
-- **Detailed failure reporting** shows exactly which files failed and why
-- **Comprehensive GUT run summary** always shows coverage details (even when tests pass)
-- **Single file coverage failures** will cause test failures if a file has tests but doesn't meet 50% coverage
+- **Pre-run validation** - Coverage is checked before tests execute
+- **Smart file detection** - Automatically converts CamelCase to snake_case for test matching
+- **Files without tests are tracked** but not validated
+- **Immediate failure** - Tests fail immediately if coverage requirements aren't met
+- **Detailed reporting** - Shows comprehensive coverage breakdown
+- **Flexible validation** - Only validates files with tests OR code execution
+- **Scaled requirements** - For files with tests: 50% coverage OR 100 lines minimum, whichever is LESS
 
-### Coverage Hooks
+## Current Implementation
 
-#### 1. `coverage_hook_combined.gd` (Default - WITH Smart Validation)
-- **Pre-run**: Initializes coverage instrumentation
-- **Post-run**: Smart validation that only checks files with tests
-- **GUT Summary**: Always shows comprehensive coverage information
-- **Usage**: Set in `.gutconfig.json` (currently active)
+### Single Hook File: `pre_run_hook.gd`
+The entire coverage system is implemented in a single file:
+- **Initialization**: Creates coverage instance and instruments scripts
+- **Validation**: Immediately checks coverage requirements
+- **Reporting**: Shows detailed coverage breakdown
+- **Failure Handling**: Fails tests immediately if requirements aren't met
 
-#### 2. `coverage_hook_simple.gd` (Simple - NO Validation)
-- **Pre-run**: Initializes coverage instrumentation  
-- **Post-run**: Displays comprehensive coverage report only (no validation)
-- **GUT Summary**: Always shows comprehensive coverage information
-- **Usage**: Change `.gutconfig.json` to use this instead
-
-## Configuration
-
-### Enable Smart Coverage Validation (Current)
+### Configuration in `.gutconfig.json`
 ```json
 {
-  "pre_run_script": "res://tests/coverage_hook_combined.gd",
-  "post_run_script": "res://tests/coverage_hook_combined.gd"
+  "pre_run_script": "res://tests/pre_run_hook.gd",
+  "post_run_script": ""
 }
 ```
-
-### Disable Coverage Validation (Simple Mode)
-```json
-{
-  "pre_run_script": "res://tests/coverage_hook_simple.gd", 
-  "post_run_script": "res://tests/coverage_hook_simple.gd"
-}
-```
-
-### Disable Coverage Entirely
-Remove the `pre_run_script` and `post_run_script` lines from `.gutconfig.json`
 
 ## Coverage Targets
 
-You can adjust the coverage requirements in `coverage_hook_combined.gd`:
+You can adjust the coverage requirements in `tests/pre_run_hook.gd`:
 
 ```gdscript
 const COVERAGE_TARGET_TOTAL := 75.0    # 75% total coverage required (only when 90% of code has tests)
 const COVERAGE_TARGET_FILE := 50.0     # 50% per-file coverage required (only for files with tests)
 const MIN_LINES_COVERED := 100         # Minimum lines that must be covered (only in tested files)
 const TEST_COVERAGE_THRESHOLD := 90.0  # Only require 75% total coverage when 90% of code has tests
+
+# FOR FILES WITH TESTS: MUST COVER 50% OR 100 LINES MINIMUM, WHICHEVER IS LESS
+# Examples:
+#   - 80 line file: need 40 lines covered (50% of 80 = 40, which is less than 100)
+#   - 300 line file: need 100 lines covered (100 is less than 50% of 300 = 150)
 ```
 
-## What Happens When Coverage is Insufficient
+## What Happens During Test Runs
 
-1. **Tests will FAIL** even if all individual tests pass
-2. **Detailed error messages** show what coverage requirements weren't met
-3. **File-by-file breakdown** shows which tested files need more coverage
-4. **Files without tests are listed** but not counted in validation
-5. **Test run exits with failure code** (useful for CI/CD)
+### 1. Pre-Run Phase
+1. **Coverage Initialization**: Creates coverage instance using `addons/coverage/coverage.gd`
+2. **Script Instrumentation**: Instruments all scripts in `res://scripts/`
+3. **File Detection**: Automatically detects which files have corresponding test files
+4. **Immediate Validation**: Checks coverage requirements before any tests run
+5. **Failure Handling**: If coverage is insufficient, tests fail immediately with detailed error messages
 
-## GUT Run Summary Information
+### 2. Test Phase
+- If coverage validation passes, tests proceed normally
+- If coverage validation fails, tests never run and the process exits with failure
 
-**Both hooks now provide comprehensive coverage information in the GUT run summary:**
+## File Detection Logic
 
-### Always Shown (Even When Tests Pass):
-- **Overall Coverage**: Total percentage and line counts
-- **Test Coverage**: Percentage of code that has tests
-- **Files with Tests**: Individual file coverage with ✅/❌ indicators
-- **Files without Tests**: List of files ignored in validation
-- **Validation Status**: Pass/fail with detailed reasons
+The system automatically detects test files using smart naming conventions:
 
-### Example GUT Summary Output:
+### CamelCase to Snake_Case Conversion
+- `GameManager.gd` → looks for `test_game_manager.gd`
+- `TowerManager.gd` → looks for `test_tower_manager.gd`
+- `RivalHacker.gd` → looks for `test_rival_hacker.gd`
 
-```
-=== CODE COVERAGE SUMMARY ===
-📊 Overall Coverage: 45.2% (67/148 lines)
-📋 Test Coverage: 40.0% of code has tests (8/20 files)
+### Test File Locations
+The system looks for test files in:
+- `res://tests/unit/test_[snake_case_name].gd`
+- `res://tests/integration/test_[snake_case_name].gd`
 
-📁 Files with Tests (Coverage):
-  ✅ TowerManager.gd (75.0%)
-  ❌ Enemy.gd (12.5%)
-  ✅ GameManager.gd (85.2%)
+## Coverage Validation Rules
 
-🚫 Files without Tests (ignored in validation):
-  - WaveManager.gd
-  - CurrencyManager.gd
-  - GridManager.gd
-  - RivalHacker.gd
+### Files That Are Validated
+- **Files with tests**: Any file that has a corresponding test file
+- **Files with code execution**: Any file that has coverage > 0% (code actually ran)
 
-✅ COVERAGE VALIDATION PASSED!
-ℹ️ Total coverage requirement waived (need 90.0% test coverage for 75.0% total requirement)
-```
+### Files That Are Ignored
+- **Files without tests**: No corresponding test file found
+- **Files with no execution**: No code ran during tests (0% coverage)
+
+### Validation Requirements
+- **Per-file**: 50% of file OR 100 lines minimum, whichever is LESS (for validated files only)
+- **Total coverage**: 75% required only when 90% of code has tests
+- **Examples**:
+  - 80-line file: needs 40 lines covered (50% of 80 = 40, less than 100)
+  - 300-line file: needs 100 lines covered (100 is less than 50% of 300 = 150)
+  - 200-line file: needs 100 lines covered (50% of 200 = 100, same as minimum)
 
 ## Example Output
 
-### Coverage Passes
+### Coverage Validation Passes
 ```
+🔥 PRE-RUN HOOK IS RUNNING! 🔥
+=== Initializing Code Coverage ===
+✓ Coverage instrumentation complete
+✓ Monitoring coverage for: res://scripts/
+✓ Coverage targets: 75.0% total, 50.0% per file
+
+=== IMMEDIATE COVERAGE VALIDATION ===
+--- Test Coverage Analysis ---
+Files with tests: 3
+Files without tests: 8 (IGNORED)
+
+--- Coverage Results (VALIDATED FILES) ---
+Coverage in validated files: 78.5% (156/198 lines)
+
+📁 Files Being Validated (✅=meets coverage, 📝=has tests, ❌=fails):
+  ✅ 📝 GameManager.gd (85/100 lines, 85.0%, need 50 lines - 50% of 100)
+  ✅ 📝 TowerManager.gd (45/60 lines, 75.0%, need 30 lines - 50% of 60)
+  ✅ 📝 Enemy.gd (26/38 lines, 68.4%, need 19 lines - 50% of 38)
+
+--- All Files Coverage Breakdown ---
+📊 Files with Coverage (3 files):
+  ✅ 85.0% GameManager.gd (85/100 lines)
+  ✅ 75.0% TowerManager.gd (45/60 lines)
+  ✅ 68.4% Enemy.gd (26/38 lines)
+
+📊 Files with No Coverage (8 files):
+  ❌ 0.0% WaveManager.gd (45 lines)
+  ❌ 0.0% CurrencyManager.gd (32 lines)
+  ❌ 0.0% GridManager.gd (67 lines)
+
 ✅ COVERAGE VALIDATION PASSED!
-📊 Coverage: 78.5% (1250/1590 lines)
-📋 Test coverage: 85.2% of code has tests
-
-=== CODE COVERAGE SUMMARY ===
-📊 Overall Coverage: 78.5% (1250/1590 lines)
-📋 Test Coverage: 85.2% of code has tests (17/20 files)
-
-📁 Files with Tests (Coverage):
-  ✅ TowerManager.gd (85.0%)
-  ✅ Enemy.gd (75.0%)
-  ✅ GameManager.gd (90.0%)
-
-🚫 Files without Tests (ignored in validation):
-  - WaveManager.gd
-  - CurrencyManager.gd
-  - GridManager.gd
-
-✅ COVERAGE VALIDATION PASSED!
+✅ All files with tests meet coverage requirements!
+=== Coverage Validation Complete ===
 ```
 
-### Coverage Fails
+### Coverage Validation Fails
 ```
+🔥 PRE-RUN HOOK IS RUNNING! 🔥
+=== Initializing Code Coverage ===
+✓ Coverage instrumentation complete
+✓ Monitoring coverage for: res://scripts/
+✓ Coverage targets: 75.0% total, 50.0% per file
+
+=== IMMEDIATE COVERAGE VALIDATION ===
+--- Test Coverage Analysis ---
+Files with tests: 3
+Files without tests: 8 (IGNORED)
+
+--- Coverage Results (VALIDATED FILES) ---
+Coverage in validated files: 35.2% (67/290 lines)
+
+📁 Files Being Validated (✅=meets coverage, 📝=has tests, ❌=fails):
+  ❌ 📝 GameManager.gd (25/100 lines, 25.0%, need 50 lines - 50% of 100)
+  ❌ 📝 TowerManager.gd (15/60 lines, 25.0%, need 30 lines - 50% of 60)
+  ❌ 📝 RivalHacker.gd (40/300 lines, 13.3%, need 100 lines - min 100 < 50% of 300)
+  ✅ 📝 Enemy.gd (27/30 lines, 90.0%, need 15 lines - 50% of 30)
+
+--- All Files Coverage Breakdown ---
+📊 Files with Coverage (4 files):
+  ❌ 25.0% GameManager.gd (25/100 lines)
+  ❌ 25.0% TowerManager.gd (15/60 lines)
+  ❌ 13.3% RivalHacker.gd (40/300 lines)
+  ✅ 90.0% Enemy.gd (27/30 lines)
+
 ❌ COVERAGE VALIDATION FAILED!
-  - Files with tests below 50.0% coverage: TowerManager.gd (12.5%), Enemy.gd (0.0%)
-  - Only 67 lines covered in tested files, minimum required: 100
+  - Files with insufficient coverage: GameManager.gd (25/100 lines, need 25 more) - insufficient coverage, TowerManager.gd (15/60 lines, need 15 more) - insufficient coverage, RivalHacker.gd (40/300 lines, need 60 more) - insufficient coverage
 
-=== CODE COVERAGE SUMMARY ===
-📊 Overall Coverage: 45.2% (67/148 lines)
-📋 Test Coverage: 40.0% of code has tests (8/20 files)
-
-📁 Files with Tests (Coverage):
-  ❌ TowerManager.gd (12.5%)
-  ❌ Enemy.gd (0.0%)
-  ✅ GameManager.gd (85.2%)
-
-🚫 Files without Tests (ignored in validation):
-  - WaveManager.gd
-  - CurrencyManager.gd
-  - GridManager.gd
-  - RivalHacker.gd
-
-❌ COVERAGE VALIDATION FAILED!
-  - Files with tests below 50.0% coverage: TowerManager.gd (12.5%), Enemy.gd (0.0%)
-  - Only 67 lines covered in tested files, minimum required: 100
-
-🚫 TESTS FAILED: Coverage requirements not met
+🚫 COVERAGE VALIDATION FAILED: Coverage requirements not met: Files with insufficient coverage: GameManager.gd (25/100 lines, need 25 more) - insufficient coverage, TowerManager.gd (15/60 lines, need 15 more) - insufficient coverage, RivalHacker.gd (40/300 lines, need 60 more) - insufficient coverage
+❌ Tests will be FAILED due to insufficient coverage!
+🔥 FORCING IMMEDIATE EXIT WITH CODE 1
 ```
 
 ### Total Coverage Requirement Waived
 ```
-ℹ️ Total coverage requirement waived (only 45.2% of code has tests, need 90.0%)
-✅ COVERAGE VALIDATION PASSED!
-📊 Coverage: 45.2% (67/148 lines)
-📋 Test coverage: 45.2% of code has tests
+--- Test Coverage Analysis ---
+Files with tests: 2
+Files without tests: 10 (IGNORED)
 
-=== CODE COVERAGE SUMMARY ===
-📊 Overall Coverage: 45.2% (67/148 lines)
-📋 Test Coverage: 45.2% of code has tests (9/20 files)
-
-📁 Files with Tests (Coverage):
-  ✅ TowerManager.gd (75.0%)
-  ✅ Enemy.gd (60.0%)
-  ✅ GameManager.gd (85.2%)
-
-🚫 Files without Tests (ignored in validation):
-  - WaveManager.gd
-  - CurrencyManager.gd
-  - GridManager.gd
-  - RivalHacker.gd
+ℹ️ Total coverage requirement waived (only 16.7% of files have tests, need 90.0%)
 
 ✅ COVERAGE VALIDATION PASSED!
-ℹ️ Total coverage requirement waived (need 90.0% test coverage for 75.0% total requirement)
+✅ All files with tests meet coverage requirements!
 ```
-
-## How Files Are Detected
-
-The system automatically detects which files have tests by looking for:
-- `res://tests/unit/test_[filename].gd`
-- `res://tests/integration/test_[filename].gd`
-
-For example:
-- `res://scripts/TowerManager.gd` → looks for `res://tests/unit/test_TowerManager.gd` or `res://tests/integration/test_TowerManager.gd`
-- If test file exists → file is validated
-- If no test file exists → file is ignored in validation
 
 ## Excluded Paths
 
@@ -203,12 +195,30 @@ The following paths are excluded from coverage analysis:
 - `res://scenes/*` - Scene files
 - `res://tools/*` - Utility tools
 
+## Configuration Options
+
+### Enable Coverage Validation (Current)
+```json
+{
+  "pre_run_script": "res://tests/pre_run_hook.gd",
+  "post_run_script": ""
+}
+```
+
+### Disable Coverage Validation
+```json
+{
+  "pre_run_script": "",
+  "post_run_script": ""
+}
+```
+
 ## Running Tests
 
 ### In Godot Editor
 1. Open the GUT panel
 2. Run tests normally
-3. Check the GUT run summary for comprehensive coverage information
+3. Coverage validation happens automatically in the pre-run phase
 
 ### Command Line
 ```bash
@@ -221,36 +231,56 @@ godot --headless --script addons/gut/gut_cmdln.gd -gdir=tests/unit -gprint_to_co
 
 ## Troubleshooting
 
-### "No coverage instance found"
-- Make sure the coverage hook is properly set in `.gutconfig.json`
-- Check that the hook script path is correct
+### "Coverage instance is still null"
+- Check that the coverage addon is properly installed in `addons/coverage/`
+- Verify that the pre-run hook path is correct in `.gutconfig.json`
+- Ensure the coverage addon is enabled in project settings
 
-### Tests failing due to coverage
-- Write more tests to cover uncovered code in tested files
+### Tests failing immediately due to coverage
+- Check which files are failing coverage requirements
+- Write more tests to cover the failing code
 - Lower coverage targets temporarily if needed
-- Use `coverage_hook_simple.gd` to disable validation
+- Remove the pre-run script to disable coverage validation
 
-### Files without tests being validated
-- The system should automatically ignore files without tests
-- Check that test files follow the naming convention: `test_[filename].gd`
-- Verify test files are in `res://tests/unit/` or `res://tests/integration/`
+### Files not being detected as having tests
+- Verify test files follow the naming convention: `test_[snake_case_name].gd`
+- Check that test files are in `res://tests/unit/` or `res://tests/integration/`
+- Ensure the CamelCase to snake_case conversion is working correctly
 
-### Coverage showing 0%
+### Coverage showing 0% for all files
 - Check that scripts are in the `res://scripts/` directory
-- Verify excluded paths aren't too broad
-- Ensure coverage instrumentation is running
+- Verify tests are actually executing code from the scripts
+- Ensure coverage instrumentation is working properly
 
-### Single file coverage failures
-- If a file has tests but doesn't meet 50% coverage, tests will fail
-- This ensures that when you write tests for a file, they actually cover the code
-- Add more test cases to improve coverage for that specific file
+## Technical Details
 
-## Benefits of Smart Validation
+### How Coverage Works
+1. **Pre-run Hook**: `tests/pre_run_hook.gd` extends `GutHookScript`
+2. **Coverage Addon**: Uses `addons/coverage/coverage.gd` for instrumentation
+3. **Script Instrumentation**: Automatically instruments all scripts in `res://scripts/`
+4. **File Matching**: Smart CamelCase to snake_case conversion for test detection
+5. **Immediate Validation**: Checks requirements before tests run
+6. **Force Exit**: Uses `get_tree().quit(1)` to ensure proper failure propagation
 
-1. **No false failures** from files without tests
-2. **Gradual adoption** - you can add tests incrementally
-3. **Clear feedback** on what needs testing
-4. **Realistic requirements** that scale with your test coverage
-5. **Detailed reporting** shows exactly what's missing
-6. **Always visible coverage** in GUT run summary
-7. **Single file validation** ensures test quality when tests exist 
+### Key Classes
+- **GutHookScript**: Base class for GUT hooks
+- **Coverage**: Main coverage instrumentation class
+- **ScriptCoverage**: Individual file coverage tracking
+
+## Benefits of This Approach
+
+1. **Immediate Feedback**: Coverage issues are caught before tests run
+2. **No False Positives**: Only validates files that actually have tests
+3. **Gradual Adoption**: You can add tests incrementally
+4. **Clear Reporting**: Detailed breakdown of what needs testing
+5. **Realistic Requirements**: Coverage targets scale with test coverage
+6. **Automatic Detection**: Smart file matching reduces configuration
+7. **Fail Fast**: Issues are caught early in the testing process 
+
+
+
+USE THIS COMMAND
+& "C:\Program Files\Godot\Godot_v4.4.1-stable_win64_console.exe" --headless --script addons/gut/gut_cmdln.gd -gtest=tests/unit/ -gexit
+
+
+USE THE ABOVE COMMAND IT WORKS!!!!!!!!!!!!!!!

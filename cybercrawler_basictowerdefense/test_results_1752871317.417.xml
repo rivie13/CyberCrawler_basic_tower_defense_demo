@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="GutTests" failures="1" tests="68" >
+  <testsuite name="tests/unit/test_clickable.gd" tests="13" failures="0" skipped="0" time="0.009508" >
+      <testcase name="test_click_config_initialization" assertions="7" status="pass" classname="tests/unit/test_clickable.gd" time="0.000315" >
+      </testcase>
+      <testcase name="test_click_config_custom_initialization" assertions="7" status="pass" classname="tests/unit/test_clickable.gd" time="0.000305" >
+      </testcase>
+      <testcase name="test_static_config_constants" assertions="12" status="pass" classname="tests/unit/test_clickable.gd" time="0.000319" >
+      </testcase>
+      <testcase name="test_is_clicked_at_within_radius" assertions="1" status="pass" classname="tests/unit/test_clickable.gd" time="0.00014" >
+      </testcase>
+      <testcase name="test_is_clicked_at_outside_radius" assertions="1" status="pass" classname="tests/unit/test_clickable.gd" time="0.000081" >
+      </testcase>
+      <testcase name="test_is_clicked_at_exact_radius" assertions="1" status="pass" classname="tests/unit/test_clickable.gd" time="0.000158" >
+      </testcase>
+      <testcase name="test_is_clicked_at_same_position" assertions="1" status="pass" classname="tests/unit/test_clickable.gd" time="0.000105" >
+      </testcase>
+      <testcase name="test_handle_click_damage_with_valid_entity" assertions="2" status="pass" classname="tests/unit/test_clickable.gd" time="0.002191" >
+      </testcase>
+      <testcase name="test_handle_click_damage_with_dead_entity" assertions="2" status="pass" classname="tests/unit/test_clickable.gd" time="0.000138" >
+      </testcase>
+      <testcase name="test_handle_click_damage_without_take_damage_method" assertions="1" status="pass" classname="tests/unit/test_clickable.gd" time="0.000848" >
+      </testcase>
+      <testcase name="test_create_click_feedback" assertions="3" status="pass" classname="tests/unit/test_clickable.gd" time="0.003235" >
+      </testcase>
+      <testcase name="test_different_config_damage_values" assertions="2" status="pass" classname="tests/unit/test_clickable.gd" time="0.001415" >
+      </testcase>
+      <testcase name="test_different_config_radius_values" assertions="2" status="pass" classname="tests/unit/test_clickable.gd" time="0.000258" >
+      </testcase>
+      </testsuite>
+  <testsuite name="tests/unit/test_coverage_debug.gd" tests="1" failures="0" skipped="0" time="0.00391" >
+      <testcase name="test_coverage_debug" assertions="1" status="pass" classname="tests/unit/test_coverage_debug.gd" time="0.00391" >
+      </testcase>
+      </testsuite>
+  <testsuite name="tests/unit/test_game_manager.gd" tests="21" failures="1" skipped="0" time="0.009168" >
+      <testcase name="test_initial_state" assertions="4" status="pass" classname="tests/unit/test_game_manager.gd" time="0.000352" >
+      </testcase>
+      <testcase name="test_victory_type_defaults" assertions="1" status="pass" classname="tests/unit/test_game_manager.gd" time="0.000333" >
+      </testcase>
+      <testcase name="test_initialize_sets_references" assertions="3" status="pass" classname="tests/unit/test_game_manager.gd" time="0.00056" >
+      </testcase>
+      <testcase name="test_ready_initializes_timer" assertions="1" status="fail" classname="tests/unit/test_game_manager.gd" time="0.000539" >
+      <failure message="failed"><![CDATA[[1375] expected to be > than [1375]:  Timer should be initialized in _ready()
+            at line -1]]></failure></testcase>
+      <testcase name="test_get_session_time" assertions="2" status="pass" classname="tests/unit/test_game_manager.gd" time="0.000225" >
+      </testcase>
+      <testcase name="test_format_time" assertions="3" status="pass" classname="tests/unit/test_game_manager.gd" time="0.000253" >
+      </testcase>
+      <testcase name="test_on_enemy_died" assertions="1" status="pass" classname="tests/unit/test_game_manager.gd" time="0.000564" >
+      </testcase>
+      <testcase name="test_on_enemy_reached_end" assertions="1" status="pass" classname="tests/unit/test_game_manager.gd" time="0.00038" >
+      </testcase>
+      <testcase name="test_trigger_game_over" assertions="2" status="pass" classname="tests/unit/test_game_manager.gd" time="0.000579" >
+      </testcase>
+      <testcase name="test_trigger_game_won" assertions="3" status="pass" classname="tests/unit/test_game_manager.gd" time="0.000549" >
+      </testcase>
+      <testcase name="test_trigger_game_won_packet" assertions="3" status="pass" classname="tests/unit/test_game_manager.gd" time="0.000763" >
+      </testcase>
+      <testcase name="test_get_victory_data" assertions="4" status="pass" classname="tests/unit/test_game_manager.gd" time="0.000379" >
+      </testcase>
+      <testcase name="test_get_game_over_data" assertions="4" status="pass" classname="tests/unit/test_game_manager.gd" time="0.000337" >
+      </testcase>
+      <testcase name="test_get_info_label_text" assertions="4" status="pass" classname="tests/unit/test_game_manager.gd" time="0.000283" >
+      </testcase>
+      <testcase name="test_is_game_over" assertions="3" status="pass" classname="tests/unit/test_game_manager.gd" time="0.000284" >
+      </testcase>
+      <testcase name="test_getters" assertions="2" status="pass" classname="tests/unit/test_game_manager.gd" time="0.000423" >
+      </testcase>
+      <testcase name="test_health_below_zero_prevention" assertions="1" status="pass" classname="tests/unit/test_game_manager.gd" time="0.000533" >
+      </testcase>
+      <testcase name="test_game_over_when_health_zero" assertions="1" status="pass" classname="tests/unit/test_game_manager.gd" time="0.000592" >
+      </testcase>
+      <testcase name="test_duplicate_game_over_prevention" assertions="1" status="pass" classname="tests/unit/test_game_manager.gd" time="0.000381" >
+      </testcase>
+      <testcase name="test_wave_countdown_handling" assertions="2" status="pass" classname="tests/unit/test_game_manager.gd" time="0.000539" >
+      </testcase>
+      <testcase name="test_signal_connections" assertions="2" status="pass" classname="tests/unit/test_game_manager.gd" time="0.00032" >
+      </testcase>
+      </testsuite>
+  <testsuite name="tests/unit/test_tower_manager.gd" tests="24" failures="0" skipped="0" time="0.011843" >
+      <testcase name="test_tower_type_constants" assertions="2" status="pass" classname="tests/unit/test_tower_manager.gd" time="0.000482" >
+      </testcase>
+      <testcase name="test_initialize_sets_references" assertions="3" status="pass" classname="tests/unit/test_tower_manager.gd" time="0.000587" >
+      </testcase>
+      <testcase name="test_towers_placed_array_initialization" assertions="2" status="pass" classname="tests/unit/test_tower_manager.gd" time="0.000384" >
+      </testcase>
+      <testcase name="test_attempt_placement_without_managers" assertions="1" status="pass" classname="tests/unit/test_tower_manager.gd" time="0.000354" >
+      </testcase>
+      <testcase name="test_preloaded_scenes" assertions="2" status="pass" classname="tests/unit/test_tower_manager.gd" time="0.000522" >
+      </testcase>
+      <testcase name="test_get_towers" assertions="2" status="pass" classname="tests/unit/test_tower_manager.gd" time="0.0003" >
+      </testcase>
+      <testcase name="test_get_tower_count" assertions="1" status="pass" classname="tests/unit/test_tower_manager.gd" time="0.000349" >
+      </testcase>
+      <testcase name="test_get_tower_count_by_type" assertions="2" status="pass" classname="tests/unit/test_tower_manager.gd" time="0.000369" >
+      </testcase>
+      <testcase name="test_get_total_power_level" assertions="1" status="pass" classname="tests/unit/test_tower_manager.gd" time="0.000243" >
+      </testcase>
+      <testcase name="test_get_enemies_for_towers" assertions="2" status="pass" classname="tests/unit/test_tower_manager.gd" time="0.00028" >
+      </testcase>
+      <testcase name="test_stop_all_towers" assertions="1" status="pass" classname="tests/unit/test_tower_manager.gd" time="0.000317" >
+      </testcase>
+      <testcase name="test_cleanup_all_towers" assertions="1" status="pass" classname="tests/unit/test_tower_manager.gd" time="0.000401" >
+      </testcase>
+      <testcase name="test_attempt_basic_tower_placement" assertions="1" status="pass" classname="tests/unit/test_tower_manager.gd" time="0.00092" >
+      </testcase>
+      <testcase name="test_attempt_tower_placement_with_type" assertions="2" status="pass" classname="tests/unit/test_tower_manager.gd" time="0.000701" >
+      </testcase>
+      <testcase name="test_signal_emission_on_failure" assertions="1" status="pass" classname="tests/unit/test_tower_manager.gd" time="0.000852" >
+      </testcase>
+      <testcase name="test_remove_tower" assertions="1" status="pass" classname="tests/unit/test_tower_manager.gd" time="0.000386" >
+      </testcase>
+      <testcase name="test_place_tower_with_invalid_type" assertions="1" status="pass" classname="tests/unit/test_tower_manager.gd" time="0.000311" >
+      </testcase>
+      <testcase name="test_place_tower_basic" assertions="1" status="pass" classname="tests/unit/test_tower_manager.gd" time="0.000494" >
+      </testcase>
+      <testcase name="test_place_tower_powerful" assertions="1" status="pass" classname="tests/unit/test_tower_manager.gd" time="0.000613" >
+      </testcase>
+      <testcase name="test_validation_invalid_position" assertions="1" status="pass" classname="tests/unit/test_tower_manager.gd" time="0.000418" >
+      </testcase>
+      <testcase name="test_validation_occupied_position" assertions="1" status="pass" classname="tests/unit/test_tower_manager.gd" time="0.000679" >
+      </testcase>
+      <testcase name="test_validation_blocked_position" assertions="1" status="pass" classname="tests/unit/test_tower_manager.gd" time="0.000743" >
+      </testcase>
+      <testcase name="test_validation_on_enemy_path" assertions="1" status="pass" classname="tests/unit/test_tower_manager.gd" time="0.000534" >
+      </testcase>
+      <testcase name="test_actual_method_calls" assertions="5" status="pass" classname="tests/unit/test_tower_manager.gd" time="0.000604" >
+      </testcase>
+      </testsuite>
+  <testsuite name="tests/integration/test_tower_placement.gd" tests="9" failures="0" skipped="0" time="0.010131" >
+      <testcase name="test_tower_placement_integration" assertions="4" status="pass" classname="tests/integration/test_tower_placement.gd" time="0.000507" >
+      </testcase>
+      <testcase name="test_tower_placement_insufficient_funds" assertions="3" status="pass" classname="tests/integration/test_tower_placement.gd" time="0.00073" >
+      </testcase>
+      <testcase name="test_tower_placement_updates_grid" assertions="3" status="pass" classname="tests/integration/test_tower_placement.gd" time="0.000811" >
+      </testcase>
+      <testcase name="test_tower_placement_deducts_currency" assertions="3" status="pass" classname="tests/integration/test_tower_placement.gd" time="0.004052" >
+      </testcase>
+      <testcase name="test_multiple_tower_placement" assertions="3" status="pass" classname="tests/integration/test_tower_placement.gd" time="0.001239" >
+      </testcase>
+      <testcase name="test_tower_placement_edge_cases" assertions="3" status="pass" classname="tests/integration/test_tower_placement.gd" time="0.000332" >
+      </testcase>
+      <testcase name="test_signal_propagation" assertions="1" status="pass" classname="tests/integration/test_tower_placement.gd" time="0.000665" >
+      </testcase>
+      <testcase name="test_game_scenario_early_placement" assertions="5" status="pass" classname="tests/integration/test_tower_placement.gd" time="0.000923" >
+      </testcase>
+      <testcase name="test_game_scenario_mid_game_placement" assertions="4" status="pass" classname="tests/integration/test_tower_placement.gd" time="0.000872" >
+      </testcase>
+      </testsuite>
+  </testsuites>
