@@ -5,8 +5,8 @@
     "tests/system"
   ],
   "should_maximize": true,
-  "should_exit": false,
-  "should_exit_on_success": false,
+  "should_exit": true,
+  "should_exit_on_success": true,
   "ignore_pause": true,
   "compact_mode": false,
   "junit_xml_file": "test_results.xml",
