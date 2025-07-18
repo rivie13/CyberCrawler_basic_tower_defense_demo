@@ -23,20 +23,27 @@ jobs:
         cd cybercrawler_basictowerdefense
         godot --headless --import --quit
         
-    - name: Run unit tests
+    - name: Run unit tests with coverage
       run: |
         cd cybercrawler_basictowerdefense
         godot --headless --script addons/gut/gut_cmdln.gd -gdir=tests/unit -gprint_to_console -gexit
         
-    - name: Run integration tests
+    - name: Run integration tests with coverage
       run: |
         cd cybercrawler_basictowerdefense
         godot --headless --script addons/gut/gut_cmdln.gd -gdir=tests/integration -gprint_to_console -gexit
         
-    - name: Run system tests
+    - name: Run system tests with coverage
       run: |
         cd cybercrawler_basictowerdefense
         godot --headless --script addons/gut/gut_cmdln.gd -gdir=tests/system -gprint_to_console -gexit
+        
+    - name: Run all tests with coverage analysis
+      env:
+        COVERAGE_FILE: coverage_report.json
+      run: |
+        cd cybercrawler_basictowerdefense
+        godot --headless --script addons/gut/gut_cmdln.gd -gprint_to_console -gexit
         
     - name: Generate test report
       run: |
@@ -48,4 +55,11 @@ jobs:
       if: always()
       with:
         name: test-results
-        path: cybercrawler_basictowerdefense/test_results.xml 
+        path: cybercrawler_basictowerdefense/test_results.xml
+        
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: coverage-report
+        path: cybercrawler_basictowerdefense/coverage_report.json 
