@@ -30,13 +30,11 @@ var hacker_spawn_timer: Timer
 var enemy_towers_placed: Array = []
 var rival_hackers_active: Array[RivalHacker] = []
 
-# Add a timer for path blocking
-var path_block_timer: Timer
-@export var path_block_interval: float = 30.0  # Time between path blocks (was 6.0)
-
-# Add a timer for non-path blocking (tower placement blocking)
-var non_path_block_timer: Timer
-@export var non_path_block_interval: float = 10.0
+# Single intelligent timer for all grid actions
+var grid_action_timer: Timer
+@export var grid_action_interval: float = 35.0  # 30-45 second range
+var blocked_cells_tracker: Array[Vector2i] = []  # Track cells we blocked
+var action_sequence: int = 0  # 0 = block path, 1+ = random action
 
 # AI strategy parameters
 var preferred_grid_zones: Array[Vector2i] = []  # Areas AI prefers to place towers
@@ -76,19 +74,12 @@ func setup_timers():
 	hacker_spawn_timer.autostart = false
 	add_child(hacker_spawn_timer)
 	
-	# Timer for path blocking
-	path_block_timer = Timer.new()
-	path_block_timer.wait_time = path_block_interval
-	path_block_timer.timeout.connect(_on_path_block_timer_timeout)
-	path_block_timer.autostart = false
-	add_child(path_block_timer)
-
-	# Timer for non-path blocking
-	non_path_block_timer = Timer.new()
-	non_path_block_timer.wait_time = non_path_block_interval
-	non_path_block_timer.timeout.connect(_on_non_path_block_timer_timeout)
-	non_path_block_timer.autostart = false
-	add_child(non_path_block_timer)
+	# Single intelligent grid action timer
+	grid_action_timer = Timer.new()
+	grid_action_timer.wait_time = grid_action_interval
+	grid_action_timer.timeout.connect(_on_grid_action_timer_timeout)
+	grid_action_timer.autostart = false
+	add_child(grid_action_timer)
 	
 	# Timer for initial activation delay - removed (now using alert-based activation)
 
@@ -370,11 +361,9 @@ func _on_alert_triggered(alert_type: String, severity: float):
 		is_active = true
 		placement_timer.start()
 		hacker_spawn_timer.start()
-		# Start path and non-path block timers ONLY after alert triggers
-		if path_block_timer:
-			path_block_timer.start()
-		if non_path_block_timer:
-			non_path_block_timer.start()
+		# Start grid action timer ONLY after alert triggers
+		if grid_action_timer:
+			grid_action_timer.start()
 		rival_hacker_activated.emit()
 		print("RivalHacker: FIRST ALERT TRIGGERED - Now active and placing enemy towers and spawning hackers!")
 	
@@ -595,23 +584,51 @@ func find_corridor_limited_path(start: Vector2i, end: Vector2i, allowed_cells: A
 					open_set.append(neighbor)
 	return [] as Array[Vector2i]
 
-# Call repair_path_after_block after blocking a path cell
-func _on_path_block_timer_timeout():
+# Single intelligent timer that handles both blocking and unblocking
+func _on_grid_action_timer_timeout():
 	if not is_active:
 		return
 	if game_manager and game_manager.is_game_over():
 		return
+	
+	# Action sequence: 0 = always block path first, then random actions
+	if action_sequence == 0:
+		# Always block a path cell first
+		_attempt_path_block()
+		action_sequence = 1
+	else:
+		# Random choice between path block, non-path block, and unblock
+		var choice = randi() % 4  # 0-3: 50% chance to block (path or non-path), 25% chance to unblock
+		if choice < 2:
+			# 50% chance: Block something (path or non-path)
+			var block_choice = randi() % 2  # 50/50 between path and non-path
+			if block_choice == 0:
+				_attempt_path_block()
+			else:
+				_attempt_non_path_block()
+		else:
+			# 25% chance: Unblock something
+			_attempt_unblock_random()
+	
+	# Restart timer
+	grid_action_timer.start()
+
+# Attempt to block a path cell (from original _on_path_block_timer_timeout)
+func _attempt_path_block():
 	var path_positions = grid_manager.path_grid_positions
 	if path_positions.size() <= 2:
 		return  # Not enough path to block
+	
 	# Exclude start/end
 	var blockable = path_positions.slice(1, path_positions.size() - 1)
 	if blockable.size() == 0:
 		return
+	
 	# Shuffle blockable cells to try multiple options
 	var shuffled = blockable.duplicate()
 	shuffled.shuffle()
 	var blocked = false
+	
 	for grid_pos in shuffled:
 		if not grid_manager.is_grid_blocked(grid_pos):
 			# Simulate block
@@ -624,33 +641,50 @@ func _on_path_block_timer_timeout():
 			var new_path = grid_manager.find_path_astar(start, end)
 			if new_path.size() > 0:
 				print("RivalHacker: Blocked path cell at ", grid_pos)
+				blocked_cells_tracker.append(grid_pos)  # Track for potential unblocking
 				blocked = true
 				break
 			else:
 				# Undo block if no path exists after repair
 				grid_manager.set_grid_blocked(grid_pos, false)
+	
 	if not blocked:
 		print("RivalHacker: No valid path block found (all would block the path)")
-	# Restart timer
-	path_block_timer.start()
 
-# Timer callback: block a random non-path cell (for tower placement only)
-func _on_non_path_block_timer_timeout():
-	if not is_active:
-		return
-	if game_manager and game_manager.is_game_over():
-		return
+# Attempt to block a non-path cell (from original _on_non_path_block_timer_timeout)
+func _attempt_non_path_block():
 	var grid_size = grid_manager.get_grid_size()
 	var candidates: Array[Vector2i] = []
+	
 	for y in range(grid_size.y):
 		for x in range(grid_size.x):
 			var pos = Vector2i(x, y)
 			if not grid_manager.is_on_enemy_path(pos) and not grid_manager.is_grid_occupied(pos) and not grid_manager.is_grid_blocked(pos):
 				candidates.append(pos)
+	
 	if candidates.size() == 0:
 		return
+	
 	var idx = randi() % candidates.size()
 	var grid_pos = candidates[idx]
 	grid_manager.set_grid_blocked(grid_pos, true)
+	blocked_cells_tracker.append(grid_pos)  # Track for potential unblocking
 	print("RivalHacker: Blocked non-path cell at ", grid_pos)
-	non_path_block_timer.start()
+
+# Attempt to unblock a random cell we previously blocked
+func _attempt_unblock_random():
+	if blocked_cells_tracker.size() == 0:
+		print("RivalHacker: No blocked cells to unblock")
+		return
+	
+	# Pick a random cell we blocked
+	var idx = randi() % blocked_cells_tracker.size()
+	var grid_pos = blocked_cells_tracker[idx]
+	
+	# Only unblock if it's still blocked (might have been unblocked by other systems)
+	if grid_manager.is_grid_blocked(grid_pos):
+		grid_manager.set_grid_blocked(grid_pos, false)
+		print("RivalHacker: Unblocked cell at ", grid_pos)
+	
+	# Remove from tracker regardless
+	blocked_cells_tracker.remove_at(idx)

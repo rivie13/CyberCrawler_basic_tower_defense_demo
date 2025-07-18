@@ -92,6 +92,8 @@ func _on_freeze_mine_depleted(mine: FreezeMine):
 	
 	# Free grid position
 	grid_manager.set_grid_occupied(mine.grid_position, false)
+	# Also unblock the grid cell
+	grid_manager.set_grid_blocked(mine.grid_position, false)
 	
 	# Remove from scene
 	mine.queue_free()

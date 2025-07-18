@@ -27,12 +27,11 @@ var max_waves: int = 10  # Win condition: survive 10 waves
 # Grid reference for positioning
 var grid_manager: Node
 var grid_layout: GridLayout
-var selected_layout_type: GridLayout.LayoutType
+var selected_layout_type: Variant = null  # FIXED: Initialize to null so randomization works
 
 # Replace Vector2i.ZERO sentinels with nullable variables
 var path_start: Variant = null  # Start grid position for path, null if unset
 var path_end: Variant = null    # End grid position for path, null if unset
-var used_initial_layout: bool = false  # Track if initial layout has been used
 
 func _ready():
 	setup_enemy_spawning()
@@ -177,21 +176,32 @@ func create_enemy_path():
 		return
 
 	var grid_path = []
-	if not used_initial_layout:
-		# Use initial layout type for the very first path
-		grid_path = grid_layout.get_path_grid_positions(selected_layout_type)
-		if grid_path.size() == 0:
-			push_error("WaveManager: No grid path available!")
-			return
-		# Store start and end for future A*
-		path_start = grid_path[0]
-		path_end = grid_path[grid_path.size() - 1]
-		used_initial_layout = true
-	else:
-		# Use A* for all subsequent path recalculations
-		if path_start == null or path_end == null:
-			push_error("WaveManager: path_start or path_end not set!")
-			return
+	
+	# Always try to use the selected layout type first (for strategic variety)
+	grid_path = grid_layout.get_path_grid_positions(selected_layout_type)
+	
+	if grid_path.size() == 0:
+		push_error("WaveManager: No grid path available for layout type: ", selected_layout_type)
+		return
+		
+	# Store start and end for potential A* fallback
+	path_start = grid_path[0]
+	path_end = grid_path[grid_path.size() - 1]
+	
+	# Check if the selected layout path is blocked by validating each step
+	var path_blocked = false
+	for i in range(grid_path.size() - 1):
+		var current_pos = grid_path[i]
+		var next_pos = grid_path[i + 1]
+		
+		# Check if current position is blocked (except start and end)
+		if i > 0 and i < grid_path.size() - 1 and grid_manager.is_grid_blocked(current_pos):
+			path_blocked = true
+			break
+	
+	# If the strategic layout is blocked, fall back to A* but preserve strategic endpoints
+	if path_blocked:
+		print("WaveManager: Strategic layout blocked, using A* pathfinding...")
 		grid_path = grid_manager.find_path_astar(path_start, path_end)
 		if grid_path.size() == 0:
 			push_error("WaveManager: No valid A* path available!")
@@ -215,6 +225,20 @@ func get_path_grid_positions() -> Array[Vector2i]:
 func start_wave():
 	if wave_active or current_wave > max_waves:
 		return
+	
+	# Every 3 waves, randomly select a new layout type for strategic variety
+	if current_wave % 3 == 0 and current_wave > 1:
+		var layout_types = [
+			GridLayout.LayoutType.STRAIGHT_LINE,
+			GridLayout.LayoutType.L_SHAPED,
+			GridLayout.LayoutType.S_CURVED,
+			GridLayout.LayoutType.ZIGZAG
+		]
+		var new_layout_type = layout_types[randi() % layout_types.size()]
+		if new_layout_type != selected_layout_type:
+			selected_layout_type = new_layout_type
+			print("WaveManager: Changing to new layout type for wave ", current_wave, ": ", selected_layout_type)
+			create_enemy_path()  # Update path with new layout
 	
 	wave_active = true
 	enemies_spawned_this_wave = 0
