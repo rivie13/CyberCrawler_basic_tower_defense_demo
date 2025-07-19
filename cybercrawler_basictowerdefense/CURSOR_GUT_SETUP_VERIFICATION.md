@@ -125,8 +125,11 @@ If you encounter issues:
 **Expected Result**: All tests in test_example.gd should pass 
 
 
-
 USE THIS COMMAND
+first:
+cd C:\Users\rivie\CursorProjects\CyberCrawler_basic_tower_defense_demo\cybercrawler_basictowerdefense
+
+second:
 & "C:\Program Files\Godot\Godot_v4.4.1-stable_win64_console.exe" --headless --script addons/gut/gut_cmdln.gd -gtest=tests/unit/ -gexit
 
 
