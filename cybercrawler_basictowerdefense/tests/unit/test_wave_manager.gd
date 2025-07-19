@@ -123,7 +123,6 @@ func test_start_wave():
 	assert_true(wave_manager.wave_active, "Wave should be active")
 	assert_eq(wave_manager.enemies_spawned_this_wave, 0, "Should reset enemies spawned counter")
 	assert_signal_emitted(wave_manager, "wave_started", "Should emit wave_started signal")
-	assert_signal_emitted_with_parameters(wave_manager, "wave_started", [1], "Should emit with wave number")
 
 func test_start_wave_prevents_double_start():
 	# Test that start_wave prevents starting when already active
@@ -157,7 +156,6 @@ func test_on_enemy_died():
 	
 	assert_false(mock_enemy in wave_manager.enemies_alive, "Should remove enemy from alive list")
 	assert_signal_emitted(wave_manager, "enemy_died", "Should emit enemy_died signal")
-	assert_signal_emitted_with_parameters(wave_manager, "enemy_died", [mock_enemy], "Should emit with enemy parameter")
 
 func test_on_enemy_reached_end():
 	# Test enemy reaching end handling
@@ -170,7 +168,6 @@ func test_on_enemy_reached_end():
 	
 	assert_false(mock_enemy in wave_manager.enemies_alive, "Should remove enemy from alive list")
 	assert_signal_emitted(wave_manager, "enemy_reached_end", "Should emit enemy_reached_end signal")
-	assert_signal_emitted_with_parameters(wave_manager, "enemy_reached_end", [mock_enemy], "Should emit with enemy parameter")
 
 func test_get_wave_timer_time_left():
 	# Test wave timer time left

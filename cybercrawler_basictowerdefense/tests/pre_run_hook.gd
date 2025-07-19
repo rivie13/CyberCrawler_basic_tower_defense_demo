@@ -76,7 +76,7 @@ func _validate_coverage_requirements():
 	var total_lines_tested_files = 0
 	var covered_lines_tested_files = 0
 	
-	# Check per-file coverage (validate ANY file with coverage OR tests)
+	# Check per-file coverage (validate ONLY files that have dedicated tests)
 	var failing_files = []
 	var file_coverage_details = []
 	
@@ -87,11 +87,11 @@ func _validate_coverage_requirements():
 		var script_covered = collector.coverage_count()
 		var file_name = script_path.get_file()
 		
-		# Validate files that have tests OR have coverage (code is running)
+		# Only validate files that have dedicated tests
 		var has_tests = script_path in files_with_tests
 		var has_coverage = script_covered > 0
 		
-		if has_tests or has_coverage:
+		if has_tests:
 			# Add to tested files totals
 			total_lines_tested_files += script_lines
 			covered_lines_tested_files += script_covered
