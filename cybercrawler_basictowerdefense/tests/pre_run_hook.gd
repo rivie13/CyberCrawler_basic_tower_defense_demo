@@ -129,7 +129,8 @@ func _validate_coverage_requirements():
 	
 	# Show ALL files with their coverage percentages (like before)
 	print("\n--- All Files Coverage Breakdown ---")
-	var files_with_coverage = []
+	var files_with_tests_and_coverage = []
+	var files_without_tests_but_coverage = []
 	var files_without_coverage = []
 	
 	for script_path in coverage.coverage_collectors:
@@ -139,15 +140,37 @@ func _validate_coverage_requirements():
 		var script_covered = collector.coverage_count()
 		var file_name = script_path.get_file()
 		
+		# Check if this file has tests
+		var has_tests = script_path in files_with_tests
+		
 		if script_covered > 0:
-			files_with_coverage.append("✅ %.1f%% %s (%d/%d lines)" % [script_coverage, file_name, script_covered, script_lines])
+			if has_tests:
+				# File has tests - check if it meets requirements
+				var percent_required = int(script_lines * 0.5)  # 50% of file
+				var min_lines_required = min(percent_required, MIN_LINES_COVERED)  # 50% OR 100 lines, whichever is LESS
+				var status = "✅" if script_covered >= min_lines_required else "❌"
+				files_with_tests_and_coverage.append("%s %.1f%% %s (%d/%d lines)" % [status, script_coverage, file_name, script_covered, script_lines])
+			else:
+				# File has no tests but has coverage (not validated)
+				files_without_tests_but_coverage.append("📝 %.1f%% %s (%d/%d lines) - NO TESTS" % [script_coverage, file_name, script_covered, script_lines])
 		else:
-			files_without_coverage.append("❌ 0.0%% %s (%d lines)" % [file_name, script_lines])
+			if has_tests:
+				# File has tests but no coverage (should fail)
+				files_without_coverage.append("❌ 0.0%% %s (%d lines) - HAS TESTS" % [file_name, script_lines])
+			else:
+				# File has no tests and no coverage (not validated)
+				files_without_coverage.append("📝 0.0%% %s (%d lines) - NO TESTS" % [file_name, script_lines])
 	
-	# Show files that had some coverage first
-	if files_with_coverage.size() > 0:
-		print("📊 Files with Coverage (%d files):" % files_with_coverage.size())
-		for file_info in files_with_coverage:
+	# Show files with tests that have coverage
+	if files_with_tests_and_coverage.size() > 0:
+		print("📊 Files with Tests and Coverage (%d files):" % files_with_tests_and_coverage.size())
+		for file_info in files_with_tests_and_coverage:
+			print("  %s" % file_info)
+	
+	# Show files without tests but with coverage
+	if files_without_tests_but_coverage.size() > 0:
+		print("📊 Files without Tests but with Coverage (%d files):" % files_without_tests_but_coverage.size())
+		for file_info in files_without_tests_but_coverage:
 			print("  %s" % file_info)
 	
 	# Show files with no coverage
