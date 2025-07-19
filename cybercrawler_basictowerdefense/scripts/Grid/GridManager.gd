@@ -206,7 +206,7 @@ func set_grid_blocked(grid_pos: Vector2i, blocked: bool):
 	if game_manager and game_manager.is_game_over():
 		return
 	if is_valid_grid_position(grid_pos):
-		print("[DEBUG][set_grid_blocked] Blocking cell at %s: %s" % [str(grid_pos), str(blocked)])
+		# print("[DEBUG][set_grid_blocked] Blocking cell at %s: %s" % [str(grid_pos), str(blocked)])
 		update_blocked_grid_data(grid_pos, blocked)
 		if not ensure_path_solvability(grid_pos, blocked):
 			return
@@ -215,7 +215,7 @@ func set_grid_blocked(grid_pos: Vector2i, blocked: bool):
 
 func update_blocked_grid_data(grid_pos: Vector2i, blocked: bool):
 	blocked_grid_data[grid_pos.y][grid_pos.x] = blocked
-	print("[DEBUG][update_blocked_grid_data] blocked_grid_data[%d][%d] = %s" % [grid_pos.y, grid_pos.x, str(blocked)])
+	# print("[DEBUG][update_blocked_grid_data] blocked_grid_data[%d][%d] = %s" % [grid_pos.y, grid_pos.x, str(blocked)])
 
 func ensure_path_solvability(grid_pos: Vector2i, blocked: bool) -> bool:
 	var path_blocked = false
