@@ -90,19 +90,24 @@ func test_place_freeze_mine_invalid_position():
 	assert_signal_emitted(freeze_mine_manager, "freeze_mine_placement_failed", "Should emit failure signal")
 
 func test_place_freeze_mine_success():
-	# Test successful placement
+	# Test successful freeze mine placement
 	freeze_mine_manager.initialize(mock_grid_manager, mock_currency_manager)
-	mock_currency_manager.current_currency = 20  # More than 15 cost
+	mock_currency_manager.current_currency = 20
 	mock_grid_manager.is_valid_position = true
 	mock_grid_manager.is_occupied = false
 	mock_grid_manager.is_on_path = false
 	mock_grid_manager.world_position = Vector2(100, 100)
-	watch_signals(freeze_mine_manager)
 	
 	# Set up a current scene for the test
 	var test_scene = Node2D.new()
 	get_tree().current_scene = test_scene
 	add_child_autofree(test_scene)
+	
+	# Wait a frame to ensure the scene is properly set
+	await get_tree().process_frame
+	
+	# Watch signals for assertions
+	watch_signals(freeze_mine_manager)
 	
 	var result = freeze_mine_manager.place_freeze_mine(Vector2i(2, 2))
 	
@@ -120,6 +125,9 @@ func test_create_freeze_mine_at_position():
 	var test_scene = Node2D.new()
 	get_tree().current_scene = test_scene
 	add_child_autofree(test_scene)
+	
+	# Wait a frame to ensure the scene is properly set
+	await get_tree().process_frame
 	
 	var freeze_mine = freeze_mine_manager.create_freeze_mine_at_position(Vector2i(3, 4))
 	
@@ -225,6 +233,9 @@ func test_signal_connections():
 	get_tree().current_scene = test_scene
 	add_child_autofree(test_scene)
 	
+	# Wait a frame to ensure the scene is properly set
+	await get_tree().process_frame
+	
 	var result = freeze_mine_manager.place_freeze_mine(Vector2i(2, 2))
 	
 	assert_true(result, "Should place mine successfully")
@@ -248,6 +259,9 @@ func test_grid_occupation_management():
 	var test_scene = Node2D.new()
 	get_tree().current_scene = test_scene
 	add_child_autofree(test_scene)
+	
+	# Wait a frame to ensure the scene is properly set
+	await get_tree().process_frame
 	
 	var result = freeze_mine_manager.place_freeze_mine(Vector2i(3, 4))
 	
@@ -285,6 +299,8 @@ class MockGridManager extends GridManager:
 	func set_grid_blocked(pos: Vector2i, blocked: bool):
 		if not blocked:
 			unblocked_positions.append(pos)
+		else:
+			unblocked_positions.erase(pos)
 
 class MockCurrencyManager extends CurrencyManager:
 	var current_currency: int = 100

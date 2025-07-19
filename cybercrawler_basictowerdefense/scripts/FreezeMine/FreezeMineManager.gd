@@ -78,8 +78,12 @@ func create_freeze_mine_at_position(grid_pos: Vector2i) -> FreezeMine:
 	freeze_mine.global_position = world_pos
 	freeze_mine.set_grid_position(grid_pos)
 	
-	# Add to scene
-	get_tree().current_scene.add_child(freeze_mine)
+	# Add to scene - try current scene first, fallback to self
+	if get_tree().current_scene:
+		get_tree().current_scene.add_child(freeze_mine)
+	else:
+		# Fallback for testing - add to self
+		add_child(freeze_mine)
 	
 	return freeze_mine
 
@@ -110,6 +114,8 @@ func clear_all_freeze_mines():
 	for mine in freeze_mines:
 		if is_instance_valid(mine):
 			grid_manager.set_grid_occupied(mine.grid_position, false)
+			# Also unblock the grid cell
+			grid_manager.set_grid_blocked(mine.grid_position, false)
 			mine.queue_free()
 	freeze_mines.clear()
 

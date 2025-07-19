@@ -58,7 +58,14 @@ func setup_detection_timer():
 	detection_timer.wait_time = 0.2  # Check every 0.2 seconds
 	detection_timer.timeout.connect(_on_detection_timer_timeout)
 	add_child(detection_timer)
-	detection_timer.start()
+	
+	# Start the timer after it's added to the scene tree
+	# Use call_deferred to ensure it happens after the node is properly added
+	call_deferred("_start_detection_timer")
+
+func _start_detection_timer():
+	if detection_timer and is_inside_tree():
+		detection_timer.start()
 
 func _on_detection_timer_timeout():
 	if not is_active or uses_remaining <= 0:

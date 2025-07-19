@@ -178,6 +178,9 @@ func test_on_wave_started_wave_1():
 	mock_wave_manager.enemy_path = enemy_path
 	watch_signals(program_data_packet_manager)
 	
+	# Ensure the packet path is created
+	program_data_packet_manager.create_packet_path()
+	
 	program_data_packet_manager._on_wave_started(1)
 	
 	assert_true(program_data_packet_manager.is_packet_spawned, "Should spawn packet on wave 1")
@@ -189,6 +192,9 @@ func test_on_wave_started_auto_release_wave():
 	program_data_packet_manager.initialize(mock_grid_manager, mock_game_manager, mock_wave_manager)
 	var enemy_path: Array[Vector2] = [Vector2(0, 0), Vector2(100, 0)]
 	mock_wave_manager.enemy_path = enemy_path
+	
+	# Ensure the packet path is created and packet is spawned
+	program_data_packet_manager.create_packet_path()
 	program_data_packet_manager.spawn_program_data_packet()
 	program_data_packet_manager.enable_packet_release()
 	

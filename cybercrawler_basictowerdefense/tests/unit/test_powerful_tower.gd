@@ -121,10 +121,10 @@ func test_visual_hierarchy():
 	assert_true(border is ColorRect, "First child should be border")
 	assert_eq(border.size, Vector2(74, 74), "First child should be border with correct size")
 	
-	# Tower body should be second child
-	var body = powerful_tower.get_child(1)
-	assert_true(body is ColorRect, "Second child should be tower body")
-	assert_eq(body.size, Vector2(70, 70), "Second child should be tower body with correct size")
+	# Tower body should be third child (after parent's visual elements and border)
+	var body = powerful_tower.get_child(2)
+	assert_true(body is ColorRect, "Third child should be tower body")
+	assert_eq(body.size, Vector2(70, 70), "Third child should be tower body with correct size")
 
 func test_health_bar_initial_state():
 	# Test health bar reflects initial health
