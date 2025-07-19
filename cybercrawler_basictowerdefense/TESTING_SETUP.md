@@ -102,3 +102,11 @@ After setup, we'll create comprehensive tests for:
 - Use descriptive test names that explain what's being tested
 - Test edge cases and error conditions
 - Mock dependencies to isolate units under test 
+
+
+
+USE THIS COMMAND
+& "C:\Program Files\Godot\Godot_v4.4.1-stable_win64_console.exe" --headless --script addons/gut/gut_cmdln.gd -gtest=tests/unit/ -gexit
+
+
+USE THE ABOVE COMMAND IT WORKS!!!!!!!!!!!!!!!

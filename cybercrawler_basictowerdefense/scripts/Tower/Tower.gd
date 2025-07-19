@@ -195,6 +195,9 @@ func _search_for_rival_hackers_recursive(node: Node, rival_hackers: Array[RivalH
 func is_target_in_range(target: Node) -> bool:
 	if not is_instance_valid(target):
 		return false
+	# Check if target has global_position property (Node2D and subclasses)
+	if not "global_position" in target:
+		return false
 	var distance_to_target = global_position.distance_to(target.global_position)
 	return distance_to_target <= tower_range
 
@@ -229,6 +232,9 @@ func attack_target():
 
 func set_grid_position(grid_pos: Vector2i):
 	grid_position = grid_pos
+
+func get_grid_position() -> Vector2i:
+	return grid_position
 
 func show_range():
 	show_range_indicator = true

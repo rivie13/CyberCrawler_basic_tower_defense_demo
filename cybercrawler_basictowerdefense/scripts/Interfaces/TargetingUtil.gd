@@ -62,6 +62,10 @@ static func is_target_in_range(attacker_position: Vector2, target: Node, detecti
 	if not is_instance_valid(target):
 		return false
 	
+	# Check if target has global_position property (Node2D and subclasses)
+	if not "global_position" in target:
+		return false
+	
 	# Check if target is alive (different methods for different types)
 	if target is Tower and not target.is_alive:
 		return false

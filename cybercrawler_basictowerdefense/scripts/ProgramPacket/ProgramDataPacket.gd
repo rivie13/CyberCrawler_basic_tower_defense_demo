@@ -6,7 +6,7 @@ const COLLISION_THRESHOLD: float = 40.0
 const TARGET_REACH_THRESHOLD: float = 10.0
 
 # Debug mode flag for conditional logging
-const DEBUG_MODE := false
+const DEBUG_MODE := true
 
 # Program data packet properties
 @export var speed: float = 80.0  # Slightly slower than enemies
@@ -22,6 +22,7 @@ var target_position: Vector2
 # State
 var is_alive: bool = true
 var is_active: bool = false  # Only active when player releases it
+var was_ever_activated: bool = false  # Track if player has ever activated this packet
 var damage_immunity_timer: Timer
 var is_immune_to_damage: bool = false
 
@@ -98,8 +99,8 @@ func set_path(new_path: Array[Vector2]):
 		queue_free()
 		return
 
-	if path_points.size() > 1 and is_active:
-		# Calculate percent progress along old path
+	if path_points.size() > 1:
+		# Calculate percent progress along old path (regardless of active state)
 		var old_path = path_points
 		var old_total = _path_total_length(old_path)
 		var idx = clamp(current_path_index, 0, old_path.size() - 2)
@@ -153,16 +154,16 @@ func set_path(new_path: Array[Vector2]):
 			target_position = path_points[current_path_index]
 		if DEBUG_MODE:
 			print("[ProgramDataPacket] set_path complete. New index: %d, New pos: %s, Target: %s" % [new_index, str(new_target_pos), str(target_position)])
-		pause_for_path_change(5.0)
+		pause_for_path_change(3.0)
 	else:
-		# If not active or no old path, just snap to start
+		# If no old path, just snap to start
 		path_points = new_path
 		current_path_index = 0
 		if path_points.size() > 0:
 			global_position = path_points[0]
 			target_position = path_points[1] if path_points.size() > 1 else path_points[0]
 			if DEBUG_MODE:
-				print("[ProgramDataPacket] set_path: Snapped to start of new path.")
+				print("[ProgramDataPacket] set_path: Snapped to start of new path (no old path).")
 	if DEBUG_MODE:
 		print("[DEBUG][set_path] After assignment: current_path_index=%d, global_position=%s, target_position=%s, path_points.size()=%d" % [current_path_index, str(global_position), str(target_position), path_points.size()])
 
@@ -184,14 +185,12 @@ func _path_distance_traveled(path: Array[Vector2], idx: int, pos: Vector2) -> fl
 
 # Pauses the packet for a duration (in seconds) before resuming movement
 var _path_pause_timer: Timer = null
-var _was_active_before_pause: bool = false
 
 func pause_for_path_change(duration: float):
 	if DEBUG_MODE:
 		print("[DEBUG][pause_for_path_change] Called. duration=%.2f, is_active=%s, is_alive=%s" % [duration, str(is_active), str(is_alive)])
 	
-	# Store current state
-	_was_active_before_pause = is_active
+	# No need to store current state - we use was_ever_activated instead
 	
 	# Clean up existing timer properly
 	if _path_pause_timer != null:
@@ -207,37 +206,46 @@ func pause_for_path_change(duration: float):
 	_path_pause_timer.timeout.connect(_on_path_pause_timeout)
 	add_child(_path_pause_timer)
 	
-	# Pause movement
+	# Pause movement and add visual feedback
 	is_active = false
 	_path_pause_timer.start()
 	
+	# Add visual feedback during pause - make packet slightly transparent and pulsing
+	var tween = create_tween()
+	tween.set_loops()
+	tween.tween_property(self, "modulate:a", 0.5, 0.5)
+	tween.tween_property(self, "modulate:a", 0.8, 0.5)
+	
 	if DEBUG_MODE:
-		print("[DEBUG][pause_for_path_change] Timer started. is_active set to false. _was_active_before_pause=%s" % str(_was_active_before_pause))
+		print("[DEBUG][pause_for_path_change] Timer started. is_active set to false. was_ever_activated=%s" % str(was_ever_activated))
 
 func _on_path_pause_timeout():
 	if DEBUG_MODE:
-		print("[DEBUG][_on_path_pause_timeout] Timer fired. _was_active_before_pause=%s" % str(_was_active_before_pause))
-	if _was_active_before_pause:
+		print("[DEBUG][_on_path_pause_timeout] Timer fired. was_ever_activated=%s" % str(was_ever_activated))
+	
+	# Stop any visual effects and restore normal appearance
+	var tween = create_tween()
+	tween.tween_property(self, "modulate:a", 1.0, 0.2)
+	
+	# Resume if the player has ever activated this packet
+	if was_ever_activated:
 		is_active = true
 		if DEBUG_MODE:
-			print("[DEBUG][_on_path_pause_timeout] is_active now: %s" % str(is_active))
+			print("[DEBUG][_on_path_pause_timeout] Resuming packet (was_ever_activated=true). is_active now: %s" % str(is_active))
 	else:
 		if DEBUG_MODE:
-			print("[DEBUG][_on_path_pause_timeout] Not resuming, was not active before pause.")
+			print("[DEBUG][_on_path_pause_timeout] Not resuming, player never activated this packet.")
 
 func activate():
 	"""Activate the program data packet to start moving"""
 	is_active = true
+	was_ever_activated = true  # Remember that player has activated this packet
 	if DEBUG_MODE:
 		print("Program data packet activated!")
 
 func _physics_process(delta):
-	if DEBUG_MODE:
-		print("[DEBUG][_physics_process] Moving. current_path_index=%d, global_position=%s, target_position=%s" % [current_path_index, str(global_position), str(target_position)])
 	# Changed back to _physics_process for consistent movement with fixed timestep (Copilot review fix)
 	if not is_alive or not is_active or path_points.size() == 0:
-		if DEBUG_MODE:
-			print("[DEBUG][_physics_process] Skipping. is_alive=%s, is_active=%s, path_points.size()=%d" % [str(is_alive), str(is_active), path_points.size()])
 		return
 	
 	# Check if game is over (get from MainController)

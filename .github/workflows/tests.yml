@@ -15,6 +15,11 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: false  # Ensure this job fails CI if tests fail
     
+    # Set default working directory for all steps
+    defaults:
+      run:
+        working-directory: ./cybercrawler_basictowerdefense
+    
     steps:
     - uses: actions/checkout@v4
     
@@ -25,7 +30,6 @@ jobs:
         
     - name: Import project and verify setup
       run: |
-        cd cybercrawler_basictowerdefense
         echo "🔧 Godot version:"
         godot --version
         echo ""
@@ -41,7 +45,6 @@ jobs:
         
     - name: Run all tests with coverage validation
       run: |
-        cd cybercrawler_basictowerdefense
         echo "🚀 Starting tests with coverage validation..."
         echo "📋 Current GUT configuration:"
         cat .gutconfig.json
@@ -51,7 +54,7 @@ jobs:
         ls -la tests/
         echo ""
         echo "🎯 Running GUT with coverage validation..."
-        godot --headless --script addons/gut/gut_cmdln.gd -gprint_to_console -gexit -gxml_export_file=test_results.xml
+        godot --headless --script addons/gut/gut_cmdln.gd -gconfig=.gutconfig.json -gexit -glog=1 -gjunit_xml_file=test_results.xml
         EXIT_CODE=$?
         echo ""
         echo "🔍 GUT exit code: $EXIT_CODE"
@@ -68,12 +71,10 @@ jobs:
         
     - name: Verify test results generated
       run: |
-        cd cybercrawler_basictowerdefense
         if [ -f test_results.xml ]; then
           echo "✅ Test results file generated - tests actually ran"
           echo "📊 Test results preview:"
           head -20 test_results.xml
-          echo ""
           echo "📈 Test summary:"
           grep -E "(failures|tests|errors)" test_results.xml || echo "No summary found"
         else

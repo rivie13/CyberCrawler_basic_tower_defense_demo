@@ -192,3 +192,11 @@ godot --headless --script addons/gut/gut_cmdln.gd -gdir=tests/unit -gexit
 **Status**: Ready for manual GUT installation and configuration
 **Next Action**: Install GUT framework through Godot AssetLib
 **Expected Timeline**: 30 minutes to complete setup and verify first tests 
+
+
+
+USE THIS COMMAND
+& "C:\Program Files\Godot\Godot_v4.4.1-stable_win64_console.exe" --headless --script addons/gut/gut_cmdln.gd -gtest=tests/unit/ -gexit
+
+
+USE THE ABOVE COMMAND IT WORKS!!!!!!!!!!!!!!!

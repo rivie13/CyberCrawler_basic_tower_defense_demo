@@ -8,47 +8,16 @@ const COVERAGE_TARGET_FILE := 50.0     # 50% per-file coverage required (only fo
 const MIN_LINES_COVERED := 100         # Minimum lines that must be covered (only in tested files)
 const TEST_COVERAGE_THRESHOLD := 90.0  # Only require 75% total coverage when 90% of code has tests
 
-# Exclude paths from coverage analysis
-const exclude_paths = [
-	"res://addons/*",          # Exclude all addons (GUT, coverage, etc.)
-	"res://tests/*",           # Exclude test scripts themselves
-	"res://scenes/*",          # Exclude scene files (we only want script coverage)
-	"res://tools/*"            # Exclude utility tools
-]
-
 func run():
-	print("🔥 PRE-RUN HOOK IS RUNNING! 🔥")
-	print("=== Initializing Code Coverage ===")
+	print("🔥 POST-RUN HOOK IS RUNNING! 🔥")
+	print("=== Final Coverage Validation ===")
 	
-	# Create coverage instance with scene tree and exclusions
-	print("DEBUG: Creating Coverage instance...")
-	Coverage.new(gut.get_tree(), exclude_paths)
+	# Validate coverage requirements now that tests have run
+	_validate_coverage_requirements()
 	
-	if !Coverage.instance:
-		print("❌ CRITICAL: Coverage instance is still null after Coverage.new()!")
-		_fail_tests("Coverage system not initialized")
-		return
-	
-	# Instrument all scripts in the scripts directory
-	print("DEBUG: Instrumenting scripts in res://scripts/...")
-	Coverage.instance.instrument_scripts("res://scripts/")
-	
-	# Set coverage targets
-	Coverage.instance.set_coverage_targets(COVERAGE_TARGET_TOTAL, COVERAGE_TARGET_FILE)
-	
-	# Check what we got
-	var total_lines = Coverage.instance.coverage_line_count()
-	var collector_count = Coverage.instance.coverage_collectors.size()
-	print("DEBUG: Instrumentation result: %d total lines, %d collectors" % [total_lines, collector_count])
-	
-	print("✓ Coverage instrumentation complete")
-	print("✓ Monitoring coverage for: res://scripts/")
-	print("✓ Coverage targets: %.1f%% total, %.1f%% per file OR %d lines minimum (whichever is LESS)" % [COVERAGE_TARGET_TOTAL, COVERAGE_TARGET_FILE, MIN_LINES_COVERED])
-	print("✓ Excluded paths: ", exclude_paths)
-	
-	# NOTE: Coverage validation will happen after tests complete
-	# The pre-run hook only sets up instrumentation - validation happens post-test
-	print("\n✓ Coverage system ready - validation will occur after tests complete\n")
+	# Finalize coverage system and show report
+	Coverage.finalize(Coverage.Verbosity.NONE)
+	print("=== Coverage Validation Complete ===")
 
 func _validate_coverage_requirements():
 	var coverage = Coverage.instance
@@ -127,7 +96,7 @@ func _validate_coverage_requirements():
 		for detail in file_coverage_details:
 			print("  %s" % detail)
 	
-	# Show ALL files with their coverage percentages (like before)
+	# Show ALL files with their coverage percentages
 	print("\n--- All Files Coverage Breakdown ---")
 	var files_with_tests_and_coverage = []
 	var files_without_tests_but_coverage = []
@@ -199,13 +168,10 @@ func _validate_coverage_requirements():
 	
 	# CHECK FOR VALIDATION FAILURES
 	if validation_errors.size() > 0:
-		# Coverage requirements not met - FAIL IMMEDIATELY
+		# Coverage requirements not met
 		print("❌ COVERAGE VALIDATION FAILED!")
 		for error in validation_errors:
 			print("  - %s" % error)
-		
-		# DO NOT finalize coverage here - let tests run first to collect coverage data
-		# Coverage.finalize() will be called after tests complete
 		
 		# Fail the test run
 		_fail_tests("Coverage requirements not met: " + "; ".join(validation_errors))
@@ -213,9 +179,6 @@ func _validate_coverage_requirements():
 		# Coverage requirements met
 		print("✅ COVERAGE VALIDATION PASSED!")
 		print("✅ All files with tests meet coverage requirements (50%% OR %d lines minimum, whichever is LESS)!" % MIN_LINES_COVERED)
-		
-		# DO NOT finalize coverage here - let tests run first to collect coverage data
-		# Coverage.finalize() will be called after tests complete
 
 func _get_files_with_tests() -> Array:
 	# Get all script files that have corresponding test files
@@ -250,7 +213,6 @@ func _find_script_files_with_tests(directory: String, files_with_tests: Array):
 			# Check if test file exists
 			if FileAccess.file_exists(test_path) or FileAccess.file_exists(integration_test_path):
 				files_with_tests.append(full_path)
-				print("  - ✅ %s has tests" % file_name)
 		
 		file_name = dir.get_next()
 
@@ -309,7 +271,6 @@ func _fail_tests(reason: String):
 	print("🔥 FORCING IMMEDIATE EXIT WITH CODE 1")
 	
 	# Force immediate exit with code 1 - this should make GitHub Actions fail
-	# The abort() + set_exit_code() mechanism doesn't seem to work properly
 	if gut and gut.get_tree():
 		gut.get_tree().quit(1)
 	else:

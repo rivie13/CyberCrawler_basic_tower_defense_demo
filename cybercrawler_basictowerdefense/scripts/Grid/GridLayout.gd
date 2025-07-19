@@ -223,15 +223,15 @@ func get_zigzag_grid_positions() -> Array[Vector2i]:
 		var is_top = (segment % 2 == 0)
 		var y = top_y if is_top else bottom_y
 
-		# Always add the current position
-		path_positions.append(Vector2i(x, y))
-
-		# If the previous y is different, fill in the vertical step(s) to connect
+		# If the previous y is different, fill in the vertical step(s) to connect FIRST
 		if x > 0 and prev_y != y:
 			var step = 1 if y > prev_y else -1
 			for fill_y in range(prev_y + step, y, step):
 				# Fill in intermediate cells for a staircase effect
 				path_positions.append(Vector2i(x, fill_y))
+
+		# Then add the current position (target)
+		path_positions.append(Vector2i(x, y))
 
 		prev_y = y
 

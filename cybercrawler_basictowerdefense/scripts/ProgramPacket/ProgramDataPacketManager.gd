@@ -54,6 +54,7 @@ func create_packet_path():
 
 	# Always use the latest enemy_path from WaveManager
 	var enemy_path = wave_manager.enemy_path
+	print("ProgramDataPacketManager: WaveManager.enemy_path has ", enemy_path.size(), " points")
 	if enemy_path.size() == 0:
 		print("ProgramDataPacketManager: No enemy path available")
 		return
@@ -65,6 +66,12 @@ func create_packet_path():
 	# Use as the packet path
 	packet_path = reversed_path
 	print("ProgramDataPacketManager: Created packet path from reversed enemy path with ", packet_path.size(), " points")
+	
+	# Print first few points for debugging
+	if packet_path.size() > 0:
+		print("ProgramDataPacketManager: First packet path point: ", packet_path[0])
+		if packet_path.size() > 1:
+			print("ProgramDataPacketManager: Second packet path point: ", packet_path[1])
 
 func spawn_program_data_packet():
 	"""Spawn the program data packet at the starting position"""
@@ -173,8 +180,16 @@ func is_packet_alive() -> bool:
 
 # NEW: Handle grid block changes
 func _on_grid_blocked_changed(grid_pos: Vector2i, blocked: bool):
+	print("ProgramDataPacketManager: grid_blocked_changed signal received at position: ", grid_pos, " blocked: ", blocked)
+	
+	# Wait a frame to ensure WaveManager has updated its path first
+	await get_tree().process_frame
+	# Add a small additional delay to ensure system stability
+	await get_tree().create_timer(0.1).timeout
+	
 	create_packet_path()
 	# Update the active program_data_packet with the new path and pause for 5 seconds
 	if program_data_packet and is_packet_spawned and program_data_packet.is_alive:
+		print("ProgramDataPacketManager: Updating packet path with ", packet_path.size(), " points")
 		program_data_packet.set_path(packet_path)
-		program_data_packet.pause_for_path_change(5.0) 
+		program_data_packet.pause_for_path_change(3.0) 

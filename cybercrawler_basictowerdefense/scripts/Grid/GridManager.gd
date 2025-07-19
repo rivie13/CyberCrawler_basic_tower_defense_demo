@@ -58,6 +58,10 @@ func initialize_grid():
 		blocked_grid_data.append(blocked_row) # NEW: add blocked row
 
 func draw_grid():
+	# Skip grid drawing if grid_container is not available (e.g., during unit testing)
+	if not grid_container:
+		return
+		
 	# Clear existing grid lines
 	for line in grid_lines:
 		if line:
@@ -90,10 +94,11 @@ func draw_grid():
 func set_path_positions(positions: Array[Vector2i]):
 	if game_manager and game_manager.is_game_over():
 		return
-	# NEW: Only set reroute_occurred to true if previous path exists and is different from new path
-	if previous_path_grid_positions.size() > 0 and previous_path_grid_positions != positions:
+	# Check if current path is different from new path
+	if path_grid_positions.size() > 0 and path_grid_positions != positions:
 		reroute_occurred = true
-	previous_path_grid_positions = path_grid_positions.duplicate()
+		# Store the current path as the previous path to be visualized
+		previous_path_grid_positions = path_grid_positions.duplicate()
 	path_grid_positions = positions
 	draw_enemy_path()
 
@@ -103,6 +108,10 @@ func draw_enemy_path():
 		if element:
 			element.queue_free()
 	path_visual_elements.clear()
+
+	# Skip visual drawing if grid_container is not available (e.g., during unit testing)
+	if not grid_container:
+		return
 
 	# Only draw previous path if reroute_occurred
 	if reroute_occurred:
@@ -138,6 +147,14 @@ func draw_enemy_path():
 		path_tile.z_index = -1
 		grid_container.add_child(path_tile)
 		path_visual_elements.append(path_tile)
+
+	# Schedule a reset of the reroute flag after the visualization has been drawn
+	if reroute_occurred:
+		call_deferred("_reset_reroute_flag")
+
+func _reset_reroute_flag():
+	"""Reset the reroute flag after the visualization has been drawn"""
+	reroute_occurred = false
 
 func handle_mouse_hover(global_pos: Vector2):
 	var new_hover_pos = world_to_grid(global_pos)
