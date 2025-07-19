@@ -233,6 +233,9 @@ func attack_target():
 func set_grid_position(grid_pos: Vector2i):
 	grid_position = grid_pos
 
+func get_grid_position() -> Vector2i:
+	return grid_position
+
 func show_range():
 	show_range_indicator = true
 	queue_redraw()
