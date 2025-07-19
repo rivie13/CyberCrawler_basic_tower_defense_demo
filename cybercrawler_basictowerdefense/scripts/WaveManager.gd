@@ -86,8 +86,9 @@ func _pause_enemies():
 
 func _show_recalculating_message():
 	var main_controller = get_tree().get_first_node_in_group("main_controller")
-	if main_controller:
+	if main_controller and is_instance_valid(main_controller) and main_controller.has_method("show_temp_message"):
 		main_controller.show_temp_message("Path changed! Enemies recalculating...", 1.5)
+	# Silently skip if main controller not available (e.g., during unit testing)
 
 # RESTORED: Identify enemies that need to be recycled when path changes
 func _identify_enemies_to_recycle() -> Array:

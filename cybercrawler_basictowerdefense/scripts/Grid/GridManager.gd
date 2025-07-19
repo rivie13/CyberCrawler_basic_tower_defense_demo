@@ -58,6 +58,10 @@ func initialize_grid():
 		blocked_grid_data.append(blocked_row) # NEW: add blocked row
 
 func draw_grid():
+	# Skip grid drawing if grid_container is not available (e.g., during unit testing)
+	if not grid_container:
+		return
+		
 	# Clear existing grid lines
 	for line in grid_lines:
 		if line:
@@ -104,6 +108,10 @@ func draw_enemy_path():
 		if element:
 			element.queue_free()
 	path_visual_elements.clear()
+
+	# Skip visual drawing if grid_container is not available (e.g., during unit testing)
+	if not grid_container:
+		return
 
 	# Only draw previous path if reroute_occurred
 	if reroute_occurred:
