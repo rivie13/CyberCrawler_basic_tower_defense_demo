@@ -87,12 +87,32 @@ func _validate_coverage_requirements():
 	if total_lines_tested_files > 0:
 		total_coverage_tested_files = (float(covered_lines_tested_files) / float(total_lines_tested_files)) * 100.0
 	
-	print("--- Coverage Results (VALIDATED FILES) ---")
-	print("Coverage in validated files: %.1f%% (%d/%d lines)" % [total_coverage_tested_files, covered_lines_tested_files, total_lines_tested_files])
+	# Calculate TOTAL coverage across ALL files (including files without tests)
+	var total_lines_all_files = 0
+	var covered_lines_all_files = 0
+	for script_path in coverage.coverage_collectors:
+		var collector = coverage.coverage_collectors[script_path]
+		total_lines_all_files += collector.coverage_line_count()
+		covered_lines_all_files += collector.coverage_count()
+	
+	var total_coverage_all_files = 0.0
+	if total_lines_all_files > 0:
+		total_coverage_all_files = (float(covered_lines_all_files) / float(total_lines_all_files)) * 100.0
+	
+	print("🔥🔥🔥 COVERAGE SUMMARY 🔥🔥🔥")
+	print("📊 TOTAL COVERAGE (ALL CODE): %.1f%% (%d/%d lines)" % [total_coverage_all_files, covered_lines_all_files, total_lines_all_files])
+	print("📊 VALIDATED FILES COVERAGE: %.1f%% (%d/%d lines)" % [total_coverage_tested_files, covered_lines_tested_files, total_lines_tested_files])
+	print("🔥🔥🔥 END COVERAGE SUMMARY 🔥🔥🔥")
+	
+	# Show detailed breakdown
+	print("\n📋 COVERAGE BREAKDOWN:")
+	print("  • Files with tests: %d files" % files_with_tests.size())
+	print("  • Files without tests: %d files (IGNORED)" % files_without_tests.size())
+	print("  • Total script files: %d files" % (files_with_tests.size() + files_without_tests.size()))
 	
 	# Show file-by-file coverage for validated files
 	if file_coverage_details.size() > 0:
-		print("📁 Files Being Validated (✅=meets coverage, 📝=has tests, ❌=fails):")
+		print("\n📁 Files Being Validated (✅=meets coverage, 📝=has tests, ❌=fails):")
 		for detail in file_coverage_details:
 			print("  %s" % detail)
 	
@@ -154,6 +174,9 @@ func _validate_coverage_requirements():
 	# Calculate test coverage percentage
 	var total_files = files_with_tests.size() + files_without_tests.size()
 	var test_coverage_percentage = (float(files_with_tests.size()) / float(total_files)) * 100.0 if total_files > 0 else 0.0
+	
+	# Add test coverage percentage to the breakdown
+	print("  • Test coverage: %.1f%% of files have tests" % test_coverage_percentage)
 	
 	# Check total coverage requirement (if 90% of files have tests)
 	if test_coverage_percentage >= TEST_COVERAGE_THRESHOLD:
