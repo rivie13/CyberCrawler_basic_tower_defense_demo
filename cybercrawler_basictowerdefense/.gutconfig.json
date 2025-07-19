@@ -10,7 +10,7 @@
   "ignore_pause": true,
   "compact_mode": false,
   "junit_xml_file": "test_results.xml",
-  "junit_xml_timestamp": true,
+  "junit_xml_timestamp": false,
   "log_level": 1,
   "ignore_pause": false,
   "pre_run_script": "res://tests/pre_run_hook.gd",
