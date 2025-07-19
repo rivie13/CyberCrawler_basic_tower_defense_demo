@@ -1,0 +1,93 @@
+name: Automated Testing
+
+# This workflow will FAIL CI if either:
+# 1. Coverage validation fails (pre-run hook exits with code 1)
+# 2. Any tests fail (GUT exits with non-zero code)
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    continue-on-error: false  # Ensure this job fails CI if tests fail
+    
+    # Set default working directory for all steps
+    defaults:
+      run:
+        working-directory: ./cybercrawler_basictowerdefense
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Godot
+      uses: lihop/setup-godot@v2
+      with:
+        version: "4.4.1"
+        
+    - name: Import project and verify setup
+      run: |
+        echo "🔧 Godot version:"
+        godot --version
+        echo ""
+        echo "📦 Project structure:"
+        ls -la
+        echo ""
+        echo "🧪 GUT addon exists: $(test -d addons/gut && echo 'YES' || echo 'NO')"
+        echo "📄 Coverage addon exists: $(test -d addons/coverage && echo 'YES' || echo 'NO')"
+        echo ""
+        echo "📥 Importing project..."
+        godot --headless --import --quit
+        echo "✅ Project imported successfully"
+        
+    - name: Run all tests with coverage validation
+      run: |
+        echo "🚀 Starting tests with coverage validation..."
+        echo "📋 Current GUT configuration:"
+        cat .gutconfig.json
+        echo ""
+        echo "📂 Pre-run hook exists: $(test -f tests/pre_run_hook.gd && echo 'YES' || echo 'NO')"
+        echo "📁 Test directories:"
+        ls -la tests/
+        echo ""
+        echo "🎯 Running GUT with coverage validation..."
+        godot --headless --script addons/gut/gut_cmdln.gd -gconfig=.gutconfig.json -gexit -glog=1 -gjunit_xml_file=test_results.xml
+        EXIT_CODE=$?
+        echo ""
+        echo "🔍 GUT exit code: $EXIT_CODE"
+        if [ $EXIT_CODE -ne 0 ]; then
+          echo "❌ Tests failed with exit code $EXIT_CODE"
+          echo "This could be due to:"
+          echo "  - Coverage validation failure (pre-run hook)"
+          echo "  - Test failures (unit/integration tests)"
+          echo "  - GUT runtime errors"
+          echo "  - Missing dependencies or configuration issues"
+          exit $EXIT_CODE
+        fi
+        echo "✅ All tests passed and coverage requirements met!"
+        
+    - name: Verify test results generated
+      run: |
+        if [ -f test_results.xml ]; then
+          echo "✅ Test results file generated - tests actually ran"
+          echo "📊 Test results preview:"
+          head -20 test_results.xml
+          echo "📈 Test summary:"
+          grep -E "(failures|tests|errors)" test_results.xml || echo "No summary found"
+        else
+          echo "❌ No test results file found - tests may have failed in pre-run hook"
+          echo "This usually means coverage validation failed before tests could run"
+          echo "🔍 Checking for any output files:"
+          ls -la *.xml *.log 2>/dev/null || echo "No output files found"
+        fi
+        
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: cybercrawler_basictowerdefense/test_results.xml
+        if-no-files-found: warn 

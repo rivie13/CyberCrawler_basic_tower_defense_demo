@@ -15,6 +15,7 @@ var target_position: Vector2
 
 # State
 var is_alive: bool = true
+var paused: bool = false  # NEW: Controls whether enemy is paused
 
 # Signals
 signal enemy_died(enemy: Enemy)
@@ -55,12 +56,20 @@ func create_health_bar():
 
 func set_path(new_path: Array[Vector2]):
 	path_points = new_path
+	
+	# FIXED: ALWAYS start from the beginning of the path - NEVER go backwards
 	current_path_index = 0
 	if path_points.size() > 0:
 		target_position = path_points[0]
 
+func pause():
+	paused = true
+
+func resume():
+	paused = false
+
 func _physics_process(delta):
-	if not is_alive or path_points.size() == 0:
+	if not is_alive or path_points.size() == 0 or paused:
 		return
 	
 	# Check if game is over (get from MainController)
@@ -72,27 +81,30 @@ func _physics_process(delta):
 	move_along_path(delta)
 
 func get_main_controller():
-	# Navigate up the tree to find MainController
-	var current_node = self
-	while current_node:
-		if current_node is MainController:
-			return current_node
-		current_node = current_node.get_parent()
-	return null
+	return get_tree().get_first_node_in_group("main_controller")
 
 func move_along_path(_delta):
 	# CRITICAL: Enemies must ALWAYS follow their path to the end to damage the player
 	# Do not allow any targeting or deviation from the path
 	
+	# Validate path and current index
+	if current_path_index >= path_points.size():
+		reach_end()
+		return
+	
 	var direction = (target_position - global_position).normalized()
 	var distance_to_target = global_position.distance_to(target_position)
+	
+	# IMPROVED: Use larger distance threshold to prevent overshooting and backtracking
+	var reach_threshold = 25.0  # Increased from 10.0 to prevent dance/reverse issues
 	
 	# Move towards target
 	velocity = direction * speed
 	move_and_slide()
 	
 	# Check if reached current target
-	if distance_to_target < 10.0:
+	if distance_to_target < reach_threshold:
+		# IMPROVED: Don't snap immediately - let enemy move naturally toward next target
 		current_path_index += 1
 		
 		# Check if reached end of path
@@ -100,8 +112,13 @@ func move_along_path(_delta):
 			reach_end()
 			return
 		
-		# Move to next path point
-		target_position = path_points[current_path_index]
+		# IMPROVED: Validate next target exists before setting
+		if current_path_index < path_points.size():
+			target_position = path_points[current_path_index]
+		else:
+			# Safety fallback - should not happen but prevents crashes
+			reach_end()
+			return
 
 func take_damage(damage: int):
 	if not is_alive:

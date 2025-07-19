@@ -212,18 +212,27 @@ func get_zigzag_grid_positions() -> Array[Vector2i]:
 	var path_positions: Array[Vector2i] = []
 	var grid_height = grid_manager.GRID_HEIGHT
 	var grid_width = grid_manager.GRID_WIDTH
-	
+
 	var segments_per_zag = 3
-	var top_y = grid_height / 4
-	var bottom_y = 3 * grid_height / 4
-	
+	var top_y = int(grid_height / 4)
+	var bottom_y = int(3 * grid_height / 4)
+
+	var prev_y = top_y
 	for x in range(0, grid_width):
 		var segment = int(x / segments_per_zag)
 		var is_top = (segment % 2 == 0)
 		var y = top_y if is_top else bottom_y
-		
-		# Clamp y to valid grid range
-		y = max(0, min(y, grid_height - 1))
+
+		# If the previous y is different, fill in the vertical step(s) to connect FIRST
+		if x > 0 and prev_y != y:
+			var step = 1 if y > prev_y else -1
+			for fill_y in range(prev_y + step, y, step):
+				# Fill in intermediate cells for a staircase effect
+				path_positions.append(Vector2i(x, fill_y))
+
+		# Then add the current position (target)
 		path_positions.append(Vector2i(x, y))
-	
+
+		prev_y = y
+
 	return path_positions 

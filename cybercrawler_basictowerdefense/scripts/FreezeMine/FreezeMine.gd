@@ -58,7 +58,14 @@ func setup_detection_timer():
 	detection_timer.wait_time = 0.2  # Check every 0.2 seconds
 	detection_timer.timeout.connect(_on_detection_timer_timeout)
 	add_child(detection_timer)
-	detection_timer.start()
+	
+	# Start the timer after it's added to the scene tree
+	# Use call_deferred to ensure it happens after the node is properly added
+	call_deferred("_start_detection_timer")
+
+func _start_detection_timer():
+	if detection_timer and is_inside_tree():
+		detection_timer.start()
 
 func _on_detection_timer_timeout():
 	if not is_active or uses_remaining <= 0:
@@ -130,13 +137,7 @@ func create_freeze_effect_visual():
 	tween.tween_callback(freeze_effect.queue_free)
 
 func get_main_controller():
-	# Navigate up the tree to find MainController
-	var current_node = self
-	while current_node:
-		if current_node is MainController:
-			return current_node
-		current_node = current_node.get_parent()
-	return null
+	return get_tree().get_first_node_in_group("main_controller")
 
 func can_be_placed_at(grid_pos: Vector2i, grid_manager: GridManager) -> bool:
 	# Check if position is valid and not occupied

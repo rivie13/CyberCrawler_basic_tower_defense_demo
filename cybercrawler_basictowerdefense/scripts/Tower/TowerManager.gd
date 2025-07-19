@@ -40,6 +40,11 @@ func attempt_tower_placement(grid_pos: Vector2i, tower_type: String = BASIC_TOWE
 		tower_placement_failed.emit("Grid position already occupied")
 		return false
 	
+	# NEW: Prevent placement on blocked cells
+	if grid_manager.is_grid_blocked(grid_pos):
+		tower_placement_failed.emit("Grid position is blocked")
+		return false
+	
 	# Check if position is on enemy path
 	if grid_manager.is_on_enemy_path(grid_pos):
 		tower_placement_failed.emit("Cannot place tower on enemy path")

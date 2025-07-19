@@ -42,23 +42,36 @@ func initialize(grid_mgr: GridManager, game_mgr: GameManager, wave_mgr: WaveMana
 	# Generate the packet path (opposite direction from enemies)
 	create_packet_path()
 
+	# NEW: Listen for grid block changes
+	if grid_manager.has_signal("grid_blocked_changed"):
+		grid_manager.grid_blocked_changed.connect(_on_grid_blocked_changed)
+
 func create_packet_path():
-	"""Create the path for the program data packet (opposite direction from enemies)"""
-	if not wave_manager:
-		print("ProgramDataPacketManager: Cannot create path - no wave manager")
+	"""Create the path for the program data packet (reverse of current enemy path)"""
+	if not wave_manager or not grid_manager:
+		print("ProgramDataPacketManager: Cannot create path - missing manager")
 		return
-	
-	# Get the current enemy path from the wave manager
-	var enemy_path = wave_manager.get_enemy_path()
+
+	# Always use the latest enemy_path from WaveManager
+	var enemy_path = wave_manager.enemy_path
+	print("ProgramDataPacketManager: WaveManager.enemy_path has ", enemy_path.size(), " points")
 	if enemy_path.size() == 0:
 		print("ProgramDataPacketManager: No enemy path available")
 		return
+
+	# Reverse the enemy path for the packet
+	var reversed_path = enemy_path.duplicate()
+	reversed_path.reverse()
+
+	# Use as the packet path
+	packet_path = reversed_path
+	print("ProgramDataPacketManager: Created packet path from reversed enemy path with ", packet_path.size(), " points")
 	
-	# Reverse the path so packet travels from user entry to enemy entry
-	packet_path = enemy_path.duplicate()
-	packet_path.reverse()
-	
-	print("ProgramDataPacketManager: Created packet path with ", packet_path.size(), " points")
+	# Print first few points for debugging
+	if packet_path.size() > 0:
+		print("ProgramDataPacketManager: First packet path point: ", packet_path[0])
+		if packet_path.size() > 1:
+			print("ProgramDataPacketManager: Second packet path point: ", packet_path[1])
 
 func spawn_program_data_packet():
 	"""Spawn the program data packet at the starting position"""
@@ -164,3 +177,19 @@ func get_program_data_packet() -> ProgramDataPacket:
 func is_packet_alive() -> bool:
 	"""Check if the packet is alive"""
 	return program_data_packet != null and program_data_packet.is_alive 
+
+# NEW: Handle grid block changes
+func _on_grid_blocked_changed(grid_pos: Vector2i, blocked: bool):
+	print("ProgramDataPacketManager: grid_blocked_changed signal received at position: ", grid_pos, " blocked: ", blocked)
+	
+	# Wait a frame to ensure WaveManager has updated its path first
+	await get_tree().process_frame
+	# Add a small additional delay to ensure system stability
+	await get_tree().create_timer(0.1).timeout
+	
+	create_packet_path()
+	# Update the active program_data_packet with the new path and pause for 5 seconds
+	if program_data_packet and is_packet_spawned and program_data_packet.is_alive:
+		print("ProgramDataPacketManager: Updating packet path with ", packet_path.size(), " points")
+		program_data_packet.set_path(packet_path)
+		program_data_packet.pause_for_path_change(3.0) 

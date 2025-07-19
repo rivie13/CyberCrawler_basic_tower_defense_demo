@@ -3,10 +3,10 @@ class_name EnemyTower
 
 # Tower properties
 @export var tower_range: float = 120.0
-@export var damage: int = 2
+@export var damage: int = 1
 @export var attack_speed: float = 2.0  # Attacks per second
-@export var health: int = 15
-@export var max_health: int = 15
+@export var health: int = 5
+@export var max_health: int = 5
 
 # Cost (for removal reward)
 @export var removal_reward: int = 5
@@ -156,13 +156,7 @@ func find_target():
 			closest_distance = distance
 
 func get_main_controller():
-	# Navigate up the tree to find MainController
-	var current_node = self
-	while current_node:
-		if current_node is MainController:
-			return current_node
-		current_node = current_node.get_parent()
-	return null
+	return get_tree().get_first_node_in_group("main_controller")
 
 func get_player_towers() -> Array[Tower]:
 	var towers: Array[Tower] = []
@@ -174,6 +168,9 @@ func get_player_towers() -> Array[Tower]:
 
 func is_target_in_range(target: Node) -> bool:
 	if not is_instance_valid(target):
+		return false
+	# Check if target has global_position property (Node2D and subclasses)
+	if not "global_position" in target:
 		return false
 	var distance_to_target = global_position.distance_to(target.global_position)
 	return distance_to_target <= tower_range
