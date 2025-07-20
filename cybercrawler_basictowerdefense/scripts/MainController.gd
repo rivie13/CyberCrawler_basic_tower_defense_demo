@@ -113,6 +113,10 @@ func initialize_systems():
 	freeze_mine_manager.freeze_mine_depleted.connect(_on_freeze_mine_depleted)
 
 func setup_ui():
+	# Skip UI setup if we're in a test environment or UI nodes don't exist
+	if not has_node("UI/TowerSelectionPanel"):
+		return
+	
 	# Setup basic tower selection UI
 	var basic_tower_button = $UI/TowerSelectionPanel/BasicTowerButton
 	if basic_tower_button:
@@ -258,6 +262,10 @@ func _on_ui_update_timer_timeout():
 	update_packet_ui()
 
 func update_tower_selection_ui():
+	# Skip UI updates if we're in a test environment or UI nodes don't exist
+	if not has_node("UI/TowerSelectionPanel"):
+		return
+	
 	# Update cost label to show both tower types
 	var cost_label = $UI/TowerSelectionPanel/CostLabel
 	if cost_label:
@@ -290,6 +298,10 @@ func update_tower_selection_ui():
 			selected_label.modulate = Color.RED
 
 func update_mode_ui():
+	# Skip UI updates if we're in a test environment or UI nodes don't exist
+	if not has_node("UI/TowerSelectionPanel"):
+		return
+	
 	# Update mode toggle button text
 	var mode_toggle_button = $UI/TowerSelectionPanel/ModeToggleButton
 	if mode_toggle_button:
@@ -314,6 +326,10 @@ func update_mode_ui():
 			mode_indicator.modulate = Color.ORANGE
 
 func update_info_label():
+	# Skip UI updates if we're in a test environment or UI nodes don't exist
+	if not has_node("UI/InfoLabel"):
+		return
+	
 	var info_label = $UI/InfoLabel
 	if info_label and game_manager:
 		info_label.text = game_manager.get_info_label_text()
@@ -342,7 +358,7 @@ func show_victory_screen():
 	# Get victory data from game manager
 	var victory_data = game_manager.get_victory_data()
 	
-	# Update info label to show victory message
+	# Update info label to show victory message (only if UI exists)
 	var info_label = $UI/InfoLabel
 	if info_label:
 		var victory_text = "VICTORY!\n"
@@ -376,7 +392,7 @@ func show_game_over_screen():
 	# Get game over data from game manager
 	var game_over_data = game_manager.get_game_over_data()
 	
-	# Update info label to show game over message
+	# Update info label to show game over message (only if UI exists)
 	var info_label = $UI/InfoLabel
 	if info_label:
 		var game_over_text = "GAME OVER!\n"
@@ -448,6 +464,10 @@ func _on_freeze_mine_button_pressed():
 	update_info_label()
 
 func update_packet_ui():
+	# Skip UI updates if we're in a test environment or UI nodes don't exist
+	if not has_node("UI/TowerSelectionPanel"):
+		return
+	
 	var packet_button = $UI/TowerSelectionPanel/ProgramDataPacketButton
 	var packet_status_label = $UI/TowerSelectionPanel/PacketStatusLabel
 	
@@ -495,6 +515,10 @@ func _on_freeze_mine_depleted(mine: FreezeMine):
 
 # Utility: Show a temporary message in the InfoLabel
 func show_temp_message(message: String, duration: float = 1.5):
+	# Skip UI updates if we're in a test environment or UI nodes don't exist
+	if not has_node("UI/InfoLabel"):
+		return
+	
 	var info_label = $UI/InfoLabel
 	if info_label:
 		var prev_text = info_label.text

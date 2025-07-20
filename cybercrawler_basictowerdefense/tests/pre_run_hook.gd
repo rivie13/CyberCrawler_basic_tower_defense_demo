@@ -1,6 +1,7 @@
 extends GutHookScript
 
 const Coverage = preload("res://addons/coverage/coverage.gd")
+const DebugLogger = preload("res://scripts/Utils/DebugLogger.gd")
 
 # Coverage requirements - tests will fail if these aren't met
 const COVERAGE_TARGET_TOTAL := 75.0    # 75% total coverage required (only when 90% of code has tests)
@@ -18,6 +19,14 @@ const exclude_paths = [
 
 func run():
 	print("🔥 PRE-RUN HOOK IS RUNNING! 🔥")
+	print("=== Initializing Debug Logger ===")
+	
+	# Initialize debug logger for testing environment
+	DebugLogger.force_test_mode = true  # Force test mode detection
+	DebugLogger.initialize()
+	print("✓ Debug logger initialized for testing environment")
+	print("✓ Log level set to: %s" % DebugLogger.LogLevel.keys()[DebugLogger.current_log_level])
+	
 	print("=== Initializing Code Coverage ===")
 	
 	# Create coverage instance with scene tree and exclusions
