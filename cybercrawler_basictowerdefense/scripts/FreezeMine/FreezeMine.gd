@@ -1,17 +1,13 @@
-extends Node2D
+extends Mine
 class_name FreezeMine
 
 # FreezeMine properties
 @export var freeze_radius: float = 100.0
 @export var freeze_duration: float = 3.0  # Duration in seconds
 @export var trigger_radius: float = 80.0  # Radius to detect enemies for auto-trigger
-@export var cost: int = 15  # Cost to place a freeze mine
 @export var max_uses: int = 1  # Single use item
-@export var is_active: bool = true
 
 # State
-var grid_position: Vector2i
-var is_triggered: bool = false
 var uses_remaining: int
 var detection_timer: Timer
 
@@ -27,6 +23,7 @@ signal mine_depleted(mine: FreezeMine)
 
 func _ready():
 	uses_remaining = max_uses
+	cost = 15  # Set the cost for freeze mines
 	create_mine_visual()
 	setup_detection_timer()
 
@@ -151,6 +148,15 @@ func can_be_placed_at(grid_pos: Vector2i, grid_manager: GridManager) -> bool:
 
 func set_grid_position(grid_pos: Vector2i):
 	grid_position = grid_pos
+
+func get_mine_type() -> String:
+	return "freeze"
+
+func get_mine_name() -> String:
+	return "Freeze Mine"
+
+func trigger_mine():
+	trigger_freeze_mine()
 
 func get_cost() -> int:
 	return cost 

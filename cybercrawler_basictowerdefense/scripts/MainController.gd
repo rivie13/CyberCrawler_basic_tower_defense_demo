@@ -26,7 +26,7 @@ var currency_manager: CurrencyManagerInterface
 var game_manager: GameManager
 var rival_hacker_manager: RivalHackerManager
 var program_data_packet_manager: ProgramDataPacketManager
-var freeze_mine_manager: FreezeMineManager
+var freeze_mine_manager: MineManagerInterface
 
 # UI update timer
 var ui_update_timer: Timer
@@ -115,10 +115,10 @@ func initialize_systems():
 	program_data_packet_manager.program_packet_reached_end.connect(_on_program_packet_reached_end)
 	
 	# Connect freeze mine manager signals
-	freeze_mine_manager.freeze_mine_placed.connect(_on_freeze_mine_placed)
-	freeze_mine_manager.freeze_mine_placement_failed.connect(_on_freeze_mine_placement_failed)
-	freeze_mine_manager.freeze_mine_triggered.connect(_on_freeze_mine_triggered)
-	freeze_mine_manager.freeze_mine_depleted.connect(_on_freeze_mine_depleted)
+	freeze_mine_manager.mine_placed.connect(_on_freeze_mine_placed)
+	freeze_mine_manager.mine_placement_failed.connect(_on_freeze_mine_placement_failed)
+	freeze_mine_manager.mine_triggered.connect(_on_freeze_mine_triggered)
+	freeze_mine_manager.mine_depleted.connect(_on_freeze_mine_depleted)
 
 func setup_ui():
 	# Skip UI setup if we're in a test environment or UI nodes don't exist
@@ -193,7 +193,7 @@ func handle_grid_click(global_pos: Vector2):
 		# In freeze mine mode, try to place freeze mine
 		var grid_pos = grid_manager.world_to_grid(global_pos)
 		if grid_manager.is_valid_grid_position(grid_pos):
-			freeze_mine_manager.place_freeze_mine(grid_pos)
+			freeze_mine_manager.place_mine(grid_pos, "freeze")
 	elif current_click_mode == MODE_BUILD_TOWERS:
 		# In build mode, only try tower placement
 		var grid_pos = grid_manager.world_to_grid(global_pos)
@@ -538,7 +538,7 @@ func destroy_all_projectiles():
 				child.queue_free()
 
 # Freeze mine signal handlers
-func _on_freeze_mine_placed(mine: FreezeMine):
+func _on_freeze_mine_placed(mine: Mine):
 	print("MainController: Freeze mine placed at ", mine.grid_position)
 	update_info_label()
 
@@ -546,10 +546,10 @@ func _on_freeze_mine_placement_failed(reason: String):
 	print("MainController: Freeze mine placement failed - ", reason)
 	update_info_label()
 
-func _on_freeze_mine_triggered(mine: FreezeMine):
+func _on_freeze_mine_triggered(mine: Mine):
 	print("MainController: Freeze mine triggered at ", mine.grid_position)
 
-func _on_freeze_mine_depleted(mine: FreezeMine):
+func _on_freeze_mine_depleted(mine: Mine):
 	print("MainController: Freeze mine depleted at ", mine.grid_position)
 	update_info_label()
 

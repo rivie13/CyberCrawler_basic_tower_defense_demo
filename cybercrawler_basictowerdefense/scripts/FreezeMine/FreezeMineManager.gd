@@ -1,28 +1,25 @@
-extends Node
+extends MineManagerInterface
 class_name FreezeMineManager
+
+# FreezeMineManager implements MineManagerInterface
+# All methods from MineManagerInterface are implemented below
 
 # Manager references
 var grid_manager: GridManager
 var currency_manager: CurrencyManagerInterface
 
-# Freeze mine tracking
-var freeze_mines: Array[FreezeMine] = []
+# Mine tracking (using generic Mine type)
+var mines: Array[Mine] = []
 
 # Freeze mine scene
 const FREEZE_MINE_SCENE = preload("res://scenes/FreezeMine.tscn")
-
-# Signals
-signal freeze_mine_placed(mine: FreezeMine)
-signal freeze_mine_placement_failed(reason: String)
-signal freeze_mine_triggered(mine: FreezeMine)
-signal freeze_mine_depleted(mine: FreezeMine)
 
 func initialize(grid_mgr: GridManager, currency_mgr: CurrencyManagerInterface):
 	grid_manager = grid_mgr
 	currency_manager = currency_mgr
 
-func can_place_freeze_mine_at(grid_pos: Vector2i) -> bool:
-	# Check if position is valid for freeze mine placement
+func can_place_mine_at(grid_pos: Vector2i, mine_type: String = "freeze") -> bool:
+	# Check if position is valid for mine placement
 	if not grid_manager.is_valid_grid_position(grid_pos):
 		return false
 	if grid_manager.is_grid_occupied(grid_pos):
@@ -31,64 +28,70 @@ func can_place_freeze_mine_at(grid_pos: Vector2i) -> bool:
 		return false
 	return true
 
-func place_freeze_mine(grid_pos: Vector2i) -> bool:
-	var freeze_mine_cost = 15  # Cost for freeze mine
+func place_mine(grid_pos: Vector2i, mine_type: String = "freeze") -> bool:
+	var mine_cost = get_mine_cost(mine_type)
 	
 	# Check if player has enough currency
-	if currency_manager.get_currency() < freeze_mine_cost:
-		freeze_mine_placement_failed.emit("Not enough currency for freeze mine")
+	if currency_manager.get_currency() < mine_cost:
+		mine_placement_failed.emit("Not enough currency for " + mine_type + " mine")
 		return false
 	
 	# Check if position is valid
-	if not can_place_freeze_mine_at(grid_pos):
-		freeze_mine_placement_failed.emit("Cannot place freeze mine at this position")
+	if not can_place_mine_at(grid_pos, mine_type):
+		mine_placement_failed.emit("Cannot place " + mine_type + " mine at this position")
 		return false
 	
-	# Create freeze mine
-	var freeze_mine = create_freeze_mine_at_position(grid_pos)
-	if freeze_mine:
+	# Create mine
+	var mine = create_mine_at_position(grid_pos, mine_type)
+	if mine:
 		# Deduct currency
-		currency_manager.spend_currency(freeze_mine_cost)
+		currency_manager.spend_currency(mine_cost)
 		
-		# Track the freeze mine
-		freeze_mines.append(freeze_mine)
+		# Track the mine
+		mines.append(mine)
 		
 		# Connect signals
-		freeze_mine.mine_triggered.connect(_on_freeze_mine_triggered)
-		freeze_mine.mine_depleted.connect(_on_freeze_mine_depleted)
+		mine.mine_triggered.connect(_on_mine_triggered)
+		mine.mine_depleted.connect(_on_mine_depleted)
 		
 		# Mark grid position as occupied
 		grid_manager.set_grid_occupied(grid_pos, true)
 		
 		# Emit success signal
-		freeze_mine_placed.emit(freeze_mine)
+		mine_placed.emit(mine)
 		
-		print("Freeze mine placed at ", grid_pos, " for ", freeze_mine_cost, " currency")
+		print(mine.get_mine_name() + " placed at ", grid_pos, " for ", mine_cost, " currency")
 		return true
 	else:
-		freeze_mine_placement_failed.emit("Failed to create freeze mine")
+		mine_placement_failed.emit("Failed to create " + mine_type + " mine")
 		return false
 
-func create_freeze_mine_at_position(grid_pos: Vector2i) -> FreezeMine:
-	# Create freeze mine instance
-	var freeze_mine = FreezeMine.new()
+func create_mine_at_position(grid_pos: Vector2i, mine_type: String = "freeze") -> Mine:
+	# Create mine instance based on type
+	var mine: Mine
+	match mine_type:
+		"freeze":
+			mine = FreezeMine.new()
+		_:
+			print("Unknown mine type: ", mine_type)
+			return null
 	
 	# Set position
 	var world_pos = grid_manager.grid_to_world(grid_pos)
-	freeze_mine.global_position = world_pos
-	freeze_mine.set_grid_position(grid_pos)
+	mine.global_position = world_pos
+	mine.set_grid_position(grid_pos)
 	
 	# Add to scene - add to self (works in both test and real environments)
-	add_child(freeze_mine)
+	add_child(mine)
 	
-	return freeze_mine
+	return mine
 
-func _on_freeze_mine_triggered(mine: FreezeMine):
-	freeze_mine_triggered.emit(mine)
+func _on_mine_triggered(mine: Mine):
+	mine_triggered.emit(mine)
 
-func _on_freeze_mine_depleted(mine: FreezeMine):
+func _on_mine_depleted(mine: Mine):
 	# Remove from tracking
-	freeze_mines.erase(mine)
+	mines.erase(mine)
 	
 	# Free grid position
 	grid_manager.set_grid_occupied(mine.grid_position, false)
@@ -98,22 +101,27 @@ func _on_freeze_mine_depleted(mine: FreezeMine):
 	# Remove from scene
 	mine.queue_free()
 	
-	freeze_mine_depleted.emit(mine)
+	mine_depleted.emit(mine)
 
-func get_freeze_mines() -> Array[FreezeMine]:
-	return freeze_mines
+func get_mines() -> Array[Mine]:
+	return mines
 
-func get_freeze_mine_count() -> int:
-	return freeze_mines.size()
+func get_mine_count() -> int:
+	return mines.size()
 
-func clear_all_freeze_mines():
-	for mine in freeze_mines:
+func clear_all_mines():
+	for mine in mines:
 		if is_instance_valid(mine):
 			grid_manager.set_grid_occupied(mine.grid_position, false)
 			# Also unblock the grid cell
 			grid_manager.set_grid_blocked(mine.grid_position, false)
 			mine.queue_free()
-	freeze_mines.clear()
+	mines.clear()
 
-func get_freeze_mine_cost() -> int:
-	return 15  # Cost for freeze mine 
+func get_mine_cost(mine_type: String = "freeze") -> int:
+	match mine_type:
+		"freeze":
+			return 15  # Cost for freeze mine
+		_:
+			print("Unknown mine type: ", mine_type)
+			return 0 

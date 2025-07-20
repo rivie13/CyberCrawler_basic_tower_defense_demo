@@ -41,14 +41,14 @@
 
 ## 3. Current State Analysis
 
-### a. What’s Already Good
+### a. What's Already Good
 - Some interfaces exist in `scripts/Interfaces/`.
 - Some managers already use `initialize()` for dependency injection.
 
 ### b. What Needs Refactoring
 - **Direct Instantiations:** Any place where a manager or system is created with `.new()` inside another class should be refactored to accept it as a parameter.
 - **Hard NodePath Lookups:** Replace `get_node("...")` with dependency injection where possible.
-- **Signal Connections:** Prefer connecting signals in the parent or via dependency injection, not in the child’s `_ready()` unless the dependency is injected.
+- **Signal Connections:** Prefer connecting signals in the parent or via dependency injection, not in the child's `_ready()` unless the dependency is injected.
 - **Static Typing:** Use interface types for properties/parameters, not concrete classes.
 - **Test Doubles:** Ensure all tests use mocks/fakes, not real implementations, for dependencies.
 
@@ -127,7 +127,7 @@ rival_hacker_manager.initialize(mock_grid_manager, ...)
    - Update interfaces and implementations.
    - Refactor constructors/initializers.
    - Update all usages and tests.
-4. **Document the new architecture** in your project’s docs for future contributors.
+4. **Document the new architecture** in your project's docs for future contributors.
 
 ---
 
@@ -147,14 +147,14 @@ rival_hacker_manager.initialize(mock_grid_manager, ...)
 |------------------------|:--------------:|:---------------:|:---------------:|:--------:|-------|
 | **Clickable**          | ✅ Yes         | Utility Class   | ❌ No           | -        | Static utility, well-designed |
 | **TargetingUtil**      | ✅ Yes         | Utility Class   | ❌ No           | -        | Static utility, well-designed |
+| **CurrencyManager**    | ✅ Yes         | Interface       | ✅ COMPLETED    | -        | ✅ Refactored to CurrencyManagerInterface |
+| **FreezeMineManager**  | ✅ Yes         | Interface       | ✅ COMPLETED    | -        | ✅ Refactored to MineManagerInterface (generic) |
 | **GridManager**        | ❌ No          | -               | ✅ Yes          | HIGH     | Core system, needs interface |
 | **TowerManager**       | ❌ No          | -               | ✅ Yes          | HIGH     | Core system, needs interface |
-| **CurrencyManager**    | ❌ No          | -               | ✅ Yes          | MEDIUM   | Simple system, needs interface |
 | **WaveManager**        | ❌ No          | -               | ✅ Yes          | HIGH     | Core system, needs interface |
 | **GameManager**        | ❌ No          | -               | ✅ Yes          | MEDIUM   | Game state, needs interface |
 | **RivalHackerManager** | ❌ No          | -               | ✅ Yes          | HIGH     | Complex AI, needs interface |
 | **ProgramDataPacketManager** | ❌ No | -               | ✅ Yes          | MEDIUM   | Specialized, needs interface |
-| **FreezeMineManager**  | ❌ No          | -               | ✅ Yes          | LOW      | Simple system, needs interface |
 | **MainController**     | ❌ No          | -               | ✅ Yes          | HIGH     | Orchestrator, needs DI refactor |
 
 ### Dependency Injection Analysis
@@ -163,10 +163,12 @@ rival_hacker_manager.initialize(mock_grid_manager, ...)
 - **Initialize() methods:** Most managers use `initialize()` for dependency injection
 - **Signal-based communication:** Good use of signals between systems
 - **Separation of concerns:** Clear boundaries between different managers
+- **CurrencyManager refactored:** ✅ Successfully implemented interface pattern
+- **FreezeMineManager refactored:** ✅ Successfully implemented generic mine interface pattern
 
 #### ❌ **Issues Found:**
 - **Direct instantiation in MainController:** All managers created with `.new()` in `setup_managers()`
-- **No interface contracts:** Managers depend on concrete classes, not abstractions
+- **No interface contracts:** Most managers depend on concrete classes, not abstractions
 - **Hard coupling:** Systems directly reference each other's concrete types
 - **Test difficulties:** Cannot easily mock dependencies for unit testing
 
@@ -190,22 +192,13 @@ rival_hacker_manager.initialize(mock_grid_manager, ...)
    - Key methods: `get_enemy_towers()`, `get_rival_hackers()`, `activate()`
 
 #### **MEDIUM PRIORITY - Supporting Systems:**
-5. **CurrencyManager** → `CurrencyManagerInterface`
-   - Used by: TowerManager, FreezeMineManager
-   - Key methods: `can_afford_tower_type()`, `purchase_tower_type()`, `get_currency()`
-
-6. **GameManager** → `GameManagerInterface`
+5. **GameManager** → `GameManagerInterface`
    - Used by: GridManager, ProgramDataPacketManager, MainController
    - Key methods: `is_game_over()`, `trigger_game_over()`, `trigger_game_won()`
 
-7. **ProgramDataPacketManager** → `ProgramDataPacketManagerInterface`
+6. **ProgramDataPacketManager** → `ProgramDataPacketManagerInterface`
    - Used by: MainController, RivalHackerManager
    - Key methods: `get_program_data_packet()`, `can_player_release_packet()`
-
-#### **LOW PRIORITY - Simple Systems:**
-8. **FreezeMineManager** → `FreezeMineManagerInterface`
-   - Used by: MainController
-   - Key methods: `place_freeze_mine()`, `get_freeze_mines()`
 
 ### MainController Refactoring Plan
 
@@ -243,11 +236,36 @@ func setup_managers(grid_mgr: GridManagerInterface, wave_mgr: WaveManagerInterfa
 
 ## 11. Action Items
 
+- [x] **CurrencyManager refactored** - ✅ COMPLETED
+- [x] **FreezeMineManager refactored** - ✅ COMPLETED
 - [ ] Complete the audit table above for your codebase.
-- [ ] For each “Needs Refactor?”, create an interface and update usages.
+- [ ] For each "Needs Refactor?", create an interface and update usages.
 - [ ] Update all tests to use mocks/fakes.
 - [ ] Document the new dependency injection pattern in your project docs.
 
 ---
 
-**This plan will set you up for robust, testable, and maintainable code as your project grows.** 
+## 12. Completed Refactors
+
+### ✅ CurrencyManager Refactor (COMPLETED)
+- **Interface Created:** `CurrencyManagerInterface` in `scripts/Interfaces/CurrencyManagerInterface.gd`
+- **Implementation Updated:** `CurrencyManager` now extends `CurrencyManagerInterface`
+- **Dependencies Updated:** All managers now accept `CurrencyManagerInterface` instead of concrete class
+- **Tests Updated:** All tests pass with interface pattern
+- **Benefits Achieved:** 
+  - Loose coupling between currency system and other managers
+  - Easy to mock for testing
+  - Clear contract for currency management functionality
+
+### ✅ FreezeMineManager Refactor (COMPLETED)
+- **Generic Interface Created:** `MineManagerInterface` in `scripts/Interfaces/MineManagerInterface.gd`
+- **Base Class Created:** `Mine` in `scripts/Interfaces/Mine.gd` for all mine types
+- **Implementation Updated:** `FreezeMineManager` now extends `MineManagerInterface`
+- **FreezeMine Updated:** Now extends generic `Mine` class
+- **Dependencies Updated:** MainController now accepts `MineManagerInterface`
+- **Tests Updated:** All tests pass with generic interface pattern
+- **Benefits Achieved:**
+  - **Open/Closed Principle:** Easy to add new mine types (explosive, EMP, etc.)
+  - **Generic design:** One interface handles all mine types
+  - **Loose coupling:** Mine system decoupled from specific implementations
+  - **Future-proof:** Can easily add `ExplosiveMine`, `EMPMine`, etc. without changing interface 
