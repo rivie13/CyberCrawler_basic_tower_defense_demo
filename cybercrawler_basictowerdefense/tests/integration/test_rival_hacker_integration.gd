@@ -38,7 +38,7 @@ func test_rival_hacker_targeting_integration():
 	# Test that rival hacker can find targets
 	# Note: This tests the integration even if targeting logic isn't fully implemented
 	assert_not_null(rival_hacker.detection_range, "Detection range should be set")
-	assert_gt(rival_hacker.detection_range, 0, "Detection range should be positive")
+	assert_gt(rival_hacker.detection_range, 0.0, "Detection range should be positive")
 
 func test_rival_hacker_attack_integration():
 	# Test that RivalHacker integrates with attack system
@@ -51,7 +51,7 @@ func test_rival_hacker_attack_integration():
 	
 	# Test that rival hacker has attack properties
 	assert_gt(rival_hacker.attack_damage, 0, "Attack damage should be positive")
-	assert_gt(rival_hacker.attack_rate, 0, "Attack rate should be positive")
+	assert_gt(rival_hacker.attack_rate, 0.0, "Attack rate should be positive")
 
 func test_rival_hacker_movement_integration():
 	# Test that RivalHacker integrates with movement system
@@ -62,7 +62,7 @@ func test_rival_hacker_movement_integration():
 	rival_hacker.target_position = Vector2(200, 200)
 	
 	# Test that rival hacker has movement properties
-	assert_gt(rival_hacker.movement_speed, 0, "Movement speed should be positive")
+	assert_gt(rival_hacker.movement_speed, 0.0, "Movement speed should be positive")
 	assert_not_null(rival_hacker.target_position, "Target position should be set")
 
 func test_rival_hacker_signal_integration():
