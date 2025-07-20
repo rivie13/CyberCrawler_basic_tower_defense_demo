@@ -83,7 +83,8 @@ func test_activate():
 	rival_hacker_manager.initialize(grid_manager, currency_manager, tower_manager, wave_manager, game_manager)
 	rival_hacker_manager.activate()
 	
-	assert_true(rival_hacker_manager.is_active)
+	# is_active should be false initially - only set to true when first alert is triggered
+	assert_false(rival_hacker_manager.is_active)
 	assert_true(rival_hacker_manager.alert_system.is_monitoring)
 
 func test_deactivate():
