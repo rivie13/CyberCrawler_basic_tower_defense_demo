@@ -71,7 +71,8 @@ func _on_damage_immunity_timeout():
 	is_immune_to_damage = false
 	# Reset visual opacity to normal
 	modulate.a = 1.0
-	print("Program data packet damage immunity ended")
+	if DEBUG_MODE:
+		DebugLogger.debug("Program data packet damage immunity ended", "PATH")
 
 func create_health_bar():
 	var health_bar_bg = ColorRect.new()
@@ -90,10 +91,8 @@ func create_health_bar():
 func set_path(new_path: Array[Vector2]):
 	"""Set the path for the program data packet to follow, keeping percent progress if possible. Robustly handles short paths and edge cases."""
 	DebugLogger.debug_path("set_path called. Old path size: %d, New path size: %d, is_active: %s, is_alive: %s" % [path_points.size(), new_path.size(), str(is_active), str(is_alive)])
-	print("[ProgramDataPacket] set_path called. Old path size: %d, New path size: %d" % [path_points.size(), new_path.size()])
 	if new_path.size() < 2:
 		DebugLogger.error("New path is too short. Destroying packet.", "PATH")
-		print("[ProgramDataPacket] ERROR: New path is too short. Destroying packet.")
 		is_alive = false
 		queue_free()
 		return
@@ -108,7 +107,7 @@ func set_path(new_path: Array[Vector2]):
 		if old_total > 0.0:
 			percent = clamp(old_traveled / old_total, 0.0, 1.0)
 		if DEBUG_MODE:
-			print("[ProgramDataPacket] Old path total: %.2f, traveled: %.2f, percent: %.2f" % [old_total, old_traveled, percent])
+			DebugLogger.debug_path("Old path total: %.2f, traveled: %.2f, percent: %.2f" % [old_total, old_traveled, percent])
 
 		# Find position on new path at same percent
 		var new_total = _path_total_length(new_path)
@@ -125,7 +124,7 @@ func set_path(new_path: Array[Vector2]):
 					new_target_pos = new_path[i].lerp(new_path[i+1], seg_percent)
 					new_index = i
 					if DEBUG_MODE:
-						print("[ProgramDataPacket] Teleporting to segment %d, seg_percent: %.2f, pos: %s" % [i, seg_percent, str(new_target_pos)])
+						DebugLogger.debug_path("Teleporting to segment %d, seg_percent: %.2f, pos: %s" % [i, seg_percent, str(new_target_pos)])
 					found = true
 					break
 				accum += seg_len
@@ -136,12 +135,12 @@ func set_path(new_path: Array[Vector2]):
 					new_target_pos = new_path[1]
 					new_index = 0
 					if DEBUG_MODE:
-						print("[ProgramDataPacket] Path very short, moving to first segment instead of start.")
+						DebugLogger.debug_path("Path very short, moving to first segment instead of start.")
 				else:
 					new_target_pos = new_path[-2]
 					new_index = new_path.size() - 2
 					if DEBUG_MODE:
-						print("[ProgramDataPacket] Teleporting to near end of new path.")
+						DebugLogger.debug_path("Teleporting to near end of new path.")
 
 		path_points = new_path
 		current_path_index = new_index
@@ -152,7 +151,7 @@ func set_path(new_path: Array[Vector2]):
 		else:
 			target_position = path_points[current_path_index]
 		if DEBUG_MODE:
-			print("[ProgramDataPacket] set_path complete. New index: %d, New pos: %s, Target: %s" % [new_index, str(new_target_pos), str(target_position)])
+			DebugLogger.debug_path("set_path complete. New index: %d, New pos: %s, Target: %s" % [new_index, str(new_target_pos), str(target_position)])
 		pause_for_path_change(3.0)
 	else:
 		# If no old path, just snap to start
@@ -162,7 +161,7 @@ func set_path(new_path: Array[Vector2]):
 			global_position = path_points[0]
 			target_position = path_points[1] if path_points.size() > 1 else path_points[0]
 			if DEBUG_MODE:
-				print("[ProgramDataPacket] set_path: Snapped to start of new path (no old path).")
+				DebugLogger.debug_path("set_path: Snapped to start of new path (no old path).")
 	# if DEBUG_MODE:
 	# 	print("[DEBUG][set_path] After assignment: current_path_index=%d, global_position=%s, target_position=%s, path_points.size()=%d" % [current_path_index, str(global_position), str(target_position), path_points.size()])
 
@@ -240,7 +239,7 @@ func activate():
 	is_active = true
 	was_ever_activated = true  # Remember that player has activated this packet
 	if DEBUG_MODE:
-		print("Program data packet activated!")
+		DebugLogger.debug("Program data packet activated!", "PATH")
 
 func _physics_process(delta):
 	# Changed back to _physics_process for consistent movement with fixed timestep (Copilot review fix)
@@ -295,7 +294,7 @@ func take_damage(damage: int):
 	modulate.a = 0.6
 	
 	if DEBUG_MODE:
-		print("Program data packet took ", damage, " damage. Health: ", health, "/", max_health, " (immune for ", damage_immunity_duration, "s)")
+		DebugLogger.debug("Program data packet took %d damage. Health: %d/%d (immune for %.1fs)" % [damage, health, max_health, damage_immunity_duration], "PATH")
 	
 	if health <= 0:
 		die()
@@ -317,13 +316,13 @@ func update_health_bar():
 func die():
 	is_alive = false
 	if DEBUG_MODE:
-		print("Program data packet destroyed!")
+		DebugLogger.debug("Program data packet destroyed!", "PATH")
 	program_packet_destroyed.emit(self)
 	queue_free()
 
 func reach_end():
 	if DEBUG_MODE:
-		print("Program data packet reached enemy network! Player wins!")
+		DebugLogger.debug("Program data packet reached enemy network! Player wins!", "PATH")
 	program_packet_reached_end.emit(self)
 	queue_free()
 
@@ -359,7 +358,7 @@ func check_enemy_collisions():
 		if distance < COLLISION_THRESHOLD:  # Use constant instead of magic number
 			take_damage(1)
 			if DEBUG_MODE:
-				print("Program data packet hit enemy at distance ", distance, "! Taking damage...")
+				DebugLogger.debug("Program data packet hit enemy at distance %.1f! Taking damage..." % distance, "PATH")
 			break  # Only take damage from one enemy per frame to avoid rapid damage
 
 func get_enemies_in_scene() -> Array:
