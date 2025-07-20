@@ -218,6 +218,10 @@ func update_blocked_grid_data(grid_pos: Vector2i, blocked: bool):
 	# print("[DEBUG][update_blocked_grid_data] blocked_grid_data[%d][%d] = %s" % [grid_pos.y, grid_pos.x, str(blocked)])
 
 func ensure_path_solvability(grid_pos: Vector2i, blocked: bool) -> bool:
+	# If no path is set up, allow the operation (no path to check)
+	if path_grid_positions.size() == 0:
+		return true
+	
 	var path_blocked = false
 	var candidates = []
 	var to_block = null
