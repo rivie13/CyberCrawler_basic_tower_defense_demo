@@ -13,14 +13,21 @@ func before_each():
 	game_manager = GameManager.new()
 	grid_manager = GridManager.new()
 	
+	# Create proper mock managers for integration testing
+	var currency_manager = CurrencyManager.new()
+	var tower_manager = TowerManager.new()
+	
 	# Add to scene
 	add_child_autofree(wave_manager)
 	add_child_autofree(game_manager)
 	add_child_autofree(grid_manager)
+	add_child_autofree(currency_manager)
+	add_child_autofree(tower_manager)
 	
-	# Initialize the integration
+	# Initialize the integration with proper managers
 	wave_manager.initialize(grid_manager)
-	game_manager.initialize(wave_manager, null, null)  # Simplified initialization
+	tower_manager.initialize(grid_manager, currency_manager, wave_manager)
+	game_manager.initialize(wave_manager, currency_manager, tower_manager)
 
 func test_wave_manager_initialization():
 	# Test that WaveManager properly initializes with GridManager

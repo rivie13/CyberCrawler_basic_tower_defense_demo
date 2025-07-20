@@ -229,12 +229,11 @@ func _on_path_pause_timeout():
 	# Resume if the player has ever activated this packet
 	if was_ever_activated:
 		is_active = true
-		# if DEBUG_MODE:
-		# 	print("[DEBUG][_on_path_pause_timeout] Resuming packet (was_ever_activated=true). is_active now: %s" % str(is_active))
+		if DEBUG_MODE:
+			DebugLogger.debug("Resuming packet (was_ever_activated=true). is_active now: %s" % str(is_active), "PATH")
 	else:
-		# if DEBUG_MODE:
-		# 	print("[DEBUG][_on_path_pause_timeout] Not resuming, player never activated this packet.")
-		pass
+		if DEBUG_MODE:
+			DebugLogger.debug("Not resuming, player never activated this packet.", "PATH")
 
 func activate():
 	"""Activate the program data packet to start moving"""

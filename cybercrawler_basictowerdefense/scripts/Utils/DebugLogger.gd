@@ -21,9 +21,9 @@ static var is_production: bool = false
 
 # Initialize the logger based on environment
 static func initialize():
-	# Detect environment
-	is_development = OS.is_debug_build() and Engine.is_editor_hint()
+	# Detect environment - testing takes priority over development
 	is_testing = _is_running_tests()
+	is_development = OS.is_debug_build() and not is_testing
 	is_production = not OS.is_debug_build()
 	
 	# Set log level based on environment
