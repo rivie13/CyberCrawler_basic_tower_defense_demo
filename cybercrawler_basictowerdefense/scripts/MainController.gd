@@ -38,6 +38,10 @@ var selected_tower_type: String = BASIC_TOWER  # Default to basic tower
 var current_click_mode: String = MODE_BUILD_TOWERS  # Default to tower building mode
 
 func _ready():
+	# Initialize debug logger first
+	DebugLogger.initialize()
+	DebugLogger.info("MainController starting up...", "INIT")
+	
 	add_to_group("main_controller")
 	setup_managers()
 	initialize_systems()

@@ -6,7 +6,8 @@ const COLLISION_THRESHOLD: float = 40.0
 const TARGET_REACH_THRESHOLD: float = 10.0
 
 # Debug mode flag for conditional logging
-const DEBUG_MODE := true
+const DEBUG_MODE: bool = true
+# Debug logging is now handled by DebugLogger singleton
 
 # Program data packet properties
 @export var speed: float = 80.0  # Slightly slower than enemies
@@ -70,7 +71,8 @@ func _on_damage_immunity_timeout():
 	is_immune_to_damage = false
 	# Reset visual opacity to normal
 	modulate.a = 1.0
-	print("Program data packet damage immunity ended")
+	if DEBUG_MODE:
+		DebugLogger.debug("Program data packet damage immunity ended", "PATH")
 
 func create_health_bar():
 	var health_bar_bg = ColorRect.new()
@@ -87,14 +89,10 @@ func create_health_bar():
 	add_child(health_bar)
 
 func set_path(new_path: Array[Vector2]):
-	if DEBUG_MODE:
-		print("[DEBUG][set_path] Called. Old path size: %d, New path size: %d, is_active: %s, is_alive: %s" % [path_points.size(), new_path.size(), str(is_active), str(is_alive)])
 	"""Set the path for the program data packet to follow, keeping percent progress if possible. Robustly handles short paths and edge cases."""
-	if DEBUG_MODE:
-		print("[ProgramDataPacket] set_path called. Old path size: %d, New path size: %d" % [path_points.size(), new_path.size()])
+	DebugLogger.debug_path("set_path called. Old path size: %d, New path size: %d, is_active: %s, is_alive: %s" % [path_points.size(), new_path.size(), str(is_active), str(is_alive)])
 	if new_path.size() < 2:
-		if DEBUG_MODE:
-			print("[ProgramDataPacket] ERROR: New path is too short. Destroying packet.")
+		DebugLogger.error("New path is too short. Destroying packet.", "PATH")
 		is_alive = false
 		queue_free()
 		return
@@ -109,7 +107,7 @@ func set_path(new_path: Array[Vector2]):
 		if old_total > 0.0:
 			percent = clamp(old_traveled / old_total, 0.0, 1.0)
 		if DEBUG_MODE:
-			print("[ProgramDataPacket] Old path total: %.2f, traveled: %.2f, percent: %.2f" % [old_total, old_traveled, percent])
+			DebugLogger.debug_path("Old path total: %.2f, traveled: %.2f, percent: %.2f" % [old_total, old_traveled, percent])
 
 		# Find position on new path at same percent
 		var new_total = _path_total_length(new_path)
@@ -126,7 +124,7 @@ func set_path(new_path: Array[Vector2]):
 					new_target_pos = new_path[i].lerp(new_path[i+1], seg_percent)
 					new_index = i
 					if DEBUG_MODE:
-						print("[ProgramDataPacket] Teleporting to segment %d, seg_percent: %.2f, pos: %s" % [i, seg_percent, str(new_target_pos)])
+						DebugLogger.debug_path("Teleporting to segment %d, seg_percent: %.2f, pos: %s" % [i, seg_percent, str(new_target_pos)])
 					found = true
 					break
 				accum += seg_len
@@ -137,12 +135,12 @@ func set_path(new_path: Array[Vector2]):
 					new_target_pos = new_path[1]
 					new_index = 0
 					if DEBUG_MODE:
-						print("[ProgramDataPacket] Path very short, moving to first segment instead of start.")
+						DebugLogger.debug_path("Path very short, moving to first segment instead of start.")
 				else:
 					new_target_pos = new_path[-2]
 					new_index = new_path.size() - 2
 					if DEBUG_MODE:
-						print("[ProgramDataPacket] Teleporting to near end of new path.")
+						DebugLogger.debug_path("Teleporting to near end of new path.")
 
 		path_points = new_path
 		current_path_index = new_index
@@ -153,7 +151,7 @@ func set_path(new_path: Array[Vector2]):
 		else:
 			target_position = path_points[current_path_index]
 		if DEBUG_MODE:
-			print("[ProgramDataPacket] set_path complete. New index: %d, New pos: %s, Target: %s" % [new_index, str(new_target_pos), str(target_position)])
+			DebugLogger.debug_path("set_path complete. New index: %d, New pos: %s, Target: %s" % [new_index, str(new_target_pos), str(target_position)])
 		pause_for_path_change(3.0)
 	else:
 		# If no old path, just snap to start
@@ -163,9 +161,9 @@ func set_path(new_path: Array[Vector2]):
 			global_position = path_points[0]
 			target_position = path_points[1] if path_points.size() > 1 else path_points[0]
 			if DEBUG_MODE:
-				print("[ProgramDataPacket] set_path: Snapped to start of new path (no old path).")
-	if DEBUG_MODE:
-		print("[DEBUG][set_path] After assignment: current_path_index=%d, global_position=%s, target_position=%s, path_points.size()=%d" % [current_path_index, str(global_position), str(target_position), path_points.size()])
+				DebugLogger.debug_path("set_path: Snapped to start of new path (no old path).")
+	# if DEBUG_MODE:
+	# 	print("[DEBUG][set_path] After assignment: current_path_index=%d, global_position=%s, target_position=%s, path_points.size()=%d" % [current_path_index, str(global_position), str(target_position), path_points.size()])
 
 # Helper: total length of a path
 func _path_total_length(path: Array[Vector2]) -> float:
@@ -187,8 +185,8 @@ func _path_distance_traveled(path: Array[Vector2], idx: int, pos: Vector2) -> fl
 var _path_pause_timer: Timer = null
 
 func pause_for_path_change(duration: float):
-	if DEBUG_MODE:
-		print("[DEBUG][pause_for_path_change] Called. duration=%.2f, is_active=%s, is_alive=%s" % [duration, str(is_active), str(is_alive)])
+	# if DEBUG_MODE:
+	# 	print("[DEBUG][pause_for_path_change] Called. duration=%.2f, is_active=%s, is_alive=%s" % [duration, str(is_active), str(is_alive)])
 	
 	# No need to store current state - we use was_ever_activated instead
 	
@@ -216,12 +214,12 @@ func pause_for_path_change(duration: float):
 	tween.tween_property(self, "modulate:a", 0.5, 0.5)
 	tween.tween_property(self, "modulate:a", 0.8, 0.5)
 	
-	if DEBUG_MODE:
-		print("[DEBUG][pause_for_path_change] Timer started. is_active set to false. was_ever_activated=%s" % str(was_ever_activated))
+	# if DEBUG_MODE:
+	# 	print("[DEBUG][pause_for_path_change] Timer started. is_active set to false. was_ever_activated=%s" % str(was_ever_activated))
 
 func _on_path_pause_timeout():
-	if DEBUG_MODE:
-		print("[DEBUG][_on_path_pause_timeout] Timer fired. was_ever_activated=%s" % str(was_ever_activated))
+	# if DEBUG_MODE:
+	# 	print("[DEBUG][_on_path_pause_timeout] Timer fired. was_ever_activated=%s" % str(was_ever_activated))
 	
 	# Stop any visual effects and restore normal appearance
 	var tween = create_tween()
@@ -231,17 +229,17 @@ func _on_path_pause_timeout():
 	if was_ever_activated:
 		is_active = true
 		if DEBUG_MODE:
-			print("[DEBUG][_on_path_pause_timeout] Resuming packet (was_ever_activated=true). is_active now: %s" % str(is_active))
+			DebugLogger.debug("Resuming packet (was_ever_activated=true). is_active now: %s" % str(is_active), "PATH")
 	else:
 		if DEBUG_MODE:
-			print("[DEBUG][_on_path_pause_timeout] Not resuming, player never activated this packet.")
+			DebugLogger.debug("Not resuming, player never activated this packet.", "PATH")
 
 func activate():
 	"""Activate the program data packet to start moving"""
 	is_active = true
 	was_ever_activated = true  # Remember that player has activated this packet
 	if DEBUG_MODE:
-		print("Program data packet activated!")
+		DebugLogger.debug("Program data packet activated!", "PATH")
 
 func _physics_process(delta):
 	# Changed back to _physics_process for consistent movement with fixed timestep (Copilot review fix)
@@ -296,7 +294,7 @@ func take_damage(damage: int):
 	modulate.a = 0.6
 	
 	if DEBUG_MODE:
-		print("Program data packet took ", damage, " damage. Health: ", health, "/", max_health, " (immune for ", damage_immunity_duration, "s)")
+		DebugLogger.debug("Program data packet took %d damage. Health: %d/%d (immune for %.1fs)" % [damage, health, max_health, damage_immunity_duration], "PATH")
 	
 	if health <= 0:
 		die()
@@ -318,13 +316,13 @@ func update_health_bar():
 func die():
 	is_alive = false
 	if DEBUG_MODE:
-		print("Program data packet destroyed!")
+		DebugLogger.debug("Program data packet destroyed!", "PATH")
 	program_packet_destroyed.emit(self)
 	queue_free()
 
 func reach_end():
 	if DEBUG_MODE:
-		print("Program data packet reached enemy network! Player wins!")
+		DebugLogger.debug("Program data packet reached enemy network! Player wins!", "PATH")
 	program_packet_reached_end.emit(self)
 	queue_free()
 
@@ -360,7 +358,7 @@ func check_enemy_collisions():
 		if distance < COLLISION_THRESHOLD:  # Use constant instead of magic number
 			take_damage(1)
 			if DEBUG_MODE:
-				print("Program data packet hit enemy at distance ", distance, "! Taking damage...")
+				DebugLogger.debug("Program data packet hit enemy at distance %.1f! Taking damage..." % distance, "PATH")
 			break  # Only take damage from one enemy per frame to avoid rapid damage
 
 func get_enemies_in_scene() -> Array:
