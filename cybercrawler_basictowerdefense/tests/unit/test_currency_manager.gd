@@ -3,10 +3,10 @@ extends GutTest
 # Unit tests for CurrencyManager class
 # These tests verify the currency system functionality
 
-var currency_manager: CurrencyManager
+var currency_manager: CurrencyManagerInterface
 
 func before_each():
-	# Setup fresh CurrencyManager for each test
+	# Setup fresh CurrencyManager for each test (concrete implementation)
 	currency_manager = CurrencyManager.new()
 	add_child_autofree(currency_manager)
 
@@ -23,8 +23,6 @@ func test_ready_emits_currency_signal():
 	currency_manager._ready()
 	
 	assert_signal_emitted(currency_manager, "currency_changed", "Should emit currency_changed signal on _ready")
-	# For parameter checking, we'll verify the signal was emitted with basic assertion
-	# The complex parameter checking was causing the GUT errors, so we'll keep it simple
 
 func test_affordability_checks():
 	# Test basic tower affordability
@@ -61,7 +59,7 @@ func test_basic_tower_purchase():
 	var result = currency_manager.purchase_basic_tower()
 	
 	assert_true(result, "Purchase should succeed")
-	assert_eq(currency_manager.get_currency(), 50, "Should have 50 currency remaining")
+	assert_eq(currency_manager.get_currency(), 50, "Should have 50 currency remaining after basic tower purchase")
 	assert_signal_emitted(currency_manager, "currency_changed", "Should emit currency_changed signal")
 
 func test_basic_tower_purchase_insufficient_funds():
@@ -81,7 +79,7 @@ func test_powerful_tower_purchase():
 	var result = currency_manager.purchase_powerful_tower()
 	
 	assert_true(result, "Purchase should succeed")
-	assert_eq(currency_manager.get_currency(), 25, "Should have 25 currency remaining")
+	assert_eq(currency_manager.get_currency(), 25, "Should have 25 currency remaining after powerful tower purchase")
 	assert_signal_emitted(currency_manager, "currency_changed", "Should emit currency_changed signal")
 
 func test_powerful_tower_purchase_insufficient_funds():
@@ -159,10 +157,14 @@ func test_spend_currency():
 	assert_eq(currency_manager.get_currency(), 70, "Currency should remain unchanged when spending fails")
 
 func test_cost_setters():
-	# Test setting tower costs
+	# Test setting tower costs - this test modifies costs but doesn't affect other tests
+	# because each test gets a fresh CurrencyManager instance
+	
+	# Test setting basic tower cost
 	currency_manager.set_basic_tower_cost(60)
 	assert_eq(currency_manager.get_basic_tower_cost(), 60, "Should update basic tower cost")
 	
+	# Test setting powerful tower cost
 	currency_manager.set_powerful_tower_cost(100)
 	assert_eq(currency_manager.get_powerful_tower_cost(), 100, "Should update powerful tower cost")
 	
@@ -176,6 +178,18 @@ func test_cost_setters():
 	
 	currency_manager.set_basic_tower_cost(-10)
 	assert_eq(currency_manager.get_basic_tower_cost(), 80, "Should not set negative cost")
+
+func test_cost_modification_affects_purchase():
+	# Test that cost modifications actually affect purchase behavior
+	currency_manager.set_basic_tower_cost(40)
+	
+	# Should now be able to purchase basic tower for 40 instead of 50
+	watch_signals(currency_manager)
+	var result = currency_manager.purchase_basic_tower()
+	
+	assert_true(result, "Purchase should succeed with modified cost")
+	assert_eq(currency_manager.get_currency(), 60, "Should have 60 currency remaining after 40 cost purchase")
+	assert_signal_emitted(currency_manager, "currency_changed", "Should emit signal")
 
 func test_currency_per_kill_setter():
 	# Test setting currency per kill

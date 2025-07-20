@@ -22,7 +22,7 @@ const MODE_PLACE_FREEZE_MINE = "place_freeze_mine"
 var grid_manager: GridManager
 var wave_manager: WaveManager  
 var tower_manager: TowerManager
-var currency_manager: CurrencyManager
+var currency_manager: CurrencyManagerInterface
 var game_manager: GameManager
 var rival_hacker_manager: RivalHackerManager
 var program_data_packet_manager: ProgramDataPacketManager

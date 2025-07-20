@@ -3,7 +3,7 @@ class_name FreezeMineManager
 
 # Manager references
 var grid_manager: GridManager
-var currency_manager: CurrencyManager
+var currency_manager: CurrencyManagerInterface
 
 # Freeze mine tracking
 var freeze_mines: Array[FreezeMine] = []
@@ -17,7 +17,7 @@ signal freeze_mine_placement_failed(reason: String)
 signal freeze_mine_triggered(mine: FreezeMine)
 signal freeze_mine_depleted(mine: FreezeMine)
 
-func initialize(grid_mgr: GridManager, currency_mgr: CurrencyManager):
+func initialize(grid_mgr: GridManager, currency_mgr: CurrencyManagerInterface):
 	grid_manager = grid_mgr
 	currency_manager = currency_mgr
 

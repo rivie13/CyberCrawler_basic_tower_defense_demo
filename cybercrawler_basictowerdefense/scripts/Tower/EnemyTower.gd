@@ -161,7 +161,7 @@ func get_main_controller():
 func get_player_towers() -> Array[Tower]:
 	var towers: Array[Tower] = []
 	var main_controller = get_main_controller()
-	if main_controller and main_controller.tower_manager:
+	if main_controller and "tower_manager" in main_controller and main_controller.tower_manager:
 		towers = main_controller.tower_manager.get_towers()
 	
 	return towers
@@ -300,7 +300,7 @@ func get_health_info() -> String:
 func get_program_data_packet() -> ProgramDataPacket:
 	"""Get the program data packet from the main controller"""
 	var main_controller = get_main_controller()
-	if main_controller and main_controller.program_data_packet_manager:
+	if main_controller and "program_data_packet_manager" in main_controller:
 		return main_controller.program_data_packet_manager.get_program_data_packet()
 	return null
 

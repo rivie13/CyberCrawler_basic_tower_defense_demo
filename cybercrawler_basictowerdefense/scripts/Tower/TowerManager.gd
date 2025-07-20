@@ -18,10 +18,10 @@ var towers_placed: Array[Tower] = []
 
 # References to other managers
 var grid_manager: Node
-var currency_manager: CurrencyManager
+var currency_manager: CurrencyManagerInterface
 var wave_manager: WaveManager
 
-func initialize(grid_mgr: Node, currency_mgr: CurrencyManager, wave_mgr: WaveManager):
+func initialize(grid_mgr: Node, currency_mgr: CurrencyManagerInterface, wave_mgr: WaveManager):
 	grid_manager = grid_mgr
 	currency_manager = currency_mgr
 	wave_manager = wave_mgr

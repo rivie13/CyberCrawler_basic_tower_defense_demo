@@ -42,7 +42,7 @@ var player_threat_level: int = 0  # Tracks how threatening player is
 
 # References to other managers
 var grid_manager: GridManager
-var currency_manager: CurrencyManager
+var currency_manager: CurrencyManagerInterface
 var tower_manager: TowerManager
 var wave_manager: WaveManager
 var game_manager: GameManager = null
@@ -128,7 +128,7 @@ func setup_timers():
 	
 	# Timer for initial activation delay - removed (now using alert-based activation)
 
-func initialize(grid_mgr: GridManager, currency_mgr: CurrencyManager, tower_mgr: TowerManager, wave_mgr: WaveManager, gm: GameManager = null):
+func initialize(grid_mgr: GridManager, currency_mgr: CurrencyManagerInterface, tower_mgr: TowerManager, wave_mgr: WaveManager, gm: GameManager = null):
 	grid_manager = grid_mgr
 	currency_manager = currency_mgr
 	tower_manager = tower_mgr
@@ -173,10 +173,10 @@ func activate():
 	if is_active:
 		return
 	print("RivalHacker: Starting activation sequence...")
+	# Don't set is_active to true yet - wait for first alert
 	if alert_system:
 		alert_system.start_monitoring()
 	print("RivalHacker: Alert system monitoring started - waiting for alerts to trigger tower placement")
-	# Removed: Do not start path_block_timer or non_path_block_timer here
 
 func _on_placement_timer_timeout():
 	if not is_active:

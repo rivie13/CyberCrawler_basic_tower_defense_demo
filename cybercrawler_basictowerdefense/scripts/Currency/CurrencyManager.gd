@@ -1,12 +1,8 @@
-extends Node
+extends CurrencyManagerInterface
 class_name CurrencyManager
 
-# Tower type constants - consistent with TowerManager  
-const BASIC_TOWER = "basic"
-const POWERFUL_TOWER = "powerful"
-
-# Signals for UI updates
-signal currency_changed(new_amount: int)
+# CurrencyManager implements CurrencyManagerInterface
+# All methods from CurrencyManagerInterface are implemented below
 
 # Currency system
 var player_currency: int = 100  # Starting money for towers
