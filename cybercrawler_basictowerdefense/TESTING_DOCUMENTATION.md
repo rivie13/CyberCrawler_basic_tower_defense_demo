@@ -169,11 +169,12 @@ cd "C:\Users\rivie\CursorProjects\CyberCrawler_basic_tower_defense_demo\cybercra
 - **Success Rate**: 100% (382/382 passing)
 - **Coverage**: 84.6% for tested files
 
-### Testing Strategy VERY IMPORTANT MUST FOLLOW THIS PLAN
+## Testing Strategy VERY IMPORTANT MUST FOLLOW THIS PLAN
 - **Read the Files**: Make sure to read the file to be tested and dependencies it has to understand what you need to do
 - **Read the Docs**: Make sure to read the GUT documentation to understand any limitations there may be to what we need to test
 - **Create a plan**: Create a plan of how to write the tests properly
 - **Write the Tests**: Actually write the tests, but only after you have done the previous steps!!!
+  - AND ONLY DO ONE AT A TIME TEST IT AFTER TO MAKE SURE IT WORKS BEFORE JUST MOVING ON TO DO ANOTHER TEST!!!
 
 ## Testing Plan
 
