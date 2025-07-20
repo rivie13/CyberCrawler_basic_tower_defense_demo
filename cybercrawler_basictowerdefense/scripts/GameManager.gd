@@ -26,13 +26,13 @@ var wave_countdown_active: bool = false
 # References to other managers
 var wave_manager: WaveManager
 var currency_manager: CurrencyManagerInterface
-var tower_manager: Node
+var tower_manager: TowerManagerInterface
 
 func _ready():
 	# Initialize timer system
 	game_session_start_time = Time.get_ticks_msec()
 
-func initialize(wave_mgr: WaveManager, currency_mgr: CurrencyManagerInterface, tower_mgr: Node):
+func initialize(wave_mgr: WaveManager, currency_mgr: CurrencyManagerInterface, tower_mgr: TowerManagerInterface):
 	wave_manager = wave_mgr
 	currency_manager = currency_mgr
 	tower_manager = tower_mgr

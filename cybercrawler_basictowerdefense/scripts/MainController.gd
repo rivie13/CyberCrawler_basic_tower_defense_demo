@@ -21,7 +21,7 @@ const MODE_PLACE_FREEZE_MINE = "place_freeze_mine"
 # Manager references
 var grid_manager: GridManager
 var wave_manager: WaveManager  
-var tower_manager: TowerManager
+var tower_manager: TowerManagerInterface
 var currency_manager: CurrencyManagerInterface
 var game_manager: GameManager
 var rival_hacker_manager: RivalHackerManager
