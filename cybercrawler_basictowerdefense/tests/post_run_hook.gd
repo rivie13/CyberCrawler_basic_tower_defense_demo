@@ -180,8 +180,8 @@ func _validate_coverage_requirements():
 	
 	# Check total coverage requirement (if 90% of files have tests)
 	if test_coverage_percentage >= TEST_COVERAGE_THRESHOLD:
-		if total_coverage_tested_files < COVERAGE_TARGET_TOTAL:
-			validation_errors.append("Total coverage in tested files %.1f%% is below target %.1f%% (required when %.1f%% of files have tests)" % [total_coverage_tested_files, COVERAGE_TARGET_TOTAL, TEST_COVERAGE_THRESHOLD])
+		if total_coverage_all_files < COVERAGE_TARGET_TOTAL:
+			validation_errors.append("Total coverage across ALL files %.1f%% is below target %.1f%% (required when %.1f%% of files have tests)" % [total_coverage_all_files, COVERAGE_TARGET_TOTAL, TEST_COVERAGE_THRESHOLD])
 	else:
 		print("ℹ️ Total coverage requirement waived (only %.1f%% of files have tests, need %.1f%%)" % [test_coverage_percentage, TEST_COVERAGE_THRESHOLD])
 	

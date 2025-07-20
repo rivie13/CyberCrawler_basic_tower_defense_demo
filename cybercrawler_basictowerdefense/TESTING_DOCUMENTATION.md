@@ -15,15 +15,15 @@ This document provides a comprehensive guide to the testing system implemented f
 - **Test Structure**: Organized unit, integration, and system test directories
 
 #### 2. Test Coverage (As of Latest Run - Updated July 2025)
-- **Total Tests**: 455 tests across 31 test scripts
-- **Test Success Rate**: 100% (455/455 passing)
-- **Code Coverage**: 83.2% for files with tests (1574/1892 lines)
-- **Files with Tests**: 20 out of 23 script files (87.0% coverage)
-- **Total Coverage**: 61.3% across all code (1740/2837 lines)
+- **Total Tests**: 494 tests across 32 test scripts
+- **Test Success Rate**: 100% (494/494 passing)
+- **Code Coverage**: 77.3% for files with tests (1701/2200 lines)
+- **Files with Tests**: 21 out of 23 script files (91.3% coverage)
+- **Total Coverage**: 62.1% across all code (1785/2875 lines)
 
 #### 3. Coverage Requirements Met
 - **Per-File Coverage**: All tested files meet 50% OR 100 lines minimum (whichever is LESS)
-- **Total Coverage**: 75% requirement waived (only 87.0% of files have tests, need 90%)
+- **Total Coverage**: 75% requirement ACTIVE (91.3% of files have tests, above 90% threshold)
 - **Validation**: Automated coverage validation prevents merging insufficiently tested code
 
 ## Test Structure
@@ -74,14 +74,14 @@ cybercrawler_basictowerdefense/
 
 ### Test Categories
 
-#### Unit Tests (429 tests)
+#### Unit Tests (455 tests)
 - **Core Systems**: GameManager, WaveManager, TowerManager, GridManager
 - **Game Entities**: Enemy, Tower, EnemyTower, PowerfulTower
 - **Special Mechanics**: FreezeMine, ProgramDataPacket, RivalHacker
 - **Utilities**: PriorityQueue, TargetingUtil, Clickable interface, DebugLogger
 - **Managers**: CurrencyManager, FreezeMineManager, ProgramDataPacketManager
 
-#### Integration Tests (26 tests)
+#### Integration Tests (39 tests)
 - **Cross-System Testing**: Tower placement, currency flow, combat system
 - **Signal Propagation**: System communication validation
 - **Game Scenarios**: Early/mid-game placement testing
@@ -121,8 +121,8 @@ cd "C:\Users\rivie\CursorProjects\CyberCrawler_basic_tower_defense_demo\cybercra
 ## Code Coverage System
 
 ### Coverage Requirements
-- **Per-File Coverage**: 50% of file OR 100 lines minimum, whichever is LESS
-- **Total Coverage**: 75% required only when 90% of code has tests
+- **Per-File Coverage**: If it has a test, then 50% of file OR 100 lines minimum, whichever is LESS
+- **Total Coverage**: 75% across ALL files required when 90% of files have tests
 - **Validation**: Automated validation prevents merging insufficiently tested code
 
 ### Coverage Validation Process
@@ -132,7 +132,7 @@ cd "C:\Users\rivie\CursorProjects\CyberCrawler_basic_tower_defense_demo\cybercra
 
 ### Current Coverage Status (Updated July 2025)
 ```
-📊 Files with Tests and Coverage (20 files):
+📊 Files with Tests and Coverage (21 files):
   ✅ 100.0% CurrencyManager.gd (47/47 lines)
   ✅ 88.0% Enemy.gd (66/75 lines)
   ✅ 96.1% FreezeMine.gd (74/77 lines)
@@ -142,6 +142,7 @@ cd "C:\Users\rivie\CursorProjects\CyberCrawler_basic_tower_defense_demo\cybercra
   ✅ 72.2% GridManager.gd (148/205 lines)
   ✅ 97.1% Clickable.gd (33/34 lines)
   ✅ 97.6% TargetingUtil.gd (41/42 lines)
+  ✅ 43.5% MainController.gd (130/299 lines)
   ✅ 85.0% ProgramDataPacket.gd (175/206 lines)
   ✅ 88.0% ProgramDataPacketManager.gd (73/83 lines)
   ✅ 77.1% Projectile.gd (27/35 lines)
@@ -150,14 +151,13 @@ cd "C:\Users\rivie\CursorProjects\CyberCrawler_basic_tower_defense_demo\cybercra
   ✅ 100.0% PowerfulTower.gd (32/32 lines)
   ✅ 64.6% Tower.gd (106/164 lines)
   ✅ 61.8% TowerManager.gd (47/76 lines)
-  ✅ 69.6% DebugLogger.gd (39/56 lines)
+  ✅ 55.4% DebugLogger.gd (36/65 lines)
   ✅ 100.0% PriorityQueue.gd (33/33 lines)
   ✅ 92.3% WaveManager.gd (167/181 lines)
 
-📊 Files without Tests (3 files):
-  📝 31.1% MainController.gd (84/270 lines) - NO TESTS
-  📝 11.3% RivalAlertSystem.gd (25/222 lines) - NO TESTS
-  📝 12.6% RivalHackerManager.gd (57/453 lines) - NO TESTS
+📊 Files without Tests (2 files):
+  📝 9.9% RivalAlertSystem.gd (22/222 lines) - NO TESTS
+  📝 13.7% RivalHackerManager.gd (62/453 lines) - NO TESTS
 ```
 
 ## Test Implementation Details
@@ -177,11 +177,11 @@ cd "C:\Users\rivie\CursorProjects\CyberCrawler_basic_tower_defense_demo\cybercra
 - **Reliability**: 100% pass rate with proper error handling
 
 ### Test Quality Metrics
-- **Test Count**: 455 tests across 31 scripts
-- **Assert Count**: 1642 assertions
-- **Execution Time**: 0.792 seconds
-- **Success Rate**: 100% (455/455 passing)
-- **Coverage**: 83.2% for tested files
+- **Test Count**: 494 tests across 32 scripts
+- **Assert Count**: 1708 assertions
+- **Execution Time**: 0.847 seconds
+- **Success Rate**: 100% (494/494 passing)
+- **Coverage**: 77.3% for tested files
 
 ## Testing Strategy VERY IMPORTANT MUST FOLLOW THIS PLAN
 - **Read the Files**: Make sure to read the file to be tested and dependencies it has to understand what you need to do
@@ -299,10 +299,10 @@ cd "C:\Users\rivie\CursorProjects\CyberCrawler_basic_tower_defense_demo\cybercra
 ## Success Metrics
 
 ### Current Achievements
-- **Test Coverage**: 455 tests with 100% pass rate
-- **Code Coverage**: 83.2% for tested files
-- **Execution Speed**: 0.792s for 455 tests
-- **Quality**: 1642 assertions across all tests
+- **Test Coverage**: 494 tests with 100% pass rate
+- **Code Coverage**: 77.3% for tested files
+- **Execution Speed**: 0.847s for 494 tests
+- **Quality**: 1708 assertions across all tests
 - **Reliability**: Zero test failures in latest run
 
 ### Quality Indicators

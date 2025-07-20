@@ -7,6 +7,7 @@ var main_controller: MainController
 
 func before_each():
 	# Create a fresh MainController for each test
+	# DO NOT call _ready() as it tries to access scene nodes that don't exist in tests
 	main_controller = MainController.new()
 	add_child_autofree(main_controller)
 

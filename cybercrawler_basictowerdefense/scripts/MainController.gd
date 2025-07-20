@@ -46,7 +46,10 @@ func _ready():
 	setup_managers()
 	initialize_systems()
 	setup_ui()
-	start_game()
+	
+	# Only start the game if we're not in a test environment
+	if get_node_or_null("GridContainer"):
+		start_game()
 
 func setup_managers():
 	# Create all manager instances
@@ -71,7 +74,12 @@ func setup_managers():
 
 func initialize_systems():
 	# Initialize GridManager with the GridContainer from the scene and inject GameManager
-	var grid_container = $GridContainer
+	# Skip if we're in a test environment or GridContainer doesn't exist
+	var grid_container = get_node_or_null("GridContainer")
+	if not grid_container:
+		# In test environment, skip scene-dependent initialization
+		return
+	
 	grid_manager.initialize_with_container(grid_container, game_manager)
 	
 	# Initialize managers with references to each other
@@ -155,6 +163,10 @@ func setup_ui():
 	update_info_label()
 
 func start_game():
+	# Skip if we're in a test environment or systems aren't initialized
+	if not wave_manager or not rival_hacker_manager:
+		return
+	
 	# Start the first wave
 	wave_manager.start_wave()
 	
@@ -266,6 +278,10 @@ func update_tower_selection_ui():
 	if not has_node("UI/TowerSelectionPanel"):
 		return
 	
+	# Skip if currency_manager is not initialized (like in tests)
+	if not currency_manager:
+		return
+	
 	# Update cost label to show both tower types
 	var cost_label = $UI/TowerSelectionPanel/CostLabel
 	if cost_label:
@@ -330,8 +346,12 @@ func update_info_label():
 	if not has_node("UI/InfoLabel"):
 		return
 	
+	# Skip if game_manager is not initialized (like in tests)
+	if not game_manager:
+		return
+	
 	var info_label = $UI/InfoLabel
-	if info_label and game_manager:
+	if info_label:
 		info_label.text = game_manager.get_info_label_text()
 
 func _on_game_over():
@@ -355,10 +375,16 @@ func show_victory_screen():
 	# Stop all game activity
 	stop_all_game_activity()
 	
+	# Skip if game_manager is not initialized (like in tests)
+	if not game_manager:
+		return
+	
 	# Get victory data from game manager
 	var victory_data = game_manager.get_victory_data()
 	
 	# Update info label to show victory message (only if UI exists)
+	if not has_node("UI/InfoLabel"):
+		return
 	var info_label = $UI/InfoLabel
 	if info_label:
 		var victory_text = "VICTORY!\n"
@@ -389,10 +415,16 @@ func show_game_over_screen():
 	# Stop all game activity
 	stop_all_game_activity()
 	
+	# Skip if game_manager is not initialized (like in tests)
+	if not game_manager:
+		return
+	
 	# Get game over data from game manager
 	var game_over_data = game_manager.get_game_over_data()
 	
 	# Update info label to show game over message (only if UI exists)
+	if not has_node("UI/InfoLabel"):
+		return
 	var info_label = $UI/InfoLabel
 	if info_label:
 		var game_over_text = "GAME OVER!\n"
@@ -468,10 +500,14 @@ func update_packet_ui():
 	if not has_node("UI/TowerSelectionPanel"):
 		return
 	
+	# Skip if program_data_packet_manager is not initialized (like in tests)
+	if not program_data_packet_manager:
+		return
+	
 	var packet_button = $UI/TowerSelectionPanel/ProgramDataPacketButton
 	var packet_status_label = $UI/TowerSelectionPanel/PacketStatusLabel
 	
-	if packet_button and packet_status_label and program_data_packet_manager:
+	if packet_button and packet_status_label:
 		var can_release = program_data_packet_manager.can_player_release_packet()
 		var is_spawned = program_data_packet_manager.is_packet_spawned
 		var is_active = program_data_packet_manager.is_packet_active
@@ -491,6 +527,10 @@ func update_packet_ui():
 
 func destroy_all_projectiles():
 	# Find and destroy all projectiles in the scene
+	# Skip if grid_manager is not initialized (like in tests)
+	if not grid_manager:
+		return
+		
 	var grid_container = grid_manager.get_grid_container()
 	if grid_container:
 		for child in grid_container.get_children():

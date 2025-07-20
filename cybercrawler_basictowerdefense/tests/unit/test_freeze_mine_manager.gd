@@ -98,14 +98,6 @@ func test_place_freeze_mine_success():
 	mock_grid_manager.is_on_path = false
 	mock_grid_manager.world_position = Vector2(100, 100)
 	
-	# Set up a current scene for the test
-	var test_scene = Node2D.new()
-	get_tree().current_scene = test_scene
-	add_child_autofree(test_scene)
-	
-	# Wait a frame to ensure the scene is properly set
-	await get_tree().process_frame
-	
 	# Watch signals for assertions
 	watch_signals(freeze_mine_manager)
 	
@@ -120,14 +112,6 @@ func test_create_freeze_mine_at_position():
 	# Test freeze mine creation
 	freeze_mine_manager.initialize(mock_grid_manager, mock_currency_manager)
 	mock_grid_manager.world_position = Vector2(150, 200)
-	
-	# Set up a current scene for the test
-	var test_scene = Node2D.new()
-	get_tree().current_scene = test_scene
-	add_child_autofree(test_scene)
-	
-	# Wait a frame to ensure the scene is properly set
-	await get_tree().process_frame
 	
 	var freeze_mine = freeze_mine_manager.create_freeze_mine_at_position(Vector2i(3, 4))
 	
@@ -228,14 +212,6 @@ func test_signal_connections():
 	mock_grid_manager.is_on_path = false
 	mock_grid_manager.world_position = Vector2(100, 100)
 	
-	# Set up a current scene for the test
-	var test_scene = Node2D.new()
-	get_tree().current_scene = test_scene
-	add_child_autofree(test_scene)
-	
-	# Wait a frame to ensure the scene is properly set
-	await get_tree().process_frame
-	
 	var result = freeze_mine_manager.place_freeze_mine(Vector2i(2, 2))
 	
 	assert_true(result, "Should place mine successfully")
@@ -254,14 +230,6 @@ func test_grid_occupation_management():
 	mock_grid_manager.is_occupied = false
 	mock_grid_manager.is_on_path = false
 	mock_grid_manager.world_position = Vector2(100, 100)
-	
-	# Set up a current scene for the test
-	var test_scene = Node2D.new()
-	get_tree().current_scene = test_scene
-	add_child_autofree(test_scene)
-	
-	# Wait a frame to ensure the scene is properly set
-	await get_tree().process_frame
 	
 	var result = freeze_mine_manager.place_freeze_mine(Vector2i(3, 4))
 	
