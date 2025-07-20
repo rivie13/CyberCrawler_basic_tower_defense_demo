@@ -54,9 +54,9 @@ func create_packet_path():
 
 	# Always use the latest enemy_path from WaveManager
 	var enemy_path = wave_manager.enemy_path
-	print("ProgramDataPacketManager: WaveManager.enemy_path has ", enemy_path.size(), " points")
+	# print("ProgramDataPacketManager: WaveManager.enemy_path has ", enemy_path.size(), " points")
 	if enemy_path.size() == 0:
-		print("ProgramDataPacketManager: No enemy path available")
+		# print("ProgramDataPacketManager: No enemy path available")
 		return
 
 	# Reverse the enemy path for the packet
@@ -65,22 +65,22 @@ func create_packet_path():
 
 	# Use as the packet path
 	packet_path = reversed_path
-	print("ProgramDataPacketManager: Created packet path from reversed enemy path with ", packet_path.size(), " points")
+	# print("ProgramDataPacketManager: Created packet path from reversed enemy path with ", packet_path.size(), " points")
 	
 	# Print first few points for debugging
-	if packet_path.size() > 0:
-		print("ProgramDataPacketManager: First packet path point: ", packet_path[0])
-		if packet_path.size() > 1:
-			print("ProgramDataPacketManager: Second packet path point: ", packet_path[1])
+	# if packet_path.size() > 0:
+	# 	print("ProgramDataPacketManager: First packet path point: ", packet_path[0])
+	# 	if packet_path.size() > 1:
+	# 		print("ProgramDataPacketManager: Second packet path point: ", packet_path[1])
 
 func spawn_program_data_packet():
 	"""Spawn the program data packet at the starting position"""
 	if is_packet_spawned:
-		print("ProgramDataPacketManager: Packet already spawned")
+		# print("ProgramDataPacketManager: Packet already spawned")
 		return
 	
 	if packet_path.size() == 0:
-		print("ProgramDataPacketManager: Cannot spawn packet - no path available")
+		# print("ProgramDataPacketManager: Cannot spawn packet - no path available")
 		return
 	
 	# Create the program data packet
@@ -98,22 +98,22 @@ func spawn_program_data_packet():
 	get_parent().add_child(program_data_packet)
 	
 	is_packet_spawned = true
-	print("ProgramDataPacketManager: Program data packet spawned at ", packet_path[0])
+	# print("ProgramDataPacketManager: Program data packet spawned at ", packet_path[0])
 
 func release_program_data_packet():
 	"""Release the program data packet to start moving"""
 	if not is_packet_spawned:
-		print("ProgramDataPacketManager: Cannot release packet - not spawned")
+		# print("ProgramDataPacketManager: Cannot release packet - not spawned")
 		return
 	
 	if is_packet_active:
-		print("ProgramDataPacketManager: Packet already active")
+		# print("ProgramDataPacketManager: Packet already active")
 		return
 	
 	if program_data_packet:
 		program_data_packet.activate()
 		is_packet_active = true
-		print("ProgramDataPacketManager: Program data packet released!")
+		# print("ProgramDataPacketManager: Program data packet released!")
 
 func can_player_release_packet() -> bool:
 	"""Check if the player can release the packet"""
