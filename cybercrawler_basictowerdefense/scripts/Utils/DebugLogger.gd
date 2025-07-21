@@ -23,8 +23,10 @@ static var is_testing: bool = false
 static var is_production: bool = false
 
 # Initialize the logger based on environment
-static func initialize():
+static func initialize(test_mode = null):
 	# Detect environment - testing takes priority over development
+	if test_mode is bool:
+		force_test_mode = test_mode
 	is_testing = force_test_mode or _is_running_tests()
 	is_development = OS.is_debug_build() and not is_testing
 	is_production = not OS.is_debug_build()
