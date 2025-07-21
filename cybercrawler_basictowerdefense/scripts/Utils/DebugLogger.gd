@@ -63,16 +63,11 @@ static func _is_running_tests() -> bool:
 	# Check if we're in a test scene or test context
 	var scene_tree = Engine.get_main_loop().get_root()
 	if scene_tree:
-		# Look for test-related nodes in the scene tree
+		# Look for test-related nodes in the scene tree (targeted group only)
 		var test_nodes = scene_tree.get_tree().get_nodes_in_group("test")
 		if test_nodes.size() > 0:
 			return true
-		
-		# Check if any node has "test" in its name
-		var all_nodes = scene_tree.get_tree().get_nodes_in_group("")
-		for node in all_nodes:
-			if "test" in node.name.to_lower() or "gut" in node.name.to_lower():
-				return true
+		# Removed expensive all-nodes scan for performance reasons
 	
 	return false
 

@@ -203,7 +203,7 @@ func create_enemy_path():
 	var path_blocked = false
 	for i in range(grid_path.size() - 1):
 		var current_pos = grid_path[i]
-		var _next_pos = grid_path[i + 1]  # Prefix with underscore to indicate intentionally unused
+		# Removed unused variable assignment for next_pos
 		
 		# Check if current position is blocked (except start and end)
 		if i > 0 and i < grid_path.size() - 1 and grid_manager.is_grid_blocked(current_pos):
