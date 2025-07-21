@@ -21,12 +21,12 @@ const MODE_PLACE_FREEZE_MINE = "place_freeze_mine"
 # Manager references
 var grid_manager: GridManager
 var wave_manager: WaveManager  
-var tower_manager: TowerManager
-var currency_manager: CurrencyManager
+var tower_manager: TowerManagerInterface
+var currency_manager: CurrencyManagerInterface
 var game_manager: GameManager
 var rival_hacker_manager: RivalHackerManager
 var program_data_packet_manager: ProgramDataPacketManager
-var freeze_mine_manager: FreezeMineManager
+var freeze_mine_manager: MineManagerInterface
 
 # UI update timer
 var ui_update_timer: Timer
@@ -46,7 +46,10 @@ func _ready():
 	setup_managers()
 	initialize_systems()
 	setup_ui()
-	start_game()
+	
+	# Only start the game if we're not in a test environment
+	if get_node_or_null("GridContainer"):
+		start_game()
 
 func setup_managers():
 	# Create all manager instances
@@ -71,7 +74,12 @@ func setup_managers():
 
 func initialize_systems():
 	# Initialize GridManager with the GridContainer from the scene and inject GameManager
-	var grid_container = $GridContainer
+	# Skip if we're in a test environment or GridContainer doesn't exist
+	var grid_container = get_node_or_null("GridContainer")
+	if not grid_container:
+		# In test environment, skip scene-dependent initialization
+		return
+	
 	grid_manager.initialize_with_container(grid_container, game_manager)
 	
 	# Initialize managers with references to each other
@@ -107,12 +115,16 @@ func initialize_systems():
 	program_data_packet_manager.program_packet_reached_end.connect(_on_program_packet_reached_end)
 	
 	# Connect freeze mine manager signals
-	freeze_mine_manager.freeze_mine_placed.connect(_on_freeze_mine_placed)
-	freeze_mine_manager.freeze_mine_placement_failed.connect(_on_freeze_mine_placement_failed)
-	freeze_mine_manager.freeze_mine_triggered.connect(_on_freeze_mine_triggered)
-	freeze_mine_manager.freeze_mine_depleted.connect(_on_freeze_mine_depleted)
+	freeze_mine_manager.mine_placed.connect(_on_freeze_mine_placed)
+	freeze_mine_manager.mine_placement_failed.connect(_on_freeze_mine_placement_failed)
+	freeze_mine_manager.mine_triggered.connect(_on_freeze_mine_triggered)
+	freeze_mine_manager.mine_depleted.connect(_on_freeze_mine_depleted)
 
 func setup_ui():
+	# Skip UI setup if we're in a test environment or UI nodes don't exist
+	if not has_node("UI/TowerSelectionPanel"):
+		return
+	
 	# Setup basic tower selection UI
 	var basic_tower_button = $UI/TowerSelectionPanel/BasicTowerButton
 	if basic_tower_button:
@@ -151,6 +163,10 @@ func setup_ui():
 	update_info_label()
 
 func start_game():
+	# Skip if we're in a test environment or systems aren't initialized
+	if not wave_manager or not rival_hacker_manager:
+		return
+	
 	# Start the first wave
 	wave_manager.start_wave()
 	
@@ -177,7 +193,7 @@ func handle_grid_click(global_pos: Vector2):
 		# In freeze mine mode, try to place freeze mine
 		var grid_pos = grid_manager.world_to_grid(global_pos)
 		if grid_manager.is_valid_grid_position(grid_pos):
-			freeze_mine_manager.place_freeze_mine(grid_pos)
+			freeze_mine_manager.place_mine(grid_pos, "freeze")
 	elif current_click_mode == MODE_BUILD_TOWERS:
 		# In build mode, only try tower placement
 		var grid_pos = grid_manager.world_to_grid(global_pos)
@@ -258,6 +274,14 @@ func _on_ui_update_timer_timeout():
 	update_packet_ui()
 
 func update_tower_selection_ui():
+	# Skip UI updates if we're in a test environment or UI nodes don't exist
+	if not has_node("UI/TowerSelectionPanel"):
+		return
+	
+	# Skip if currency_manager is not initialized (like in tests)
+	if not currency_manager:
+		return
+	
 	# Update cost label to show both tower types
 	var cost_label = $UI/TowerSelectionPanel/CostLabel
 	if cost_label:
@@ -290,6 +314,10 @@ func update_tower_selection_ui():
 			selected_label.modulate = Color.RED
 
 func update_mode_ui():
+	# Skip UI updates if we're in a test environment or UI nodes don't exist
+	if not has_node("UI/TowerSelectionPanel"):
+		return
+	
 	# Update mode toggle button text
 	var mode_toggle_button = $UI/TowerSelectionPanel/ModeToggleButton
 	if mode_toggle_button:
@@ -314,8 +342,16 @@ func update_mode_ui():
 			mode_indicator.modulate = Color.ORANGE
 
 func update_info_label():
+	# Skip UI updates if we're in a test environment or UI nodes don't exist
+	if not has_node("UI/InfoLabel"):
+		return
+	
+	# Skip if game_manager is not initialized (like in tests)
+	if not game_manager:
+		return
+	
 	var info_label = $UI/InfoLabel
-	if info_label and game_manager:
+	if info_label:
 		info_label.text = game_manager.get_info_label_text()
 
 func _on_game_over():
@@ -339,10 +375,16 @@ func show_victory_screen():
 	# Stop all game activity
 	stop_all_game_activity()
 	
+	# Skip if game_manager is not initialized (like in tests)
+	if not game_manager:
+		return
+	
 	# Get victory data from game manager
 	var victory_data = game_manager.get_victory_data()
 	
-	# Update info label to show victory message
+	# Update info label to show victory message (only if UI exists)
+	if not has_node("UI/InfoLabel"):
+		return
 	var info_label = $UI/InfoLabel
 	if info_label:
 		var victory_text = "VICTORY!\n"
@@ -373,10 +415,16 @@ func show_game_over_screen():
 	# Stop all game activity
 	stop_all_game_activity()
 	
+	# Skip if game_manager is not initialized (like in tests)
+	if not game_manager:
+		return
+	
 	# Get game over data from game manager
 	var game_over_data = game_manager.get_game_over_data()
 	
-	# Update info label to show game over message
+	# Update info label to show game over message (only if UI exists)
+	if not has_node("UI/InfoLabel"):
+		return
 	var info_label = $UI/InfoLabel
 	if info_label:
 		var game_over_text = "GAME OVER!\n"
@@ -448,10 +496,18 @@ func _on_freeze_mine_button_pressed():
 	update_info_label()
 
 func update_packet_ui():
+	# Skip UI updates if we're in a test environment or UI nodes don't exist
+	if not has_node("UI/TowerSelectionPanel"):
+		return
+	
+	# Skip if program_data_packet_manager is not initialized (like in tests)
+	if not program_data_packet_manager:
+		return
+	
 	var packet_button = $UI/TowerSelectionPanel/ProgramDataPacketButton
 	var packet_status_label = $UI/TowerSelectionPanel/PacketStatusLabel
 	
-	if packet_button and packet_status_label and program_data_packet_manager:
+	if packet_button and packet_status_label:
 		var can_release = program_data_packet_manager.can_player_release_packet()
 		var is_spawned = program_data_packet_manager.is_packet_spawned
 		var is_active = program_data_packet_manager.is_packet_active
@@ -471,6 +527,10 @@ func update_packet_ui():
 
 func destroy_all_projectiles():
 	# Find and destroy all projectiles in the scene
+	# Skip if grid_manager is not initialized (like in tests)
+	if not grid_manager:
+		return
+		
 	var grid_container = grid_manager.get_grid_container()
 	if grid_container:
 		for child in grid_container.get_children():
@@ -478,7 +538,7 @@ func destroy_all_projectiles():
 				child.queue_free()
 
 # Freeze mine signal handlers
-func _on_freeze_mine_placed(mine: FreezeMine):
+func _on_freeze_mine_placed(mine: Mine):
 	print("MainController: Freeze mine placed at ", mine.grid_position)
 	update_info_label()
 
@@ -486,15 +546,19 @@ func _on_freeze_mine_placement_failed(reason: String):
 	print("MainController: Freeze mine placement failed - ", reason)
 	update_info_label()
 
-func _on_freeze_mine_triggered(mine: FreezeMine):
+func _on_freeze_mine_triggered(mine: Mine):
 	print("MainController: Freeze mine triggered at ", mine.grid_position)
 
-func _on_freeze_mine_depleted(mine: FreezeMine):
+func _on_freeze_mine_depleted(mine: Mine):
 	print("MainController: Freeze mine depleted at ", mine.grid_position)
 	update_info_label()
 
 # Utility: Show a temporary message in the InfoLabel
 func show_temp_message(message: String, duration: float = 1.5):
+	# Skip UI updates if we're in a test environment or UI nodes don't exist
+	if not has_node("UI/InfoLabel"):
+		return
+	
 	var info_label = $UI/InfoLabel
 	if info_label:
 		var prev_text = info_label.text

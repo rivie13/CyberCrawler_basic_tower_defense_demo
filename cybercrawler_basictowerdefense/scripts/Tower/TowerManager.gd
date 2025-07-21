@@ -1,13 +1,7 @@
-extends Node2D
+extends TowerManagerInterface
 class_name TowerManager
 
-# Signals
-signal tower_placed(grid_pos: Vector2i, tower_type: String)
-signal tower_placement_failed(reason: String)
-
-# Tower type constants - addresses Copilot feedback about string literals
-const BASIC_TOWER = "basic"
-const POWERFUL_TOWER = "powerful"
+# Tower type constants are inherited from TowerManagerInterface
 
 # Tower scenes
 const TOWER_SCENE = preload("res://scenes/Tower.tscn")
@@ -18,10 +12,10 @@ var towers_placed: Array[Tower] = []
 
 # References to other managers
 var grid_manager: Node
-var currency_manager: CurrencyManager
+var currency_manager: CurrencyManagerInterface
 var wave_manager: WaveManager
 
-func initialize(grid_mgr: Node, currency_mgr: CurrencyManager, wave_mgr: WaveManager):
+func initialize(grid_mgr: Node, currency_mgr: CurrencyManagerInterface, wave_mgr: Node) -> void:
 	grid_manager = grid_mgr
 	currency_manager = currency_mgr
 	wave_manager = wave_mgr
@@ -141,7 +135,7 @@ func get_tower_count_by_type(tower_type: String) -> int:
 						count += 1
 	return count
 
-func remove_tower(tower: Tower):
+func remove_tower(tower: Node) -> void:
 	if tower in towers_placed:
 		towers_placed.erase(tower)
 		# Could add logic here to mark grid position as unoccupied

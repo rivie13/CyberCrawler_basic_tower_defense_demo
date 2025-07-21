@@ -180,8 +180,8 @@ func _validate_coverage_requirements():
 	
 	# Check total coverage requirement (if 90% of files have tests)
 	if test_coverage_percentage >= TEST_COVERAGE_THRESHOLD:
-		if total_coverage_tested_files < COVERAGE_TARGET_TOTAL:
-			validation_errors.append("Total coverage in tested files %.1f%% is below target %.1f%% (required when %.1f%% of files have tests)" % [total_coverage_tested_files, COVERAGE_TARGET_TOTAL, TEST_COVERAGE_THRESHOLD])
+		if total_coverage_all_files < COVERAGE_TARGET_TOTAL:
+			validation_errors.append("Total coverage across ALL files %.1f%% is below target %.1f%% (required when %.1f%% of files have tests)" % [total_coverage_all_files, COVERAGE_TARGET_TOTAL, TEST_COVERAGE_THRESHOLD])
 	else:
 		print("ℹ️ Total coverage requirement waived (only %.1f%% of files have tests, need %.1f%%)" % [test_coverage_percentage, TEST_COVERAGE_THRESHOLD])
 	
@@ -214,12 +214,10 @@ func _find_script_files_with_tests(directory: String, files_with_tests: Array):
 	var dir = DirAccess.open(directory)
 	if !dir:
 		return
-	
 	dir.list_dir_begin()
 	var file_name = dir.get_next()
 	while file_name != "":
 		var full_path = directory + "/" + file_name
-		
 		if dir.current_is_dir():
 			# Recursively search subdirectories
 			_find_script_files_with_tests(full_path, files_with_tests)
@@ -228,16 +226,28 @@ func _find_script_files_with_tests(directory: String, files_with_tests: Array):
 			var base_name = file_name.get_basename()  # Remove .gd extension
 			var snake_case_name = _camel_to_snake_case(base_name)
 			var test_file_name = "test_" + snake_case_name + ".gd"
-			
-			# Check if this script file has a corresponding test file
-			var test_path = "res://tests/unit/" + test_file_name
-			var integration_test_path = "res://tests/integration/" + test_file_name
-			
-			# Check if test file exists
-			if FileAccess.file_exists(test_path) or FileAccess.file_exists(integration_test_path):
+
+			# Recursively search for test file in all subdirectories under tests/unit and tests/integration
+			if _test_file_exists_recursive("res://tests/unit", test_file_name) or _test_file_exists_recursive("res://tests/integration", test_file_name):
 				files_with_tests.append(full_path)
-		
 		file_name = dir.get_next()
+
+# Helper to recursively search for a test file in a directory and its subdirectories
+func _test_file_exists_recursive(directory: String, test_file_name: String) -> bool:
+	var dir = DirAccess.open(directory)
+	if !dir:
+		return false
+	dir.list_dir_begin()
+	var file_name = dir.get_next()
+	while file_name != "":
+		var full_path = directory + "/" + file_name
+		if dir.current_is_dir():
+			if _test_file_exists_recursive(full_path, test_file_name):
+				return true
+		elif file_name == test_file_name:
+			return true
+		file_name = dir.get_next()
+	return false
 
 func _camel_to_snake_case(camel_case: String) -> String:
 	# Convert CamelCase to snake_case
