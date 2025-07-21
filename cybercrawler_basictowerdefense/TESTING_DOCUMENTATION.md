@@ -130,35 +130,6 @@ cd "C:\Users\rivie\CursorProjects\CyberCrawler_basic_tower_defense_demo\cybercra
 2. **Test Execution**: Collects coverage data during test runs
 3. **Post-Run Hook**: Validates coverage requirements and fails tests if insufficient
 
-### Current Coverage Status (Updated July 2025)
-```
-📊 Files with Tests and Coverage (21 files):
-  ✅ 100.0% CurrencyManager.gd (47/47 lines)
-  ✅ 88.0% Enemy.gd (66/75 lines)
-  ✅ 96.1% FreezeMine.gd (74/77 lines)
-  ✅ 94.1% FreezeMineManager.gd (48/51 lines)
-  ✅ 77.2% GameManager.gd (78/101 lines)
-  ✅ 99.2% GridLayout.gd (121/122 lines)
-  ✅ 72.2% GridManager.gd (148/205 lines)
-  ✅ 97.1% Clickable.gd (33/34 lines)
-  ✅ 97.6% TargetingUtil.gd (41/42 lines)
-  ✅ 43.5% MainController.gd (130/299 lines)
-  ✅ 85.0% ProgramDataPacket.gd (175/206 lines)
-  ✅ 88.0% ProgramDataPacketManager.gd (73/83 lines)
-  ✅ 77.1% Projectile.gd (27/35 lines)
-  ✅ 85.3% RivalHacker.gd (99/116 lines)
-  ✅ 76.9% EnemyTower.gd (120/156 lines)
-  ✅ 100.0% PowerfulTower.gd (32/32 lines)
-  ✅ 64.6% Tower.gd (106/164 lines)
-  ✅ 61.8% TowerManager.gd (47/76 lines)
-  ✅ 55.4% DebugLogger.gd (36/65 lines)
-  ✅ 100.0% PriorityQueue.gd (33/33 lines)
-  ✅ 92.3% WaveManager.gd (167/181 lines)
-
-📊 Files without Tests (2 files):
-  📝 9.9% RivalAlertSystem.gd (22/222 lines) - NO TESTS
-  📝 13.7% RivalHackerManager.gd (62/453 lines) - NO TESTS
-```
 
 ## Test Implementation Details
 
@@ -257,44 +228,85 @@ cd "C:\Users\rivie\CursorProjects\CyberCrawler_basic_tower_defense_demo\cybercra
 - **Confidence**: 100% pass rate enables safe refactoring
 - **Quality Gates**: Automated validation prevents quality regression
 
-## Troubleshooting
+## IMPORTANT: Coverage and Test Execution Guidance
 
-### Common Issues
-1. **"GutTest not found"**: Install GUT plugin from AssetLib
-2. **Tests not discovered**: Check file naming (must start with `test_`)
-3. **Coverage validation fails**: Write more tests for failing files
-4. **CI/CD failures**: Check Godot version compatibility
+### GUT Coverage and Test Validation: Editor vs Command Line
 
-### Performance Issues
-- **Slow test execution**: Tests run in 0.792s for 455 tests
-- **Memory leaks**: 89 orphans detected (mostly expected GUT objects)
-- **Resource cleanup**: Automatic cleanup via add_child_autofree()
+**Code coverage and coverage validation will NOT work reliably when running GUT from the Godot editor.**
 
-### Coverage Issues
-- **Insufficient coverage**: Add tests for files below 50% coverage
-- **Missing files**: Add tests for files without test coverage
-- **Validation failures**: Coverage requirements prevent merging
+- The Godot editor (and the GUT plugin) may preload scripts before the pre-run hook runs, which prevents the coverage system from instrumenting scripts. This results in 0% coverage for most or all files, even if tests pass.
+- This is a known limitation of Godot and GUT. See the [GUT documentation](https://gut.readthedocs.io/en/v9.4.0/Quick-Start.html) for more details. (I can't find it myself yet, looking for it but seems to be legit)
 
-## Future Enhancements
+**To get accurate coverage and enforce coverage requirements, ALWAYS run tests from the command line:**
 
-### Planned Improvements
-1. **System Tests**: End-to-end game scenario testing
-2. **More Integration Tests**: Need to make sure mechanics don't break so we need more integration tests!!!
-3. **Performance Tests**: Frame rate and memory benchmarking
-4. **Visual Tests**: Screenshot comparison testing
-5. **Stress Tests**: High-load scenario validation
+```powershell
+cd "C:\Users\rivie\CursorProjects\CyberCrawler_basic_tower_defense_demo\cybercrawler_basictowerdefense";
+& "C:\Program Files\Godot\Godot_v4.4.1-stable_win64_console.exe" --headless --script addons/gut/gut_cmdln.gd -gtest=tests/unit/ -gexit
+```
 
-### Coverage Goals
-1. **100% Test Coverage**: Add tests for remaining 3 files
-2. **90% File Coverage**: Achieve 90% of files having tests
-3. **75% Total Coverage**: Enable total coverage requirement
-4. **Integration Coverage**: Expand cross-system testing
+- This ensures the pre-run hook instruments all scripts before any are loaded, so coverage is tracked correctly.
+- The CI pipeline is configured to use this command for all automated test and coverage validation.
 
-### Quality Improvements
-1. **Test Organization**: Better categorization and naming
-2. **Mock System**: Enhanced mocking for complex dependencies
-3. **Test Data**: Centralized test data management
-4. **Documentation**: Enhanced test documentation and examples
+### Running Tests in the Editor
+- You can run tests in the Godot editor for quick feedback, but **ignore the coverage results** shown in the editor.
+- Use the command line for any test runs where coverage or coverage validation matters (e.g., before PRs, for CI, for release readiness).
+
+---
+
+## Test Directory Structure (Updated)
+
+Tests are now organized into subdirectories by system/feature for clarity and maintainability. This applies to both unit and integration tests.
+
+```
+cybercrawler_basictowerdefense/
+  tests/
+    unit/
+      Enemy/
+        test_enemy.gd
+      Tower/
+        test_tower.gd
+        test_tower_manager.gd
+        ...
+      ...
+    integration/
+      Combat/
+        test_combat_system_integration.gd
+      Currency/
+        test_currency_flow.gd
+      ...
+```
+
+- **All test discovery and coverage validation scripts have been updated to support this structure.**
+- You can add new test files in the appropriate subdirectory for the system or feature being tested.
+
+---
+
+## CI and Coverage Validation
+
+- The CI workflow runs all tests and coverage validation from the command line, ensuring accurate results and enforcing coverage requirements.
+- If coverage or tests fail, CI will fail the build.
+- Do not rely on coverage results from the Godot editor or GUT panel for PRs or releases.
+
+---
+
+## Troubleshooting: Coverage Issues
+
+- **If you see 0% coverage for all files in the editor, but correct coverage from the command line, this is expected.**
+- If you see coverage issues from the command line, check that:
+  - You are running the correct command (see above).
+  - No scripts are being loaded before the pre-run hook (avoid autoloads that reference scripts under test).
+  - The test directory structure matches the organization described above.
+
+---
+
+## Summary of Recent Refactoring
+
+- **Tests are now organized into subdirectories by system/feature.**
+- **Coverage hooks and validation scripts have been updated to support recursive test discovery.**
+- **CI is configured to use the command line for all test and coverage validation.**
+- **Coverage is only accurate when running from the command line.**
+
+---
 
 ## Success Metrics
 
