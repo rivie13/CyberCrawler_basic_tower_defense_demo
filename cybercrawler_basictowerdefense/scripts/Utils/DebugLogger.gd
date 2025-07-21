@@ -22,6 +22,9 @@ static var is_development: bool = false
 static var is_testing: bool = false
 static var is_production: bool = false
 
+# Cache for scene tree root
+static var _cached_scene_tree_root = null
+
 # Initialize the logger based on environment
 static func initialize(test_mode = null):
 	# Detect environment - testing takes priority over development
@@ -44,7 +47,9 @@ static func initialize(test_mode = null):
 # Check if we're running tests
 static func _is_running_tests() -> bool:
 	# Check if GUT is running
-	var gut_runner = Engine.get_main_loop().get_root().get_node_or_null("GutRunner")
+	if _cached_scene_tree_root == null:
+		_cached_scene_tree_root = Engine.get_main_loop().get_root()
+	var gut_runner = _cached_scene_tree_root.get_node_or_null("GutRunner")
 	if gut_runner:
 		return true
 	
@@ -63,15 +68,18 @@ static func _is_running_tests() -> bool:
 	# Note: We can't use get_script() in static context, so we'll rely on other methods
 	
 	# Check if we're in a test scene or test context
-	var scene_tree = Engine.get_main_loop().get_root()
-	if scene_tree:
+	if _cached_scene_tree_root:
 		# Look for test-related nodes in the scene tree (targeted group only)
-		var test_nodes = scene_tree.get_tree().get_nodes_in_group("test")
+		var test_nodes = _cached_scene_tree_root.get_tree().get_nodes_in_group("test")
 		if test_nodes.size() > 0:
 			return true
 		# Removed expensive all-nodes scan for performance reasons
 	
 	return false
+
+# For testability: clear the cached scene tree root
+static func clear_scene_tree_cache():
+	_cached_scene_tree_root = null
 
 # Logging methods
 static func error(message: String, context: String = ""):
