@@ -17,48 +17,9 @@ class MockPacketManager extends Node:
 	func get_program_data_packet():
 		return _packet
 
-class MockTowerManager extends TowerManagerInterface:
-	var _towers = []
-	
-	func set_towers(towers):
-		_towers = towers
-	
-	func get_towers():
-		return _towers
-	
-	# Implement required interface methods
-	func initialize(grid_mgr: Node, currency_mgr: CurrencyManagerInterface, wave_mgr: Node) -> void:
-		pass
-	
-	func attempt_tower_placement(grid_pos: Vector2i, tower_type: String = BASIC_TOWER) -> bool:
-		return false
-	
-	func attempt_basic_tower_placement(grid_pos: Vector2i) -> bool:
-		return false
-	
-	func place_tower(grid_pos: Vector2i, tower_type: String = BASIC_TOWER) -> bool:
-		return false
-	
-	func get_enemies_for_towers() -> Array:
-		return []
-	
-	func stop_all_towers() -> void:
-		pass
-	
-	func cleanup_all_towers() -> void:
-		pass
-	
-	func get_tower_count() -> int:
-		return _towers.size()
-	
-	func get_tower_count_by_type(tower_type: String) -> int:
-		return 0
-	
-	func remove_tower(tower: Node) -> void:
-		pass
-	
-	func get_total_power_level() -> float:
-		return 0.0
+const BaseMockTowerManager = preload("res://tests/unit/Mocks/BaseMockTowerManager.gd")
+class MockTowerManager extends BaseMockTowerManager:
+	pass
 
 func test_find_priority_target_with_no_controller():
 	# Test finding priority target with no main controller
