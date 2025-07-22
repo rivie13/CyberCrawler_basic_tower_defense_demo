@@ -15,15 +15,17 @@ This document provides a comprehensive guide to the testing system implemented f
 - **Test Structure**: Organized unit, integration, and system test directories
 
 #### 2. Test Coverage (As of Latest Run - Updated July 2025)
-- **Total Tests**: 494 tests across 32 test scripts
-- **Test Success Rate**: 100% (494/494 passing)
-- **Code Coverage**: 77.3% for files with tests (1701/2200 lines)
-- **Files with Tests**: 21 out of 23 script files (91.3% coverage)
-- **Total Coverage**: 62.1% across all code (1785/2875 lines)
+- **Total Tests**: 625 tests across 41 test scripts
+- **Test Success Rate**: 100% (625/625 passing)
+- **Code Coverage**: 78.1% for files with tests (2055/2632 lines)
+- **Files with Tests**: 25 out of 27 script files (92.6% coverage)
+- **Files that Need Tests**: 22 out of 22 files (100% coverage)
+- **Total Coverage**: 76.9% across all code (2271/2955 lines)
 
 #### 3. Coverage Requirements Met
 - **Per-File Coverage**: All tested files meet 50% OR 100 lines minimum (whichever is LESS)
-- **Total Coverage**: 75% requirement ACTIVE (91.3% of files have tests, above 90% threshold)
+- **Total Coverage**: 75% requirement ACTIVE (100% of files that need tests have tests, above 90% threshold)
+- **Test Coverage**: 100% of files that actually need tests have tests (excludes interfaces and special cases)
 - **Validation**: Automated coverage validation prevents merging insufficiently tested code
 
 ## Test Structure
@@ -120,10 +122,39 @@ cd "C:\Users\rivie\CursorProjects\CyberCrawler_basic_tower_defense_demo\cybercra
 
 ## Code Coverage System
 
+### Dual Coverage Metrics
+The testing system now tracks **two separate coverage percentages** to provide more accurate metrics:
+
+#### 1. **All Files Coverage** (92.6%)
+- **What it measures**: Percentage of ALL script files that have tests
+- **Includes**: Interfaces, special cases, and files with alternative testing approaches
+- **Purpose**: Overall project test coverage overview
+
+#### 2. **Required Files Coverage** (100%)
+- **What it measures**: Percentage of files that actually need tests
+- **Excludes**: 
+  - Interface files (tested through implementations)
+  - Files split into multiple smaller test files (like MainController.gd)
+  - Files using mocks for dependency injection testing
+- **Purpose**: **Primary metric for coverage requirements**
+
 ### Coverage Requirements
 - **Per-File Coverage**: If it has a test, then 50% of file OR 100 lines minimum, whichever is LESS
-- **Total Coverage**: 75% across ALL files required when 90% of files have tests
+- **Total Coverage**: 75% across ALL files required when 90% of files that need tests have tests
+- **Test Coverage Metrics**: 
+  - **All Files**: Percentage of all script files that have tests
+  - **Required Files**: Percentage of files that actually need tests (excludes interfaces, special cases)
 - **Validation**: Automated validation prevents merging insufficiently tested code
+
+### Files Excluded from Test Requirements
+The following files are excluded from test requirements because they use alternative testing approaches:
+
+- **Interface Files**: `TowerManagerInterface.gd`, `Clickable.gd`, `CurrencyManagerInterface.gd`, etc.
+  - **Reason**: Tested through their implementations, not directly
+- **MainController.gd**: 
+  - **Reason**: Split into multiple smaller test files for better organization
+- **Files with Mocks**: 
+  - **Reason**: Use dependency injection with mock objects for testing
 
 ### Coverage Validation Process
 1. **Pre-Run Hook**: Initializes coverage instrumentation
@@ -311,10 +342,11 @@ cybercrawler_basictowerdefense/
 ## Success Metrics
 
 ### Current Achievements
-- **Test Coverage**: 494 tests with 100% pass rate
-- **Code Coverage**: 77.3% for tested files
-- **Execution Speed**: 0.847s for 494 tests
-- **Quality**: 1708 assertions across all tests
+- **Test Coverage**: 625 tests with 100% pass rate
+- **Code Coverage**: 78.1% for tested files
+- **Required Files Coverage**: 100% of files that need tests have tests
+- **Execution Speed**: 0.986s for 625 tests
+- **Quality**: 2054 assertions across all tests
 - **Reliability**: Zero test failures in latest run
 
 ### Quality Indicators

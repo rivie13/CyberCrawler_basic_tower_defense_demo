@@ -69,6 +69,14 @@ func test_setup_preferred_zones():
 	
 	# Should have preferred zones defined
 	assert_gt(rival_hacker_manager.preferred_grid_zones.size(), 0)
+	
+	# All zones should be in the right half of the grid
+	var grid_size = grid_manager.get_grid_size()
+	for zone in rival_hacker_manager.preferred_grid_zones:
+		assert_gte(zone.x, int(grid_size.x / 2), "Zone should be in right half of grid")
+		assert_lt(zone.x, grid_size.x, "Zone should be within grid bounds")
+		assert_gte(zone.y, 0, "Zone should be within grid bounds")
+		assert_lt(zone.y, grid_size.y, "Zone should be within grid bounds")
 
 func test_setup_alert_system():
 	# Test alert system setup
@@ -105,43 +113,70 @@ func test_is_valid_enemy_tower_position():
 	# Test position validation
 	rival_hacker_manager.grid_manager = grid_manager
 	
-	# Test that the method exists and can be called
+	# Test valid position
 	var valid_pos = Vector2i(5, 5)
 	var result = rival_hacker_manager.is_valid_enemy_tower_position(valid_pos)
 	assert_true(result is bool, "Should return a boolean result")
+	
+	# Test invalid position (outside grid)
+	var invalid_pos = Vector2i(-1, -1)
+	result = rival_hacker_manager.is_valid_enemy_tower_position(invalid_pos)
+	assert_false(result, "Should return false for invalid position")
+	
+	# Test without grid manager
+	rival_hacker_manager.grid_manager = null
+	result = rival_hacker_manager.is_valid_enemy_tower_position(valid_pos)
+	assert_false(result, "Should return false without grid manager")
 
 func test_find_optimal_tower_position():
 	# Test finding optimal tower position
 	rival_hacker_manager.grid_manager = grid_manager
 	rival_hacker_manager.setup_preferred_zones()
 	
-	# Test that the method exists and can be called
+	# Test that the method returns a valid position
 	var position = rival_hacker_manager.find_optimal_tower_position()
 	assert_true(position is Vector2i, "Should return a Vector2i result")
+	
+	# If a valid position is found, it should be in preferred zones
+	if position != Vector2i(-1, -1):
+		assert_true(rival_hacker_manager.preferred_grid_zones.has(position), "Position should be in preferred zones")
 
 func test_place_enemy_tower():
 	# Test enemy tower placement
 	rival_hacker_manager.grid_manager = grid_manager
 	
-	# Test that the method exists and can be called
-	var result = rival_hacker_manager.place_enemy_tower(Vector2i(5, 5))
-	assert_true(result is bool, "Should return a boolean result")
+	# Test valid placement
+	var valid_pos = Vector2i(5, 5)
+	var result = rival_hacker_manager.place_enemy_tower(valid_pos)
+	assert_true(result, "Should successfully place tower at valid position")
+	assert_eq(rival_hacker_manager.enemy_towers_placed.size(), 1, "Should add tower to placed list")
+	
+	# Test invalid placement (no grid manager)
+	rival_hacker_manager.grid_manager = null
+	result = rival_hacker_manager.place_enemy_tower(valid_pos)
+	assert_false(result, "Should fail to place tower without grid manager")
 
 func test_find_rival_hacker_spawn_position():
 	# Test finding spawn position for rival hacker
 	rival_hacker_manager.grid_manager = grid_manager
 	
-	# Test that the method exists and can be called
+	# Test that the method returns a valid position
 	var position = rival_hacker_manager.find_rival_hacker_spawn_position()
 	assert_true(position is Vector2, "Should return a Vector2 result")
+	
+	# Position should not be zero if grid manager is available
+	if rival_hacker_manager.grid_manager != null:
+		assert_ne(position, Vector2.ZERO, "Should return non-zero position with grid manager")
 
 func test_spawn_rival_hacker():
 	# Test rival hacker spawning
 	rival_hacker_manager.grid_manager = grid_manager
 	
-	# Test that the method exists and can be called
-	var result = rival_hacker_manager.spawn_rival_hacker(Vector2(100, 100))
-	assert_true(result is bool, "Should return a boolean result")
+	# Test valid spawn
+	var spawn_pos = Vector2(100, 100)
+	var result = rival_hacker_manager.spawn_rival_hacker(spawn_pos)
+	assert_true(result, "Should successfully spawn rival hacker")
+	assert_eq(rival_hacker_manager.rival_hackers_active.size(), 1, "Should add hacker to active list")
 
 func test_get_rival_hackers():
 	# Test getting valid rival hackers
@@ -179,9 +214,17 @@ func test_analyze_player_threat():
 	rival_hacker_manager.tower_manager = tower_manager
 	rival_hacker_manager.placement_interval = 3.0
 	
-	# Test that the method exists and can be called
+	# Test with no player towers
 	rival_hacker_manager.analyze_player_threat()
-	assert_true(true, "Method should not crash")
+	assert_eq(rival_hacker_manager.player_threat_level, 0, "Should have zero threat with no towers")
+	
+	# Test with player towers
+	var mock_tower = Tower.new()
+	add_child_autofree(mock_tower)
+	tower_manager.towers_placed = [mock_tower]
+	
+	rival_hacker_manager.analyze_player_threat()
+	assert_eq(rival_hacker_manager.player_threat_level, 1, "Should calculate threat based on tower count")
 
 func test_on_player_tower_placed():
 	# Test player tower placement response
@@ -189,9 +232,17 @@ func test_on_player_tower_placed():
 	rival_hacker_manager.alert_system = RivalAlertSystem.new()
 	rival_hacker_manager.alert_system.is_monitoring = true
 	
-	# Test that the method can be called without crashing
+	# Add a tower to the tower manager so it can be found
+	var mock_tower = Tower.new()
+	add_child_autofree(mock_tower)
+	tower_manager.towers_placed = [mock_tower]
+	
+	# Test that the method calls alert system
+	var initial_alert_count = rival_hacker_manager.alert_system.recent_tower_placements.size()
 	rival_hacker_manager._on_player_tower_placed(Vector2i(5, 5), "basic")
-	assert_true(true, "Method should not crash")
+	
+	# Should have notified alert system
+	assert_gt(rival_hacker_manager.alert_system.recent_tower_placements.size(), initial_alert_count, "Should notify alert system of tower placement")
 
 func test_on_player_tower_placed_powerful():
 	# Test powerful tower placement response
@@ -199,17 +250,25 @@ func test_on_player_tower_placed_powerful():
 	rival_hacker_manager.alert_system = RivalAlertSystem.new()
 	rival_hacker_manager.alert_system.is_monitoring = true
 	
-	# Test that the method can be called without crashing
+	# Add a tower to the tower manager so it can be found
+	var mock_tower = Tower.new()
+	add_child_autofree(mock_tower)
+	tower_manager.towers_placed = [mock_tower]
+	
+	# Test that the method calls alert system
+	var initial_alert_count = rival_hacker_manager.alert_system.recent_tower_placements.size()
 	rival_hacker_manager._on_player_tower_placed(Vector2i(5, 5), "powerful")
-	assert_true(true, "Method should not crash")
+	
+	# Should have notified alert system
+	assert_gt(rival_hacker_manager.alert_system.recent_tower_placements.size(), initial_alert_count, "Should notify alert system of powerful tower placement")
 
 func test_on_alert_triggered():
 	# Test alert response
 	rival_hacker_manager.initialize(grid_manager, currency_manager, tower_manager, wave_manager, game_manager)
 	
-	# Test that the method can be called without crashing
+	# Test that alert triggers activation
 	rival_hacker_manager._on_alert_triggered("TOWERS_TOO_CLOSE_TO_EXIT", 0.5)
-	assert_true(true, "Method should not crash")
+	assert_true(rival_hacker_manager.is_active, "Should activate on alert")
 
 func test_respond_to_exit_proximity_alert():
 	# Test exit proximity alert response
@@ -218,7 +277,7 @@ func test_respond_to_exit_proximity_alert():
 	rival_hacker_manager.placement_timer.wait_time = 3.0
 	
 	rival_hacker_manager.respond_to_exit_proximity_alert(0.5)
-	assert_lt(rival_hacker_manager.placement_timer.wait_time, 3.0)
+	assert_lt(rival_hacker_manager.placement_timer.wait_time, 3.0, "Should reduce placement interval")
 
 func test_respond_to_burst_placement_alert():
 	# Test burst placement alert response
@@ -227,7 +286,7 @@ func test_respond_to_burst_placement_alert():
 	rival_hacker_manager.placement_timer.wait_time = 3.0
 	
 	rival_hacker_manager.respond_to_burst_placement_alert(0.5)
-	assert_lt(rival_hacker_manager.placement_timer.wait_time, 3.0)
+	assert_lt(rival_hacker_manager.placement_timer.wait_time, 3.0, "Should reduce placement interval")
 
 func test_respond_to_powerful_tower_alert():
 	# Test powerful tower alert response
@@ -237,33 +296,37 @@ func test_respond_to_powerful_tower_alert():
 	rival_hacker_manager.placement_timer.wait_time = 3.0
 	
 	rival_hacker_manager.respond_to_powerful_tower_alert(0.5)
-	assert_gt(rival_hacker_manager.max_enemy_towers, 10)
-	assert_lt(rival_hacker_manager.placement_timer.wait_time, 3.0)
+	assert_gt(rival_hacker_manager.max_enemy_towers, 10, "Should increase max enemy towers")
+	assert_lt(rival_hacker_manager.placement_timer.wait_time, 3.0, "Should reduce placement interval")
 
 func test_setup_detour_points():
 	# Test detour points setup
 	rival_hacker_manager.grid_manager = grid_manager
 	
-	# Test that the method can be called without crashing
 	rival_hacker_manager.setup_detour_points()
-	assert_true(true, "Method should not crash")
+	assert_gt(rival_hacker_manager.detour_points.size(), 0, "Should create detour points")
 
 func test_setup_cell_weights():
 	# Test cell weights setup
 	rival_hacker_manager.grid_manager = grid_manager
 	rival_hacker_manager.tower_manager = tower_manager
 	
-	# Test that the method can be called without crashing
+	# Add a tower to create weights
+	var mock_tower = Tower.new()
+	add_child_autofree(mock_tower)
+	mock_tower.grid_position = Vector2i(3, 3)
+	tower_manager.towers_placed = [mock_tower]
+	
 	rival_hacker_manager.setup_cell_weights()
-	assert_true(true, "Method should not crash")
+	assert_gt(rival_hacker_manager.cell_weights.size(), 0, "Should create cell weights")
 
 func test_find_weighted_path():
 	# Test weighted pathfinding
 	rival_hacker_manager.grid_manager = grid_manager
 	
-	# Test that the method can be called without crashing
 	var path = rival_hacker_manager.find_weighted_path(Vector2i(0, 0), Vector2i(3, 3))
-	assert_true(true, "Method should not crash")
+	assert_true(path is Array, "Should return an array")
+	assert_gt(path.size(), 0, "Should return a non-empty path")
 
 func test_stop_all_activity():
 	# Test stopping all activity
@@ -276,7 +339,7 @@ func test_stop_all_activity():
 	rival_hacker_manager.rival_hackers_active.append(mock_hacker)
 	
 	rival_hacker_manager.stop_all_activity()
-	assert_false(rival_hacker_manager.is_active)
+	assert_false(rival_hacker_manager.is_active, "Should deactivate")
 	assert_false(mock_hacker.is_alive, "Should set hacker to dead")
 
 func test_on_enemy_tower_destroyed():
@@ -285,7 +348,7 @@ func test_on_enemy_tower_destroyed():
 	rival_hacker_manager.enemy_towers_placed = [mock_tower]
 	
 	rival_hacker_manager._on_enemy_tower_destroyed(mock_tower)
-	assert_eq(rival_hacker_manager.enemy_towers_placed.size(), 0)
+	assert_eq(rival_hacker_manager.enemy_towers_placed.size(), 0, "Should remove destroyed tower from list")
 
 func test_on_rival_hacker_destroyed():
 	# Test rival hacker destruction
@@ -293,82 +356,94 @@ func test_on_rival_hacker_destroyed():
 	rival_hacker_manager.rival_hackers_active = [mock_hacker]
 	
 	rival_hacker_manager._on_rival_hacker_destroyed(mock_hacker)
-	assert_eq(rival_hacker_manager.rival_hackers_active.size(), 0)
+	assert_eq(rival_hacker_manager.rival_hackers_active.size(), 0, "Should remove destroyed hacker from list")
 
 func test_on_rival_hacker_tower_attacked():
 	# Test rival hacker tower attack
 	var mock_tower = Tower.new()
 	add_child_autofree(mock_tower)
+	var initial_health = mock_tower.health
 	
-	# Test that the method can be called without crashing
 	rival_hacker_manager._on_rival_hacker_tower_attacked(mock_tower, 10)
 	
-	# Verify the method executed successfully (it should not crash)
-	assert_true(true, "Method should execute without errors")
+	# The method doesn't actually damage the tower, it just logs the attack
+	# So we verify the method executed successfully
+	assert_eq(mock_tower.health, initial_health, "Method should not modify tower health directly")
 	
 	# Test with different damage values
 	rival_hacker_manager._on_rival_hacker_tower_attacked(mock_tower, 25)
-	assert_true(true, "Method should handle different damage values")
+	assert_eq(mock_tower.health, initial_health, "Method should not modify tower health directly")
 
 func test_attempt_strategic_path_block():
 	# Test strategic path blocking
 	rival_hacker_manager.grid_manager = grid_manager
 	
-	# Test that the method can be called without crashing
 	var result = rival_hacker_manager._attempt_strategic_path_block()
-	assert_true(true, "Method should not crash")
+	assert_true(result is bool, "Should return boolean result")
+	
+	# If successful, should have blocked cells
+	if result:
+		assert_gt(rival_hacker_manager.blocked_cells_tracker.size(), 0, "Should track blocked cells")
 
 func test_attempt_strategic_non_path_block():
 	# Test strategic non-path blocking
 	rival_hacker_manager.grid_manager = grid_manager
 	
-	# Test that the method can be called without crashing
 	var result = rival_hacker_manager._attempt_strategic_non_path_block()
-	assert_true(true, "Method should not crash")
+	assert_true(result is bool, "Should return boolean result")
+	
+	# If successful, should have blocked cells
+	if result:
+		assert_gt(rival_hacker_manager.blocked_cells_tracker.size(), 0, "Should track blocked cells")
 
 func test_attempt_strategic_unblock():
 	# Test strategic unblocking
 	rival_hacker_manager.grid_manager = grid_manager
 	rival_hacker_manager.blocked_cells_tracker = [Vector2i(5, 5)]
 	
-	# Test that the method can be called without crashing
 	var result = rival_hacker_manager._attempt_strategic_unblock()
-	assert_true(true, "Method should not crash")
+	assert_true(result is bool, "Should return boolean result")
+	
+	# If successful, should have unblocked cells
+	if result:
+		assert_lt(rival_hacker_manager.blocked_cells_tracker.size(), 1, "Should remove unblocked cells")
 
 func test_force_path_recalculation():
 	# Test path recalculation
 	rival_hacker_manager.grid_manager = grid_manager
 	rival_hacker_manager.wave_manager = wave_manager
 	
-	# Test that the method can be called without crashing
 	rival_hacker_manager._force_path_recalculation()
-	assert_true(true, "Method should not crash")
+	assert_true(true, "Should not crash when forcing path recalculation")
 
 func test_get_corridor_cells_around_path():
 	# Test corridor cells calculation
 	rival_hacker_manager.grid_manager = grid_manager
 	
-	# Test that the method can be called without crashing
 	var path: Array[Vector2i] = [Vector2i(5, 5), Vector2i(6, 6)]
 	var corridor = rival_hacker_manager.get_corridor_cells_around_path(path, 2)
-	assert_true(true, "Method should not crash")
+	assert_true(corridor is Array, "Should return array of corridor cells")
+	assert_gt(corridor.size(), 0, "Should return corridor cells")
 
 func test_find_corridor_limited_path():
 	# Test corridor-limited pathfinding
 	rival_hacker_manager.grid_manager = grid_manager
 	
-	# Test that the method can be called without crashing
 	var allowed_cells: Array[Vector2i] = [Vector2i(1, 1), Vector2i(2, 2), Vector2i(3, 3)]
 	var path = rival_hacker_manager.find_corridor_limited_path(Vector2i(0, 0), Vector2i(3, 3), allowed_cells)
-	assert_true(true, "Method should not crash")
+	assert_true(path is Array, "Should return array path")
+	# Note: Path finding may return empty array if no valid path exists through allowed cells
+	# This is expected behavior when start/end points are not in allowed cells
 
 func test_perform_comprehensive_grid_action():
 	# Test comprehensive grid action
 	rival_hacker_manager.grid_manager = grid_manager
 	
-	# Test that the method can be called without crashing
+	var initial_action_sequence = rival_hacker_manager.action_sequence
 	rival_hacker_manager._perform_comprehensive_grid_action()
-	assert_true(true, "Method should not crash")
+	
+	# Should increment action sequence
+	assert_eq(rival_hacker_manager.action_sequence, initial_action_sequence + 1, "Should increment action sequence")
 
 func test_on_grid_action_timer_timeout():
 	# Test grid action timer timeout
@@ -376,6 +451,8 @@ func test_on_grid_action_timer_timeout():
 	rival_hacker_manager.game_manager = game_manager
 	rival_hacker_manager.grid_manager = grid_manager
 	
-	# Test that the method can be called without crashing
+	var initial_action_sequence = rival_hacker_manager.action_sequence
 	rival_hacker_manager._on_grid_action_timer_timeout()
-	assert_true(true, "Method should not crash") 
+	
+	# Should perform grid action when active
+	assert_eq(rival_hacker_manager.action_sequence, initial_action_sequence + 1, "Should perform grid action") 

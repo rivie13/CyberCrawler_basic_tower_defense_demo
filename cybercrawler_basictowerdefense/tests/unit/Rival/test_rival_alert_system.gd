@@ -294,7 +294,7 @@ func test_alert_factor_combinations():
 	
 	# This should trigger combination checks
 	rival_alert_system.calculate_alert_level()
-	assert_true(true, "Factor combination checks should not crash")
+	assert_gt(rival_alert_system.current_alert_level, 0.0, "Should calculate alert level from multiple factors")
 
 func test_edge_case_empty_placements():
 	# Test edge case with no recent placements

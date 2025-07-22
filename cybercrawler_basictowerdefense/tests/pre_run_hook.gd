@@ -22,8 +22,7 @@ func run():
 	print("=== Initializing Debug Logger ===")
 	
 	# Initialize debug logger for testing environment
-	DebugLogger.force_test_mode = true  # Force test mode detection
-	DebugLogger.initialize()
+	DebugLogger.initialize(true)  # Pass test mode as a parameter
 	print("✓ Debug logger initialized for testing environment")
 	print("✓ Log level set to: %s" % DebugLogger.LogLevel.keys()[DebugLogger.current_log_level])
 	
