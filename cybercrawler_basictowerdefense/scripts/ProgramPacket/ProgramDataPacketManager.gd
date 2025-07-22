@@ -20,11 +20,11 @@ var is_packet_active: bool = false
 var can_release_packet: bool = false
 
 # References to other managers
-var grid_manager: GridManager
+var grid_manager: GridManagerInterface
 var game_manager: GameManager
 var wave_manager: WaveManager
 
-func initialize(grid_mgr: GridManager, game_mgr: GameManager, wave_mgr: WaveManager):
+func initialize(grid_mgr: GridManagerInterface, game_mgr: GameManager, wave_mgr: WaveManager):
 	grid_manager = grid_mgr
 	game_manager = game_mgr
 	wave_manager = wave_mgr

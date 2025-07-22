@@ -41,7 +41,7 @@ var preferred_grid_zones: Array[Vector2i] = []  # Areas AI prefers to place towe
 var player_threat_level: int = 0  # Tracks how threatening player is
 
 # References to other managers
-var grid_manager: GridManager
+var grid_manager: GridManagerInterface
 var currency_manager: CurrencyManagerInterface
 var tower_manager: TowerManagerInterface
 var wave_manager: WaveManager
@@ -128,7 +128,7 @@ func setup_timers():
 	
 	# Timer for initial activation delay - removed (now using alert-based activation)
 
-func initialize(grid_mgr: GridManager, currency_mgr: CurrencyManagerInterface, tower_mgr: TowerManagerInterface, wave_mgr: WaveManager, gm: GameManager = null):
+func initialize(grid_mgr: GridManagerInterface, currency_mgr: CurrencyManagerInterface, tower_mgr: TowerManagerInterface, wave_mgr: WaveManager, gm: GameManager = null):
 	grid_manager = grid_mgr
 	currency_manager = currency_mgr
 	tower_manager = tower_mgr

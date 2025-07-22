@@ -19,7 +19,7 @@ const MODE_ATTACK_ENEMIES = "attack_enemies"
 const MODE_PLACE_FREEZE_MINE = "place_freeze_mine"
 
 # Manager references
-var grid_manager: GridManager
+var grid_manager: GridManagerInterface
 var wave_manager: WaveManager  
 var tower_manager: TowerManagerInterface
 var currency_manager: CurrencyManagerInterface

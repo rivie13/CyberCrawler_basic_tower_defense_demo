@@ -10,9 +10,9 @@ enum LayoutType {
 }
 
 # Grid reference for calculations
-var grid_manager: GridManager
+var grid_manager: GridManagerInterface
 
-func _init(grid_ref: GridManager):
+func _init(grid_ref: GridManagerInterface):
 	grid_manager = grid_ref
 
 func create_path(layout_type: LayoutType = LayoutType.L_SHAPED) -> Array[Vector2]:

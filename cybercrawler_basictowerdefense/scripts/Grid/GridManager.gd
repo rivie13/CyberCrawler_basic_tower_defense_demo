@@ -1,4 +1,4 @@
-extends Node2D
+extends GridManagerInterface
 class_name GridManager
 # Implements GridManagerInterface contract
 
@@ -15,7 +15,6 @@ var path_grid_positions: Array[Vector2i] = []  # Track which grid positions are 
 # NEW: Track previous path positions for visualization
 var previous_path_grid_positions: Array[Vector2i] = []
 var path_visual_elements: Array = []  # Visual indicators for the path
-var grid_container: Node2D
 var grid_lines: Array = []
 
 # Colors for visualization

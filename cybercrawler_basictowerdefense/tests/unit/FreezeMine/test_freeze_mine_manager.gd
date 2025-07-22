@@ -33,9 +33,8 @@ func test_initialize():
 func test_can_place_mine_at_valid_position():
 	# Test placement validation with valid position
 	freeze_mine_manager.initialize(mock_grid_manager, mock_currency_manager)
-	mock_grid_manager.is_valid_position = true
-	mock_grid_manager.is_occupied = false
-	mock_grid_manager.is_on_path = false
+	# MockGridManager defaults to valid positions, unoccupied, no path
+	# No need to set anything - defaults are correct
 	
 	var result = freeze_mine_manager.can_place_mine_at(Vector2i(2, 2), "freeze")
 	assert_true(result, "Should allow placement at valid position")
@@ -43,7 +42,7 @@ func test_can_place_mine_at_valid_position():
 func test_can_place_mine_at_invalid_position():
 	# Test placement validation with invalid position
 	freeze_mine_manager.initialize(mock_grid_manager, mock_currency_manager)
-	mock_grid_manager.is_valid_position = false
+	# MockGridManager will return false for invalid positions like (-1, -1)
 	
 	var result = freeze_mine_manager.can_place_mine_at(Vector2i(-1, -1), "freeze")
 	assert_false(result, "Should not allow placement at invalid position")
@@ -238,37 +237,6 @@ func test_grid_occupation_management():
 	assert_eq(mock_grid_manager.occupied_positions[0], Vector2i(3, 4), "Should occupy correct position")
 
 # Mock classes for testing
-class MockGridManager extends GridManager:
-	var is_valid_position: bool = true
-	var is_occupied: bool = false
-	var is_on_path: bool = false
-	var world_position: Vector2 = Vector2.ZERO
-	var occupied_positions: Array[Vector2i] = []
-	var unblocked_positions: Array[Vector2i] = []
-	
-	func is_valid_grid_position(pos: Vector2i) -> bool:
-		return is_valid_position
-	
-	func is_grid_occupied(pos: Vector2i) -> bool:
-		return is_occupied
-	
-	func is_on_enemy_path(pos: Vector2i) -> bool:
-		return is_on_path
-	
-	func grid_to_world(pos: Vector2i) -> Vector2:
-		return world_position
-	
-	func set_grid_occupied(pos: Vector2i, occupied: bool):
-		if occupied:
-			occupied_positions.append(pos)
-		else:
-			occupied_positions.erase(pos)
-	
-	func set_grid_blocked(pos: Vector2i, blocked: bool):
-		if not blocked:
-			unblocked_positions.append(pos)
-		else:
-			unblocked_positions.erase(pos)
 
 class MockCurrencyManager extends CurrencyManager:
 	var current_currency: int = 100

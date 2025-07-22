@@ -87,7 +87,7 @@ func test_path_positions():
 	assert_not_null(mock_grid_manager, "MockGridManager should not be null")
 	print("DEBUG: MockGridManager is not null")
 	
-	var test_path = [Vector2i(1, 1), Vector2i(2, 1), Vector2i(3, 1)]
+	var test_path: Array[Vector2i] = [Vector2i(1, 1), Vector2i(2, 1), Vector2i(3, 1)]
 	print("DEBUG: Test path created: ", test_path)
 	
 	# Test basic functionality first

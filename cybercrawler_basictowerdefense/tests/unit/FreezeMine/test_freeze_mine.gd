@@ -111,9 +111,10 @@ func test_set_get_grid_position():
 func test_can_be_placed_at_valid_position():
 	# Test placement validation with valid position
 	var mock_grid_manager = MockGridManager.new()
-	mock_grid_manager.is_valid_position = true
-	mock_grid_manager.is_occupied = false
-	mock_grid_manager.is_on_path = false
+	mock_grid_manager.initialize_with_container(Node2D.new())
+	# Set up grid data for valid position
+	mock_grid_manager.set_grid_occupied(Vector2i(2, 2), false)
+	mock_grid_manager.set_path_positions([])  # No path positions
 	add_child_autofree(mock_grid_manager)
 	
 	var result = freeze_mine.can_be_placed_at(Vector2i(2, 2), mock_grid_manager)
@@ -122,7 +123,7 @@ func test_can_be_placed_at_valid_position():
 func test_can_be_placed_at_invalid_position():
 	# Test placement validation with invalid position
 	var mock_grid_manager = MockGridManager.new()
-	mock_grid_manager.is_valid_position = false
+	mock_grid_manager.initialize_with_container(Node2D.new())
 	add_child_autofree(mock_grid_manager)
 	
 	var result = freeze_mine.can_be_placed_at(Vector2i(-1, -1), mock_grid_manager)
@@ -131,8 +132,8 @@ func test_can_be_placed_at_invalid_position():
 func test_can_be_placed_at_occupied_position():
 	# Test placement validation with occupied position
 	var mock_grid_manager = MockGridManager.new()
-	mock_grid_manager.is_valid_position = true
-	mock_grid_manager.is_occupied = true
+	mock_grid_manager.initialize_with_container(Node2D.new())
+	mock_grid_manager.set_grid_occupied(Vector2i(2, 2), true)
 	add_child_autofree(mock_grid_manager)
 	
 	var result = freeze_mine.can_be_placed_at(Vector2i(2, 2), mock_grid_manager)
@@ -141,9 +142,8 @@ func test_can_be_placed_at_occupied_position():
 func test_can_be_placed_at_enemy_path():
 	# Test placement validation on enemy path
 	var mock_grid_manager = MockGridManager.new()
-	mock_grid_manager.is_valid_position = true
-	mock_grid_manager.is_occupied = false
-	mock_grid_manager.is_on_path = true
+	mock_grid_manager.initialize_with_container(Node2D.new())
+	mock_grid_manager.set_path_positions([Vector2i(2, 2)])  # Position is on path
 	add_child_autofree(mock_grid_manager)
 	
 	var result = freeze_mine.can_be_placed_at(Vector2i(2, 2), mock_grid_manager)
@@ -256,20 +256,6 @@ func test_get_main_controller():
 	assert_eq(result, mock_main_controller, "Should return main controller from group")
 
 # Mock classes for testing
-class MockGridManager extends GridManager:
-	var is_valid_position: bool = true
-	var is_occupied: bool = false
-	var is_on_path: bool = false
-	
-	func is_valid_grid_position(pos: Vector2i) -> bool:
-		return is_valid_position
-	
-	func is_grid_occupied(pos: Vector2i) -> bool:
-		return is_occupied
-	
-	func is_on_enemy_path(pos: Vector2i) -> bool:
-		return is_on_path
-
 class MockEnemyTower extends Node2D:
 	var is_alive: bool = true
 
