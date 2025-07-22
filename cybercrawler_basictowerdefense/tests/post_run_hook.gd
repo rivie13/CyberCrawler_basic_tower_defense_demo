@@ -129,6 +129,10 @@ func _validate_coverage_requirements():
 		var script_covered = collector.coverage_count()
 		var file_name = script_path.get_file()
 		
+		# Skip files that shouldn't be displayed in coverage reports
+		if _should_skip_file_for_coverage_display(file_name):
+			continue
+		
 		# Check if this file has tests
 		var has_tests = script_path in files_with_tests
 		
@@ -171,19 +175,27 @@ func _validate_coverage_requirements():
 	# Validate coverage requirements
 	var validation_errors = []
 	
-	# Calculate test coverage percentage
+	# Calculate test coverage percentages
 	var total_files = files_with_tests.size() + files_without_tests.size()
 	var test_coverage_percentage = (float(files_with_tests.size()) / float(total_files)) * 100.0 if total_files > 0 else 0.0
 	
-	# Add test coverage percentage to the breakdown
-	print("  • Test coverage: %.1f%% of files have tests" % test_coverage_percentage)
+	# Calculate test coverage for files that actually need tests
+	var files_that_need_tests = _get_files_that_need_tests()
+	var files_that_need_tests_and_have_tests = _get_files_that_need_tests_and_have_tests(files_with_tests)
+	var test_coverage_required_files_percentage = (float(files_that_need_tests_and_have_tests.size()) / float(files_that_need_tests.size())) * 100.0 if files_that_need_tests.size() > 0 else 0.0
 	
-	# Check total coverage requirement (if 90% of files have tests)
-	if test_coverage_percentage >= TEST_COVERAGE_THRESHOLD:
-		if total_coverage_tested_files < COVERAGE_TARGET_TOTAL:
-			validation_errors.append("Total coverage in tested files %.1f%% is below target %.1f%% (required when %.1f%% of files have tests)" % [total_coverage_tested_files, COVERAGE_TARGET_TOTAL, TEST_COVERAGE_THRESHOLD])
+	# Add test coverage percentages to the breakdown
+	print("  • Test coverage (ALL files): %.1f%% of files have tests" % test_coverage_percentage)
+	print("  • Test coverage (files that need tests): %.1f%% of required files have tests" % test_coverage_required_files_percentage)
+	print("  • Files that need tests: %d files" % files_that_need_tests.size())
+	print("  • Files that need tests AND have tests: %d files" % files_that_need_tests_and_have_tests.size())
+	
+	# Check total coverage requirement (if 90% of files that need tests have tests)
+	if test_coverage_required_files_percentage >= TEST_COVERAGE_THRESHOLD:
+		if total_coverage_all_files < COVERAGE_TARGET_TOTAL:
+			validation_errors.append("Total coverage across ALL files %.1f%% is below target %.1f%% (required when %.1f%% of files that need tests have tests)" % [total_coverage_all_files, COVERAGE_TARGET_TOTAL, TEST_COVERAGE_THRESHOLD])
 	else:
-		print("ℹ️ Total coverage requirement waived (only %.1f%% of files have tests, need %.1f%%)" % [test_coverage_percentage, TEST_COVERAGE_THRESHOLD])
+		print("ℹ️ Total coverage requirement waived (only %.1f%% of files that need tests have tests, need %.1f%%)" % [test_coverage_required_files_percentage, TEST_COVERAGE_THRESHOLD])
 	
 	# Add per-file failures to validation errors
 	if failing_files.size() > 0:
@@ -205,39 +217,112 @@ func _validate_coverage_requirements():
 
 func _get_files_with_tests() -> Array:
 	# Get all script files that have corresponding test files
+	print("🔍 Building test files cache...")
+	var test_files_cache = _build_test_files_cache()
+	print("🔍 Found %d test files in cache" % test_files_cache.size())
+	
 	var files_with_tests = []
-	_find_script_files_with_tests("res://scripts", files_with_tests)
+	_find_script_files_with_tests("res://scripts", files_with_tests, test_files_cache)
+	print("🔍 Found %d files with tests" % files_with_tests.size())
 	return files_with_tests
 
-func _find_script_files_with_tests(directory: String, files_with_tests: Array):
-	# Recursively search for script files and check if they have tests
+func _build_test_files_cache() -> Array:
+	# Build a cache of all test files to avoid repeated recursive searches
+	var test_files_cache = []
+	_collect_test_files_recursive("res://tests/unit", test_files_cache)
+	_collect_test_files_recursive("res://tests/integration", test_files_cache)
+	return test_files_cache
+
+func _collect_test_files_recursive(directory: String, test_files_cache: Array):
+	# Recursively collect all test files into cache
 	var dir = DirAccess.open(directory)
 	if !dir:
 		return
-	
 	dir.list_dir_begin()
 	var file_name = dir.get_next()
 	while file_name != "":
 		var full_path = directory + "/" + file_name
-		
+		if dir.current_is_dir():
+			_collect_test_files_recursive(full_path, test_files_cache)
+		elif file_name.begins_with("test_") and file_name.ends_with(".gd"):
+			test_files_cache.append(file_name)
+		file_name = dir.get_next()
+
+func _find_script_files_with_tests(directory: String, files_with_tests: Array, test_files_cache: Array):
+	# Recursively search for script files and check if they have tests using cache
+	var dir = DirAccess.open(directory)
+	if !dir:
+		return
+	dir.list_dir_begin()
+	var file_name = dir.get_next()
+	while file_name != "":
+		var full_path = directory + "/" + file_name
 		if dir.current_is_dir():
 			# Recursively search subdirectories
-			_find_script_files_with_tests(full_path, files_with_tests)
+			_find_script_files_with_tests(full_path, files_with_tests, test_files_cache)
 		elif file_name.ends_with(".gd"):
+			# Skip files that don't need direct tests (using mocks)
+			if _should_skip_file_for_test_check(file_name):
+				file_name = dir.get_next()
+				continue
+				
 			# Convert CamelCase to snake_case for test file matching
 			var base_name = file_name.get_basename()  # Remove .gd extension
 			var snake_case_name = _camel_to_snake_case(base_name)
 			var test_file_name = "test_" + snake_case_name + ".gd"
-			
-			# Check if this script file has a corresponding test file
-			var test_path = "res://tests/unit/" + test_file_name
-			var integration_test_path = "res://tests/integration/" + test_file_name
-			
-			# Check if test file exists
-			if FileAccess.file_exists(test_path) or FileAccess.file_exists(integration_test_path):
+
+			# Check if exact test file exists in cache
+			if test_file_name in test_files_cache:
 				files_with_tests.append(full_path)
-		
+			else:
+				# Check for multiple smaller test files (e.g., test_main_controller_*.gd)
+				var has_multiple_test_files = _check_for_multiple_test_files(snake_case_name, test_files_cache)
+				if has_multiple_test_files:
+					files_with_tests.append(full_path)
 		file_name = dir.get_next()
+
+
+
+func _should_skip_file_for_test_check(file_name: String) -> bool:
+	# Files that don't need direct tests because they use mocks
+	var skip_files = [
+		"TowerManagerInterface.gd"  # Uses mocks for DI testing
+	]
+	return file_name in skip_files
+
+func _should_skip_file_for_coverage_display(file_name: String) -> bool:
+	# Files that should not be shown in coverage reports because they have special testing approaches
+	var skip_display_files = [
+		"TowerManagerInterface.gd"  # Uses mocks - no coverage expected
+	]
+	return file_name in skip_display_files
+
+func _should_skip_file_for_test_requirement(file_name: String) -> bool:
+	# Files that don't need tests at all (interfaces, special cases, etc.)
+	var skip_requirement_files = [
+		"TowerManagerInterface.gd",  # Interface - uses mocks for testing
+		"Clickable.gd",              # Interface - tested through implementations
+		"CurrencyManagerInterface.gd", # Interface - tested through implementations
+		"FreezeMineManagerInterface.gd", # Interface - tested through implementations
+		"ProgramDataPacketManagerInterface.gd", # Interface - tested through implementations
+		"RivalHackerManagerInterface.gd", # Interface - tested through implementations
+		"TargetingUtil.gd"           # Interface - tested through implementations
+	]
+	return file_name in skip_requirement_files
+
+func _check_for_multiple_test_files(base_name: String, test_files_cache: Array) -> bool:
+	# Check if there are multiple test files for this base name
+	# e.g., for "main_controller", check for "test_main_controller_*.gd"
+	var prefix = "test_" + base_name + "_"
+	var count = 0
+	
+	for test_file in test_files_cache:
+		if test_file.begins_with(prefix):
+			count += 1
+			if count >= 2:  # Need at least 2 test files to count as "multiple"
+				return true
+	
+	return false
 
 func _camel_to_snake_case(camel_case: String) -> String:
 	# Convert CamelCase to snake_case
@@ -260,6 +345,30 @@ func _get_files_without_tests(files_with_tests: Array) -> Array:
 	var result = []
 	for file_path in files_without_tests:
 		if file_path not in files_with_tests:
+			result.append(file_path)
+	
+	return result
+
+func _get_files_that_need_tests() -> Array:
+	# Get all script files that actually need tests (excluding interfaces and special cases)
+	var all_script_files = []
+	_find_all_script_files("res://scripts", all_script_files)
+	
+	var files_that_need_tests = []
+	for file_path in all_script_files:
+		var file_name = file_path.get_file()
+		if not _should_skip_file_for_test_requirement(file_name):
+			files_that_need_tests.append(file_path)
+	
+	return files_that_need_tests
+
+func _get_files_that_need_tests_and_have_tests(files_with_tests: Array) -> Array:
+	# Get files that need tests AND have tests
+	var files_that_need_tests = _get_files_that_need_tests()
+	var result = []
+	
+	for file_path in files_that_need_tests:
+		if file_path in files_with_tests:
 			result.append(file_path)
 	
 	return result

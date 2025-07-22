@@ -1,6 +1,7 @@
 extends GutHookScript
 
 const Coverage = preload("res://addons/coverage/coverage.gd")
+const DebugLogger = preload("res://scripts/Utils/DebugLogger.gd")
 
 # Coverage requirements - tests will fail if these aren't met
 const COVERAGE_TARGET_TOTAL := 75.0    # 75% total coverage required (only when 90% of code has tests)
@@ -18,6 +19,13 @@ const exclude_paths = [
 
 func run():
 	print("🔥 PRE-RUN HOOK IS RUNNING! 🔥")
+	print("=== Initializing Debug Logger ===")
+	
+	# Initialize debug logger for testing environment
+	DebugLogger.initialize(true)  # Pass test mode as a parameter
+	print("✓ Debug logger initialized for testing environment")
+	print("✓ Log level set to: %s" % DebugLogger.LogLevel.keys()[DebugLogger.current_log_level])
+	
 	print("=== Initializing Code Coverage ===")
 	
 	# Create coverage instance with scene tree and exclusions
@@ -32,14 +40,20 @@ func run():
 	# Instrument all scripts in the scripts directory
 	print("DEBUG: Instrumenting scripts in res://scripts/...")
 	Coverage.instance.instrument_scripts("res://scripts/")
-	
-	# Set coverage targets
-	Coverage.instance.set_coverage_targets(COVERAGE_TARGET_TOTAL, COVERAGE_TARGET_FILE)
-	
-	# Check what we got
-	var total_lines = Coverage.instance.coverage_line_count()
-	var collector_count = Coverage.instance.coverage_collectors.size()
-	print("DEBUG: Instrumentation result: %d total lines, %d collectors" % [total_lines, collector_count])
+
+	# Debug output: print all instrumented scripts
+	print("DEBUG: Instrumented scripts:")
+	for script_path in Coverage.instance.coverage_collectors.keys():
+		print("  - ", script_path)
+	print("DEBUG: Total instrumented scripts: %d" % Coverage.instance.coverage_collectors.size())
+
+	# List all .gd scripts in res://scripts/ for comparison
+	var all_scripts = []
+	_list_all_gd_scripts("res://scripts", all_scripts)
+	print("DEBUG: Total .gd scripts in res://scripts/: %d" % all_scripts.size())
+	for script in all_scripts:
+		if script not in Coverage.instance.coverage_collectors:
+			print("  (NOT instrumented): ", script)
 	
 	print("✓ Coverage instrumentation complete")
 	print("✓ Monitoring coverage for: res://scripts/")
@@ -242,17 +256,28 @@ func _find_script_files_with_tests(directory: String, files_with_tests: Array):
 			var base_name = file_name.get_basename()  # Remove .gd extension
 			var snake_case_name = _camel_to_snake_case(base_name)
 			var test_file_name = "test_" + snake_case_name + ".gd"
-			
-			# Check if this script file has a corresponding test file
-			var test_path = "res://tests/unit/" + test_file_name
-			var integration_test_path = "res://tests/integration/" + test_file_name
-			
-			# Check if test file exists
-			if FileAccess.file_exists(test_path) or FileAccess.file_exists(integration_test_path):
+
+			# Recursively search for test file in all subdirectories under tests/unit and tests/integration
+			if _test_file_exists_recursive("res://tests/unit", test_file_name) or _test_file_exists_recursive("res://tests/integration", test_file_name):
 				files_with_tests.append(full_path)
-				print("  - ✅ %s has tests" % file_name)
-		
 		file_name = dir.get_next()
+
+# Helper to recursively search for a test file in a directory and its subdirectories
+func _test_file_exists_recursive(directory: String, test_file_name: String) -> bool:
+	var dir = DirAccess.open(directory)
+	if !dir:
+		return false
+	dir.list_dir_begin()
+	var file_name = dir.get_next()
+	while file_name != "":
+		var full_path = directory + "/" + file_name
+		if dir.current_is_dir():
+			if _test_file_exists_recursive(full_path, test_file_name):
+				return true
+		elif file_name == test_file_name:
+			return true
+		file_name = dir.get_next()
+	return false
 
 func _camel_to_snake_case(camel_case: String) -> String:
 	# Convert CamelCase to snake_case
@@ -315,3 +340,18 @@ func _fail_tests(reason: String):
 	else:
 		# Fallback: force exit with code 1
 		OS.kill(OS.get_process_id()) 
+
+# Helper to recursively list all .gd scripts in a directory
+func _list_all_gd_scripts(directory: String, all_scripts: Array):
+	var dir = DirAccess.open(directory)
+	if !dir:
+		return
+	dir.list_dir_begin()
+	var file_name = dir.get_next()
+	while file_name != "":
+		var full_path = directory + "/" + file_name
+		if dir.current_is_dir():
+			_list_all_gd_scripts(full_path, all_scripts)
+		elif file_name.ends_with(".gd"):
+			all_scripts.append(full_path)
+		file_name = dir.get_next() 

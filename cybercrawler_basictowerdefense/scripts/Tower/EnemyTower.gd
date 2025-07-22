@@ -161,9 +161,10 @@ func get_main_controller():
 func get_player_towers() -> Array[Tower]:
 	var towers: Array[Tower] = []
 	var main_controller = get_main_controller()
-	if main_controller and main_controller.tower_manager:
-		towers = main_controller.tower_manager.get_towers()
-	
+	if main_controller and main_controller.has_method("get_tower_manager"):
+		var tower_manager = main_controller.get_tower_manager()
+		if tower_manager:
+			towers = tower_manager.get_towers()
 	return towers
 
 func is_target_in_range(target: Node) -> bool:
@@ -300,8 +301,10 @@ func get_health_info() -> String:
 func get_program_data_packet() -> ProgramDataPacket:
 	"""Get the program data packet from the main controller"""
 	var main_controller = get_main_controller()
-	if main_controller and main_controller.program_data_packet_manager:
-		return main_controller.program_data_packet_manager.get_program_data_packet()
+	if main_controller and main_controller.has_method("get_program_data_packet_manager"):
+		var pdp_manager = main_controller.get_program_data_packet_manager()
+		if pdp_manager and pdp_manager.has_method("get_program_data_packet"):
+			return pdp_manager.get_program_data_packet()
 	return null
 
 # Debug method for range visualization (can be called from console)
