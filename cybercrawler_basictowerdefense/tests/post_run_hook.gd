@@ -286,14 +286,16 @@ func _find_script_files_with_tests(directory: String, files_with_tests: Array, t
 func _should_skip_file_for_test_check(file_name: String) -> bool:
 	# Files that don't need direct tests because they use mocks
 	var skip_files = [
-		"TowerManagerInterface.gd"  # Uses mocks for DI testing
+		"TowerManagerInterface.gd",  # Uses mocks for DI testing
+		"GridManagerInterface.gd"    # Interface - tested through implementations and mocks
 	]
 	return file_name in skip_files
 
 func _should_skip_file_for_coverage_display(file_name: String) -> bool:
 	# Files that should not be shown in coverage reports because they have special testing approaches
 	var skip_display_files = [
-		"TowerManagerInterface.gd"  # Uses mocks - no coverage expected
+		"TowerManagerInterface.gd",  # Uses mocks - no coverage expected
+		"GridManagerInterface.gd"    # Interface - no coverage expected
 	]
 	return file_name in skip_display_files
 
@@ -301,6 +303,7 @@ func _should_skip_file_for_test_requirement(file_name: String) -> bool:
 	# Files that don't need tests at all (interfaces, special cases, etc.)
 	var skip_requirement_files = [
 		"TowerManagerInterface.gd",  # Interface - uses mocks for testing
+		"GridManagerInterface.gd",   # Interface - tested through implementations and mocks
 		"Clickable.gd",              # Interface - tested through implementations
 		"CurrencyManagerInterface.gd", # Interface - tested through implementations
 		"FreezeMineManagerInterface.gd", # Interface - tested through implementations

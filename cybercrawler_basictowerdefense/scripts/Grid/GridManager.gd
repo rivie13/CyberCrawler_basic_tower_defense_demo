@@ -1,5 +1,6 @@
 extends Node2D
 class_name GridManager
+# Implements GridManagerInterface contract
 
 # Grid constants
 const GRID_SIZE = 64  # Size of each grid cell in pixels
