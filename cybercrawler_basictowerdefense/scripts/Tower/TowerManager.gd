@@ -11,11 +11,11 @@ const POWERFUL_TOWER_SCENE = preload("res://scenes/PowerfulTower.tscn")
 var towers_placed: Array[Tower] = []
 
 # References to other managers
-var grid_manager: Node
+var grid_manager: GridManagerInterface
 var currency_manager: CurrencyManagerInterface
-var wave_manager: WaveManager
+var wave_manager: WaveManagerInterface
 
-func initialize(grid_mgr: Node, currency_mgr: CurrencyManagerInterface, wave_mgr: Node) -> void:
+func initialize(grid_mgr: GridManagerInterface, currency_mgr: CurrencyManagerInterface, wave_mgr: WaveManagerInterface) -> void:
 	grid_manager = grid_mgr
 	currency_manager = currency_mgr
 	wave_manager = wave_mgr
