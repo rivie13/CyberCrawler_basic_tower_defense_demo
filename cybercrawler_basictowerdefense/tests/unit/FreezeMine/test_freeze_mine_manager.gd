@@ -100,11 +100,13 @@ func test_place_mine_success():
 	# Watch signals for assertions
 	watch_signals(freeze_mine_manager)
 	
+	var currency_before = mock_currency_manager.get_currency()
 	var result = freeze_mine_manager.place_mine(Vector2i(2, 2), "freeze")
+	var currency_after = mock_currency_manager.get_currency()
 	
 	assert_true(result, "Should succeed with valid placement")
 	assert_eq(freeze_mine_manager.mines.size(), 1, "Should track the placed mine")
-	assert_eq(mock_currency_manager.spent_amount, 15, "Should spend 15 currency")
+	assert_eq(currency_before - currency_after, 15, "Should spend 15 currency")
 	assert_signal_emitted(freeze_mine_manager, "mine_placed", "Should emit success signal")
 
 func test_create_mine_at_position():

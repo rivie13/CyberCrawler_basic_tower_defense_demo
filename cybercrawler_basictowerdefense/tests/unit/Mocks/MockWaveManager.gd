@@ -1,6 +1,17 @@
 extends WaveManagerInterface
 class_name MockWaveManager
 
+# Add public properties to match real WaveManager
+enum { DEFAULT_CURRENT_WAVE = 1, DEFAULT_MAX_WAVES = 10 }
+
+var current_wave: int:
+	get: return mock_current_wave
+	set(value): mock_current_wave = value
+
+var max_waves: int:
+	get: return mock_max_waves
+	set(value): mock_max_waves = value
+
 # Mock state
 var mock_enemies: Array[Enemy] = []
 var mock_enemy_path: Array[Vector2] = []

@@ -2,12 +2,16 @@ extends CurrencyManagerInterface
 class_name MockCurrencyManager
 
 # Mock state
-var _currency: int = 1000
+var _currency: int = 100  # Match real CurrencyManager initial value
 var _purchase_history: Array = []
 var _spent_amount: int = 0
 var _basic_tower_cost: int = 50
 var _powerful_tower_cost: int = 75
 var _currency_per_kill: int = 10
+
+func _ready():
+	# Emit initial currency amount (same as real CurrencyManager)
+	currency_changed.emit(_currency)
 
 func get_currency() -> int:
 	return _currency
@@ -58,8 +62,9 @@ func purchase_tower_type(tower_type: String) -> bool:
 	return spend_currency(cost)
 
 func add_currency(amount: int):
-	_currency += amount
-	currency_changed.emit(_currency)
+	if amount > 0:
+		_currency += amount
+		currency_changed.emit(_currency)
 
 func spend_currency(amount: int) -> bool:
 	if _currency >= amount:
@@ -74,16 +79,19 @@ func can_afford(amount: int) -> bool:
 	return _currency >= amount
 
 func set_basic_tower_cost(new_cost: int):
-	_basic_tower_cost = new_cost
+	if new_cost > 0:
+		_basic_tower_cost = new_cost
 
 func set_powerful_tower_cost(new_cost: int):
-	_powerful_tower_cost = new_cost
+	if new_cost > 0:
+		_powerful_tower_cost = new_cost
 
 func set_currency_per_kill(new_amount: int):
-	_currency_per_kill = new_amount
+	if new_amount >= 0:
+		_currency_per_kill = new_amount
 
 func reset_currency():
-	_currency = 1000
+	_currency = 100  # Match real CurrencyManager reset value
 	_purchase_history.clear()
 	_spent_amount = 0
 	currency_changed.emit(_currency)

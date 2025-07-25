@@ -367,7 +367,4 @@ func test_constants():
 	assert_eq(ProgramDataPacket.TARGET_REACH_THRESHOLD, 10.0, "TARGET_REACH_THRESHOLD should be 10.0")
 	assert_true(ProgramDataPacket.DEBUG_MODE, "DEBUG_MODE should be true")
 
-# Mock classes for testing
-class MockEnemy extends Node2D:
-	# global_position is already available from Node2D
-	pass 
+# Mock classes for testing - now using global MockEnemy 

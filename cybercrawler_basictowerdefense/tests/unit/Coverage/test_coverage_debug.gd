@@ -4,25 +4,25 @@ extends GutTest
 func test_coverage_debug():
 	print("=== COVERAGE DEBUG TEST ===")
 	
-	# Test 1: Create GameManager and call _ready()
-	print("Creating GameManager...")
-	var game_manager = GameManager.new()
+	# Test 1: Create MockGameManager and call _ready()
+	print("Creating MockGameManager...")
+	var game_manager = MockGameManager.new()
 	add_child_autofree(game_manager)
 	
 	print("Calling _ready()...")
 	game_manager._ready()
 	
-	print("GameManager session start time: ", game_manager.game_session_start_time)
+	print("MockGameManager session time: ", game_manager.get_session_time())
 	
-	# Test 2: Create TowerManager and call initialize()
-	print("Creating TowerManager...")
-	var tower_manager = TowerManager.new()
+	# Test 2: Create BaseMockTowerManager and call initialize()
+	print("Creating BaseMockTowerManager...")
+	var tower_manager = BaseMockTowerManager.new()
 	add_child_autofree(tower_manager)
 	
 	print("Calling initialize()...")
 	tower_manager.initialize(null, null, null)
 	
-	print("TowerManager towers_placed size: ", tower_manager.towers_placed.size())
+	print("BaseMockTowerManager tower count: ", tower_manager.get_tower_count())
 	
 	# Test 3: Create Clickable config (this works)
 	print("Creating Clickable config...")

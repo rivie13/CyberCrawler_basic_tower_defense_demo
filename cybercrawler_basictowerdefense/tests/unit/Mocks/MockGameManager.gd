@@ -9,6 +9,10 @@ var mock_enemies_killed: int = 0
 var mock_victory_type: VictoryType = VictoryType.WAVE_SURVIVAL
 var mock_session_time: float = 0.0
 
+func _ready():
+	# Mock implementation - initialize session time
+	mock_session_time = 0.0
+
 # Signal tracking
 var game_over_triggered_called: bool = false
 var game_won_triggered_called: bool = false

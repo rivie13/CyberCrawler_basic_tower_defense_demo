@@ -257,6 +257,4 @@ func test_get_main_controller():
 	var result = freeze_mine.get_main_controller()
 	assert_eq(result, mock_main_controller, "Should return main controller from group")
 
-# Mock classes for testing
-class MockEnemyTower extends Node2D:
-	var is_alive: bool = true 
+# Mock classes for testing - now using global MockEnemyTower 
