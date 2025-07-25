@@ -95,6 +95,11 @@ func set_path_positions(positions: Array[Vector2i]) -> void:
 func get_path_positions() -> Array[Vector2i]:
 	return _path_positions
 
+# Add property to match real GridManager interface
+var path_grid_positions: Array[Vector2i]:
+	get: return _path_positions
+	set(value): _path_positions = value
+
 func handle_mouse_hover(world_pos: Vector2) -> void:
 	# Mock implementation - does nothing
 	pass
@@ -162,4 +167,21 @@ func set_occupied_positions(positions: Array) -> void:
 	occupied_positions = positions
 
 func get_occupied_positions() -> Array:
-	return occupied_positions 
+	return occupied_positions
+
+# Add missing methods that RivalHackerManager expects
+func find_path_astar(start: Vector2i, end: Vector2i) -> Array[Vector2i]:
+	# Mock implementation - return a simple path if start and end are valid
+	if is_valid_grid_position(start) and is_valid_grid_position(end):
+		return [start, end]
+	return [] as Array[Vector2i]
+
+func get_neighbors(pos: Vector2i) -> Array[Vector2i]:
+	# Mock implementation - return adjacent positions
+	var neighbors: Array[Vector2i] = []
+	var directions = [Vector2i(0, 1), Vector2i(1, 0), Vector2i(0, -1), Vector2i(-1, 0)]
+	for dir in directions:
+		var neighbor = pos + dir
+		if is_valid_grid_position(neighbor):
+			neighbors.append(neighbor)
+	return neighbors 

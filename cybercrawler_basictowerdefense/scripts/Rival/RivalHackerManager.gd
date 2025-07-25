@@ -568,9 +568,10 @@ func repair_path_after_block():
 	if connector.size() > 0:
 		var new_path = seg1 + connector + seg2
 		grid_manager.set_path_positions(new_path)
-		wave_manager.enemy_path.clear()
+		var enemy_path = wave_manager.get_enemy_path()
+		enemy_path.clear()
 		for grid_pos in new_path:
-			wave_manager.enemy_path.append(grid_manager.grid_to_world(grid_pos))
+			enemy_path.append(grid_manager.grid_to_world(grid_pos))
 		# Update packet path as well
 		if program_data_packet_manager:
 			program_data_packet_manager.create_packet_path()
@@ -801,9 +802,10 @@ func _force_path_recalculation():
 	if new_path.size() > 0:
 		# Update the path
 		grid_manager.set_path_positions(new_path)
-		wave_manager.enemy_path.clear()
+		var enemy_path = wave_manager.get_enemy_path()
+		enemy_path.clear()
 		for grid_pos in new_path:
-			wave_manager.enemy_path.append(grid_manager.grid_to_world(grid_pos))
+			enemy_path.append(grid_manager.grid_to_world(grid_pos))
 		
 		# Update packet path as well
 		if program_data_packet_manager:

@@ -174,6 +174,72 @@ The following files are excluded from test requirements because they use alterna
 - **Edge Case Testing**: Boundary conditions and error scenarios
 - **State-Based Testing**: Testing observable effects rather than implementation details
 
+### Critical Lessons Learned
+
+#### 1. Mock Object Initialization Requirements
+**Issue**: Mock objects may require explicit initialization before use, even if the real objects don't.
+
+**Problem Example**: 
+```gdscript
+# This will fail - mock not initialized
+mock_tower_manager.place_tower(grid_pos, tower_type)
+assert_eq(mock_tower_manager.get_towers().size(), 1)  # Returns 0!
+```
+
+**Solution**: Always initialize mock objects before use:
+```gdscript
+# Correct approach
+mock_tower_manager.initialize(mock_grid_manager, mock_currency_manager, mock_wave_manager)
+mock_tower_manager.place_tower(grid_pos, tower_type)
+assert_eq(mock_tower_manager.get_towers().size(), 1)  # Now works correctly
+```
+
+**Rule**: **Always check if mock objects need initialization and call their initialize() method before use.**
+
+#### 2. Interface Compliance in Dependency Injection
+**Issue**: Direct property access violates dependency injection principles and breaks when using mock objects.
+
+**Problem Example**:
+```gdscript
+# This breaks with mock objects that don't have the property
+wave_manager.enemy_path.clear()
+wave_manager.enemy_path.append(new_position)
+```
+
+**Solution**: Always use interface methods instead of direct property access:
+```gdscript
+# Correct approach - uses interface method
+var enemy_path = wave_manager.get_enemy_path()
+enemy_path.clear()
+enemy_path.append(new_position)
+```
+
+**Rule**: **Never access properties directly on injected dependencies. Always use interface methods.**
+
+#### 3. Mock Object State Verification
+**Issue**: Mock objects may not track state correctly if not properly initialized or if their methods don't update internal state.
+
+**Debugging Approach**:
+```gdscript
+# Add debug output to understand mock behavior
+print("DEBUG: Mock tower manager has ", mock_tower_manager.get_towers().size(), " towers")
+print("DEBUG: Mock tower manager get_tower_count(): ", mock_tower_manager.get_tower_count())
+```
+
+**Rule**: **When tests fail unexpectedly with mock objects, add debug output to verify mock state and behavior.**
+
+#### 4. Test Setup Completeness
+**Issue**: Tests may fail because not all dependencies are properly set up.
+
+**Checklist for Test Setup**:
+- [ ] All mock objects are initialized
+- [ ] All dependencies are injected correctly
+- [ ] Test data is properly seeded
+- [ ] Mock objects track state correctly
+- [ ] Interface methods are used instead of direct property access
+
+**Rule**: **Always verify that mock objects are in the expected state before running assertions.**
+
 ### Key Test Features
 - **Isolation**: Each test runs independently
 - **Comprehensive Coverage**: Tests both success and failure paths
