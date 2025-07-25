@@ -1,12 +1,7 @@
-extends Node2D
+extends WaveManagerInterface
 class_name WaveManager
 
-# Signals for communication with other managers
-signal enemy_died(enemy: Enemy)
-signal enemy_reached_end(enemy: Enemy)
-signal wave_started(wave_number: int)
-signal wave_completed(wave_number: int)
-signal all_waves_completed()
+# Signals are now inherited from WaveManagerInterface
 
 # Enemy spawning
 const ENEMY_SCENE = preload("res://scenes/Enemy.tscn")

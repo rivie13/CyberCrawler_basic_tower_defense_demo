@@ -234,7 +234,9 @@ func test_get_enemy_towers_in_radius():
 	# Create mock main controller and rival hacker manager
 	var mock_main_controller = MockMainController.new()
 	var mock_rival_manager = MockRivalHackerManager.new()
-	mock_rival_manager.enemy_towers = [mock_tower1, mock_tower2]
+	mock_rival_manager.set_mock_enemy_towers([mock_tower1, mock_tower2])
+	
+	# Set the real rival_hacker_manager property that FreezeMine will access
 	mock_main_controller.rival_hacker_manager = mock_rival_manager
 	add_child_autofree(mock_main_controller)
 	add_child_autofree(mock_rival_manager)
@@ -257,13 +259,4 @@ func test_get_main_controller():
 
 # Mock classes for testing
 class MockEnemyTower extends Node2D:
-	var is_alive: bool = true
-
-class MockMainController extends Node:
-	var rival_hacker_manager: MockRivalHackerManager
-
-class MockRivalHackerManager extends Node:
-	var enemy_towers: Array = []
-	
-	func get_enemy_towers() -> Array:
-		return enemy_towers 
+	var is_alive: bool = true 

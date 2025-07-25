@@ -20,12 +20,12 @@ const MODE_PLACE_FREEZE_MINE = "place_freeze_mine"
 
 # Manager references
 var grid_manager: GridManagerInterface
-var wave_manager: WaveManager  
+var wave_manager: WaveManagerInterface  
 var tower_manager: TowerManagerInterface
 var currency_manager: CurrencyManagerInterface
-var game_manager: GameManager
-var rival_hacker_manager: RivalHackerManager
-var program_data_packet_manager: ProgramDataPacketManager
+var game_manager: GameManagerInterface
+var rival_hacker_manager: RivalHackerManagerInterface
+var program_data_packet_manager: ProgramDataPacketManagerInterface
 var freeze_mine_manager: MineManagerInterface
 
 # UI update timer
@@ -43,7 +43,12 @@ func _ready():
 	DebugLogger.info("MainController starting up...", "INIT")
 	
 	add_to_group("main_controller")
-	setup_managers()
+	
+	# Check if we're in a test environment (no managers injected)
+	if not grid_manager:
+		# In test environment, create managers for backwards compatibility
+		setup_managers()
+	
 	initialize_systems()
 	setup_ui()
 	
@@ -51,16 +56,48 @@ func _ready():
 	if get_node_or_null("GridContainer"):
 		start_game()
 
+func initialize(grid_mgr: GridManagerInterface, wave_mgr: WaveManagerInterface, 
+				tower_mgr: TowerManagerInterface, currency_mgr: CurrencyManagerInterface,
+				game_mgr: GameManagerInterface, rival_mgr: RivalHackerManagerInterface,
+				packet_mgr: ProgramDataPacketManagerInterface, mine_mgr: MineManagerInterface):
+	"""Initialize MainController with injected dependencies"""
+	grid_manager = grid_mgr
+	wave_manager = wave_mgr
+	tower_manager = tower_mgr
+	currency_manager = currency_mgr
+	game_manager = game_mgr
+	rival_hacker_manager = rival_mgr
+	program_data_packet_manager = packet_mgr
+	freeze_mine_manager = mine_mgr
+	
+	# Add them as children if they aren't already
+	if not grid_manager.get_parent():
+		add_child(grid_manager)
+	if not wave_manager.get_parent():
+		add_child(wave_manager)
+	if not tower_manager.get_parent():
+		add_child(tower_manager)
+	if not currency_manager.get_parent():
+		add_child(currency_manager)
+	if not game_manager.get_parent():
+		add_child(game_manager)
+	if not rival_hacker_manager.get_parent():
+		add_child(rival_hacker_manager)
+	if not program_data_packet_manager.get_parent():
+		add_child(program_data_packet_manager)
+	if not freeze_mine_manager.get_parent():
+		add_child(freeze_mine_manager)
+
 func setup_managers():
-	# Create all manager instances
+	# Create all manager instances (for backwards compatibility)
 	grid_manager = GridManager.new()
-	wave_manager = WaveManager.new()
-	tower_manager = TowerManager.new()
-	currency_manager = CurrencyManager.new()
-	game_manager = GameManager.new()
-	rival_hacker_manager = RivalHackerManager.new()
-	program_data_packet_manager = ProgramDataPacketManager.new()
-	freeze_mine_manager = FreezeMineManager.new()
+	wave_manager = WaveManager.new() as WaveManagerInterface
+	tower_manager = TowerManager.new() as TowerManagerInterface
+	currency_manager = CurrencyManager.new() as CurrencyManagerInterface
+	game_manager = GameManager.new() as GameManagerInterface
+	rival_hacker_manager = RivalHackerManager.new() as RivalHackerManagerInterface
+	program_data_packet_manager = ProgramDataPacketManager.new() as ProgramDataPacketManagerInterface
+	freeze_mine_manager = FreezeMineManager.new() as MineManagerInterface
 	
 	# Add them as children
 	add_child(grid_manager)

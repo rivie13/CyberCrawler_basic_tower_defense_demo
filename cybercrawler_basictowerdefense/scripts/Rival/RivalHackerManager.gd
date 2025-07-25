@@ -1,4 +1,4 @@
-extends Node2D
+extends RivalHackerManagerInterface
 class_name RivalHackerManager
 
 # Scene references
@@ -8,9 +8,7 @@ const RIVAL_HACKER_SCENE = preload("res://scenes/RivalHacker.tscn")
 # Tower type constants - consistent with TowerManager  
 const POWERFUL_TOWER = "powerful"
 
-# Signals
-signal enemy_tower_placed(grid_pos: Vector2i)
-signal rival_hacker_activated()
+# Signals are now inherited from RivalHackerManagerInterface
 
 # Alert system
 var alert_system: RivalAlertSystem
@@ -44,8 +42,8 @@ var player_threat_level: int = 0  # Tracks how threatening player is
 var grid_manager: GridManagerInterface
 var currency_manager: CurrencyManagerInterface
 var tower_manager: TowerManagerInterface
-var wave_manager: WaveManager
-var game_manager: GameManager = null
+var wave_manager: WaveManagerInterface
+var game_manager: Node = null
 
 # Detour points for adversarial path repair
 var detour_points: Array[Vector2i] = []
@@ -128,7 +126,7 @@ func setup_timers():
 	
 	# Timer for initial activation delay - removed (now using alert-based activation)
 
-func initialize(grid_mgr: GridManagerInterface, currency_mgr: CurrencyManagerInterface, tower_mgr: TowerManagerInterface, wave_mgr: WaveManager, gm: GameManager = null):
+func initialize(grid_mgr: GridManagerInterface, currency_mgr: CurrencyManagerInterface, tower_mgr: TowerManagerInterface, wave_mgr: WaveManagerInterface, gm: Node = null):
 	grid_manager = grid_mgr
 	currency_manager = currency_mgr
 	tower_manager = tower_mgr
@@ -570,7 +568,7 @@ func repair_path_after_block():
 	if connector.size() > 0:
 		var new_path = seg1 + connector + seg2
 		grid_manager.set_path_positions(new_path)
-		wave_manager.enemy_path = []
+		wave_manager.enemy_path.clear()
 		for grid_pos in new_path:
 			wave_manager.enemy_path.append(grid_manager.grid_to_world(grid_pos))
 		# Update packet path as well
@@ -803,7 +801,7 @@ func _force_path_recalculation():
 	if new_path.size() > 0:
 		# Update the path
 		grid_manager.set_path_positions(new_path)
-		wave_manager.enemy_path = []
+		wave_manager.enemy_path.clear()
 		for grid_pos in new_path:
 			wave_manager.enemy_path.append(grid_manager.grid_to_world(grid_pos))
 		

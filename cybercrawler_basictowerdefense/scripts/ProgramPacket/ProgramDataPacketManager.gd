@@ -1,13 +1,7 @@
-extends Node2D
+extends ProgramDataPacketManagerInterface
 class_name ProgramDataPacketManager
 
-# Constants (addressing Copilot review)
-const AUTO_RELEASE_WAVE_NUMBER: int = 10
-
-# Signals for communication with other managers
-signal program_packet_ready()
-signal program_packet_destroyed(packet: ProgramDataPacket)
-signal program_packet_reached_end(packet: ProgramDataPacket)
+# Constants and signals are now inherited from ProgramDataPacketManagerInterface
 
 # Program data packet scene reference
 const PROGRAM_DATA_PACKET_SCENE = preload("res://scenes/ProgramDataPacket.tscn")
@@ -21,10 +15,10 @@ var can_release_packet: bool = false
 
 # References to other managers
 var grid_manager: GridManagerInterface
-var game_manager: GameManager
-var wave_manager: WaveManager
+var game_manager: GameManagerInterface
+var wave_manager: WaveManagerInterface
 
-func initialize(grid_mgr: GridManagerInterface, game_mgr: GameManager, wave_mgr: WaveManager):
+func initialize(grid_mgr: GridManagerInterface, game_mgr: GameManagerInterface, wave_mgr: WaveManagerInterface):
 	grid_manager = grid_mgr
 	game_manager = game_mgr
 	wave_manager = wave_mgr

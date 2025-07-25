@@ -11,6 +11,14 @@ var _grid_container: Node2D
 var _game_manager: Node
 var _initialized: bool = false
 
+# Mock properties for test control
+var is_valid_position: bool = true
+var is_occupied: bool = false
+var is_on_path: bool = false
+var world_position: Vector2 = Vector2.ZERO
+var unblocked_positions: Array = []
+var occupied_positions: Array = []
+
 # Mock grid constants
 const GRID_SIZE = 64
 const GRID_WIDTH = 15
@@ -36,18 +44,42 @@ func _initialize_grid():
 		_blocked_grid_data.append(blocked_row)
 
 func is_valid_grid_position(grid_pos: Vector2i) -> bool:
+	# Use mock property for test control
+	if not is_valid_position:
+		return false
 	return grid_pos.x >= 0 and grid_pos.x < GRID_WIDTH and grid_pos.y >= 0 and grid_pos.y < GRID_HEIGHT
 
 func is_grid_occupied(grid_pos: Vector2i) -> bool:
+	# Use mock property for test control
+	if is_occupied:
+		return true
 	if not is_valid_grid_position(grid_pos):
 		return true
+	# Ensure arrays are initialized
+	if _grid_data.size() <= grid_pos.y or _grid_data[grid_pos.y].size() <= grid_pos.x:
+		return false
 	return _grid_data[grid_pos.y][grid_pos.x]
 
 func set_grid_occupied(grid_pos: Vector2i, occupied: bool) -> void:
 	if is_valid_grid_position(grid_pos):
+		# Ensure arrays are initialized
+		while _grid_data.size() <= grid_pos.y:
+			_grid_data.append([])
+		while _grid_data[grid_pos.y].size() <= grid_pos.x:
+			_grid_data[grid_pos.y].append(false)
 		_grid_data[grid_pos.y][grid_pos.x] = occupied
+		
+		# Track positions for tests
+		if occupied:
+			if not grid_pos in occupied_positions:
+				occupied_positions.append(grid_pos)
+		else:
+			occupied_positions.erase(grid_pos)
 
 func grid_to_world(grid_pos: Vector2i) -> Vector2:
+	# Use mock property for test control
+	if world_position != Vector2.ZERO:
+		return world_position
 	var world_x = grid_pos.x * GRID_SIZE + GRID_SIZE / 2.0
 	var world_y = grid_pos.y * GRID_SIZE + GRID_SIZE / 2.0
 	return Vector2(world_x, world_y)
@@ -74,16 +106,34 @@ func get_grid_size() -> Vector2i:
 	return Vector2i(GRID_WIDTH, GRID_HEIGHT)
 
 func is_on_enemy_path(grid_pos: Vector2i) -> bool:
+	# Use mock property for test control
+	if is_on_path:
+		return true
 	return grid_pos in _path_positions
 
 func is_grid_blocked(grid_pos: Vector2i) -> bool:
 	if not is_valid_grid_position(grid_pos):
 		return true
+	# Ensure arrays are initialized
+	if _blocked_grid_data.size() <= grid_pos.y or _blocked_grid_data[grid_pos.y].size() <= grid_pos.x:
+		return false
 	return _blocked_grid_data[grid_pos.y][grid_pos.x]
 
 func set_grid_blocked(grid_pos: Vector2i, blocked: bool) -> void:
 	if is_valid_grid_position(grid_pos):
+		# Ensure arrays are initialized
+		while _blocked_grid_data.size() <= grid_pos.y:
+			_blocked_grid_data.append([])
+		while _blocked_grid_data[grid_pos.y].size() <= grid_pos.x:
+			_blocked_grid_data[grid_pos.y].append(false)
 		_blocked_grid_data[grid_pos.y][grid_pos.x] = blocked
+		
+		# Track positions for tests
+		if not blocked:
+			if not grid_pos in unblocked_positions:
+				unblocked_positions.append(grid_pos)
+		else:
+			unblocked_positions.erase(grid_pos)
 
 # Helper methods for tests
 func set_grid_data(data: Array) -> void:
@@ -99,4 +149,17 @@ func get_blocked_grid_data() -> Array:
 	return _blocked_grid_data
 
 func is_initialized() -> bool:
-	return _initialized 
+	return _initialized
+
+# Additional helper methods for tests
+func set_unblocked_positions(positions: Array) -> void:
+	unblocked_positions = positions
+
+func get_unblocked_positions() -> Array:
+	return unblocked_positions
+
+func set_occupied_positions(positions: Array) -> void:
+	occupied_positions = positions
+
+func get_occupied_positions() -> Array:
+	return occupied_positions 

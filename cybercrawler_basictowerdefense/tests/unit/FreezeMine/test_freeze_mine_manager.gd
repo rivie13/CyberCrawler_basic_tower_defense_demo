@@ -69,7 +69,7 @@ func test_can_place_mine_at_enemy_path():
 func test_place_mine_insufficient_currency():
 	# Test placement with insufficient currency
 	freeze_mine_manager.initialize(mock_grid_manager, mock_currency_manager)
-	mock_currency_manager.current_currency = 10  # Less than 15 cost
+	mock_currency_manager.set_currency(10)  # Less than 15 cost
 	watch_signals(freeze_mine_manager)
 	
 	var result = freeze_mine_manager.place_mine(Vector2i(2, 2), "freeze")
@@ -91,7 +91,7 @@ func test_place_mine_invalid_position():
 func test_place_mine_success():
 	# Test successful freeze mine placement
 	freeze_mine_manager.initialize(mock_grid_manager, mock_currency_manager)
-	mock_currency_manager.current_currency = 20
+	mock_currency_manager.set_currency(20)
 	mock_grid_manager.is_valid_position = true
 	mock_grid_manager.is_occupied = false
 	mock_grid_manager.is_on_path = false
@@ -205,7 +205,7 @@ func test_get_mine_cost():
 func test_signal_connections():
 	# Test that signals are properly connected when placing mines
 	freeze_mine_manager.initialize(mock_grid_manager, mock_currency_manager)
-	mock_currency_manager.current_currency = 20
+	mock_currency_manager.set_currency(20)
 	mock_grid_manager.is_valid_position = true
 	mock_grid_manager.is_occupied = false
 	mock_grid_manager.is_on_path = false
@@ -224,7 +224,7 @@ func test_signal_connections():
 func test_grid_occupation_management():
 	# Test that grid positions are properly managed
 	freeze_mine_manager.initialize(mock_grid_manager, mock_currency_manager)
-	mock_currency_manager.current_currency = 20
+	mock_currency_manager.set_currency(20)
 	mock_grid_manager.is_valid_position = true
 	mock_grid_manager.is_occupied = false
 	mock_grid_manager.is_on_path = false
@@ -236,18 +236,4 @@ func test_grid_occupation_management():
 	assert_eq(mock_grid_manager.occupied_positions.size(), 1, "Should mark position as occupied")
 	assert_eq(mock_grid_manager.occupied_positions[0], Vector2i(3, 4), "Should occupy correct position")
 
-# Mock classes for testing
-
-class MockCurrencyManager extends CurrencyManager:
-	var current_currency: int = 100
-	var spent_amount: int = 0
-	
-	func get_currency() -> int:
-		return current_currency
-	
-	func spend_currency(amount: int) -> bool:
-		if current_currency >= amount:
-			current_currency -= amount
-			spent_amount = amount
-			return true
-		return false 
+# Mock classes for testing 

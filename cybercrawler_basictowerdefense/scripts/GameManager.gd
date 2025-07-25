@@ -1,9 +1,5 @@
-extends Node2D
+extends GameManagerInterface
 class_name GameManager
-
-# Signals for game state changes
-signal game_over_triggered()
-signal game_won_triggered()
 
 # Game state
 var player_health: int = 10
@@ -11,11 +7,7 @@ var enemies_killed: int = 0
 var game_over: bool = false
 var game_won: bool = false
 
-# Victory types
-enum VictoryType {
-	WAVE_SURVIVAL,
-	PROGRAM_DATA_PACKET
-}
+# Victory type
 var victory_type: VictoryType = VictoryType.WAVE_SURVIVAL
 
 # Timer system
@@ -24,7 +16,7 @@ var wave_countdown_time: float = 0.0
 var wave_countdown_active: bool = false
 
 # References to other managers
-var wave_manager: WaveManager
+var wave_manager: WaveManagerInterface
 var currency_manager: CurrencyManagerInterface
 var tower_manager: TowerManagerInterface
 
@@ -32,7 +24,7 @@ func _ready():
 	# Initialize timer system
 	game_session_start_time = Time.get_ticks_msec()
 
-func initialize(wave_mgr: WaveManager, currency_mgr: CurrencyManagerInterface, tower_mgr: TowerManagerInterface):
+func initialize(wave_mgr: WaveManagerInterface, currency_mgr: CurrencyManagerInterface, tower_mgr: TowerManagerInterface):
 	wave_manager = wave_mgr
 	currency_manager = currency_mgr
 	tower_manager = tower_mgr

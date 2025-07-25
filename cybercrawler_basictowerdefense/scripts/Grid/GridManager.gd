@@ -32,13 +32,13 @@ var reroute_occurred: bool = false
 # NEW: Signal for when a grid cell is blocked/unblocked
 signal grid_blocked_changed(grid_pos: Vector2i, blocked: bool)
 
-var game_manager: GameManager = null
+var game_manager: GameManagerInterface = null
 
 func _ready():
 	# GridContainer will be set by MainController during initialization
 	initialize_grid()
 
-func initialize_with_container(container: Node2D, gm: GameManager = null):
+func initialize_with_container(container: Node2D, gm: GameManagerInterface = null):
 	grid_container = container
 	if gm != null:
 		game_manager = gm
