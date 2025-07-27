@@ -57,6 +57,8 @@ func attempt_basic_tower_placement(grid_pos: Vector2i) -> bool:
 	return attempt_tower_placement(grid_pos, BASIC_TOWER)
 
 func place_tower(grid_pos: Vector2i, tower_type: String = BASIC_TOWER) -> bool:
+	if not currency_manager:
+		return false
 	if not currency_manager.purchase_tower_type(tower_type):
 		return false
 	

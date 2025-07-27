@@ -313,6 +313,9 @@ func find_rival_hacker_spawn_position() -> Vector2:
 	return grid_manager.grid_to_world(Vector2i(edge_x, edge_y))
 
 func spawn_rival_hacker(world_position: Vector2) -> bool:
+	if not grid_manager:
+		return false
+	
 	# Create RivalHacker instance
 	var rival_hacker = RIVAL_HACKER_SCENE.instantiate()
 	rival_hacker.global_position = world_position
@@ -581,6 +584,8 @@ func repair_path_after_block():
 
 # Helper: Get all grid cells within 'width' cells of any cell in the path
 func get_corridor_cells_around_path(path: Array[Vector2i], width: int) -> Array[Vector2i]:
+	if not grid_manager:
+		return [] as Array[Vector2i]
 	var corridor: Array[Vector2i] = []
 	var grid_size = grid_manager.get_grid_size()
 	var seen = {}
@@ -726,6 +731,8 @@ func _attempt_unblock_random():
 
 # Strategic versions of blocking functions for comprehensive grid action
 func _attempt_strategic_path_block() -> bool:
+	if not grid_manager:
+		return false
 	# More aggressive path blocking that ensures at least one path cell is blocked
 	var path_positions = grid_manager.path_grid_positions
 	if path_positions.size() <= 2:
@@ -750,6 +757,8 @@ func _attempt_strategic_path_block() -> bool:
 	return false
 
 func _attempt_strategic_non_path_block() -> bool:
+	if not grid_manager:
+		return false
 	# Block a non-path cell strategically
 	var grid_size = grid_manager.get_grid_size()
 	var candidates: Array[Vector2i] = []
