@@ -111,6 +111,12 @@ func get_enemies_for_towers() -> Array[Enemy]:
 func get_towers() -> Array[Tower]:
 	return towers_placed
 
+func get_tower_at_position(grid_pos: Vector2i) -> Tower:
+	for tower in towers_placed:
+		if is_instance_valid(tower) and tower.get_grid_position() == grid_pos:
+			return tower
+	return null
+
 func stop_all_towers():
 	for tower in towers_placed:
 		if is_instance_valid(tower):

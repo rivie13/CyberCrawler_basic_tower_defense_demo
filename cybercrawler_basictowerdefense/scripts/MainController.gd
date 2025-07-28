@@ -427,7 +427,7 @@ func show_victory_screen():
 		var victory_text = "VICTORY!\n"
 		
 		# Show different victory messages based on victory type
-		if victory_data.victory_type == GameManager.VictoryType.PROGRAM_DATA_PACKET:
+		if victory_data.victory_type == GameManagerInterface.VictoryType.PROGRAM_DATA_PACKET:
 			victory_text += "Program data packet successfully infiltrated the enemy network!\n"
 			victory_text += "Mission accomplished during wave %d!\n" % [victory_data.current_wave]
 			victory_text += "\nYou've hacked into the enemy system and retrieved critical data!"
@@ -484,6 +484,10 @@ func _on_enemy_tower_placed(grid_pos: Vector2i):
 	# Could add visual/audio feedback here
 
 func stop_all_game_activity():
+	# Stop wave manager first
+	if wave_manager:
+		wave_manager.stop_all_timers()
+	
 	# Stop rival hacker activity
 	if rival_hacker_manager:
 		rival_hacker_manager.stop_all_activity()
