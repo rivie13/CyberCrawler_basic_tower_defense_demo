@@ -590,6 +590,15 @@ func _on_freeze_mine_depleted(mine: Mine):
 	print("MainController: Freeze mine depleted at ", mine.grid_position)
 	update_info_label()
 
+# Getter methods for manager access
+func get_program_data_packet_manager() -> ProgramDataPacketManagerInterface:
+	"""Get the program data packet manager"""
+	return program_data_packet_manager
+
+func get_tower_manager() -> TowerManagerInterface:
+	"""Get the tower manager"""
+	return tower_manager
+
 # Utility: Show a temporary message in the InfoLabel
 func show_temp_message(message: String, duration: float = 1.5):
 	# Skip UI updates if we're in a test environment or UI nodes don't exist
