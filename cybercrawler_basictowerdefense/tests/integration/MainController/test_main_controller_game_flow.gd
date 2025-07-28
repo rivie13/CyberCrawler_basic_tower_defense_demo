@@ -29,18 +29,12 @@ func test_player_places_tower_workflow():
 	var initial_currency = main_controller.currency_manager.get_currency()
 	var initial_tower_count = main_controller.tower_manager.get_tower_count()
 	
-	# Simulate player placing a tower through grid click
-	var grid_position = Vector2i(3, 3)
-	var world_position = main_controller.grid_manager.grid_to_world(grid_position)
-	main_controller.handle_grid_click(world_position)
+	# Simulate tower placement
+	main_controller.handle_grid_click(Vector2(100, 100))  # Valid grid position
 	
-	# Currency should decrease
-	var final_currency = main_controller.currency_manager.get_currency()
-	assert_lt(final_currency, initial_currency, "Currency should decrease when placing tower")
-	
-	# Tower count should increase
-	var final_tower_count = main_controller.tower_manager.get_tower_count()
-	assert_gt(final_tower_count, initial_tower_count, "Tower count should increase when placing tower")
+	# Verify tower placement worked - the tower should be placed successfully
+	assert_gt(main_controller.tower_manager.get_tower_count(), initial_tower_count, "Tower count should increase after placement")
+	assert_lt(main_controller.currency_manager.get_currency(), initial_currency, "Currency should decrease after tower placement")
 
 func test_game_over_workflow():
 	# Integration test: Game over triggered → All systems stop activity
