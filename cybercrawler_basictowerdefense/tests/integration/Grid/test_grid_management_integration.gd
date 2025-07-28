@@ -398,7 +398,7 @@ func test_grid_multi_system_coordination_integration():
 		program_data_packet_manager.release_program_data_packet()
 		await wait_frames(3)
 		
-		var packet = program_data_packet_manager.get_current_packet()
+		var packet = program_data_packet_manager.get_program_data_packet()
 		if packet and is_instance_valid(packet):
 			# Packet should follow valid path that respects grid constraints
 			assert_true(packet.is_alive, "Packet should be alive in modified grid scenario")

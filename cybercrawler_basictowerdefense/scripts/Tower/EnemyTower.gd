@@ -193,6 +193,10 @@ func attack_target():
 		current_target = null
 
 func create_projectile_to_target(target: Node):
+	# Safety check for freed target
+	if not target or not is_instance_valid(target):
+		return
+		
 	# Create a simple projectile visual effect
 	var projectile = ColorRect.new()
 	projectile.size = Vector2(6, 6)
@@ -304,7 +308,10 @@ func get_program_data_packet() -> ProgramDataPacket:
 	if main_controller and main_controller.has_method("get_program_data_packet_manager"):
 		var pdp_manager = main_controller.get_program_data_packet_manager()
 		if pdp_manager and pdp_manager.has_method("get_program_data_packet"):
-			return pdp_manager.get_program_data_packet()
+			var packet = pdp_manager.get_program_data_packet()
+			# Check if the packet is valid and not freed
+			if packet and is_instance_valid(packet):
+				return packet
 	return null
 
 # Debug method for range visualization (can be called from console)
