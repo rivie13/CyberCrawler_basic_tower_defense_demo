@@ -1,4 +1,4 @@
-extends Node2D
+extends RivalHackerManagerInterface
 class_name RivalHackerManager
 
 # Scene references
@@ -8,9 +8,7 @@ const RIVAL_HACKER_SCENE = preload("res://scenes/RivalHacker.tscn")
 # Tower type constants - consistent with TowerManager  
 const POWERFUL_TOWER = "powerful"
 
-# Signals
-signal enemy_tower_placed(grid_pos: Vector2i)
-signal rival_hacker_activated()
+# Signals are now inherited from RivalHackerManagerInterface
 
 # Alert system
 var alert_system: RivalAlertSystem
@@ -41,11 +39,11 @@ var preferred_grid_zones: Array[Vector2i] = []  # Areas AI prefers to place towe
 var player_threat_level: int = 0  # Tracks how threatening player is
 
 # References to other managers
-var grid_manager: GridManager
+var grid_manager: GridManagerInterface
 var currency_manager: CurrencyManagerInterface
 var tower_manager: TowerManagerInterface
-var wave_manager: WaveManager
-var game_manager: GameManager = null
+var wave_manager: WaveManagerInterface
+var game_manager: Node = null
 
 # Detour points for adversarial path repair
 var detour_points: Array[Vector2i] = []
@@ -128,7 +126,7 @@ func setup_timers():
 	
 	# Timer for initial activation delay - removed (now using alert-based activation)
 
-func initialize(grid_mgr: GridManager, currency_mgr: CurrencyManagerInterface, tower_mgr: TowerManagerInterface, wave_mgr: WaveManager, gm: GameManager = null):
+func initialize(grid_mgr: GridManagerInterface, currency_mgr: CurrencyManagerInterface, tower_mgr: TowerManagerInterface, wave_mgr: WaveManagerInterface, gm: Node = null):
 	grid_manager = grid_mgr
 	currency_manager = currency_mgr
 	tower_manager = tower_mgr
@@ -255,6 +253,10 @@ func is_valid_enemy_tower_position(grid_pos: Vector2i) -> bool:
 	if grid_manager.is_on_enemy_path(grid_pos):
 		return false
 	
+	# NEW: Check if position is ruined
+	if grid_manager.is_grid_ruined(grid_pos):
+		return false
+	
 	return true
 
 func place_enemy_tower(grid_pos: Vector2i) -> bool:
@@ -306,7 +308,7 @@ func find_rival_hacker_spawn_position() -> Vector2:
 		var grid_pos = Vector2i(spawn_x, spawn_y)
 		
 		# Check if position is valid (not occupied, not on path)
-		if grid_manager.is_valid_grid_position(grid_pos) and not grid_manager.is_grid_occupied(grid_pos) and not grid_manager.is_on_enemy_path(grid_pos):
+		if grid_manager.is_valid_grid_position(grid_pos) and not grid_manager.is_grid_occupied(grid_pos) and not grid_manager.is_on_enemy_path(grid_pos) and not grid_manager.is_grid_ruined(grid_pos):
 			return grid_manager.grid_to_world(grid_pos)
 	
 	# Fallback: spawn at edge if no good position found
@@ -315,6 +317,9 @@ func find_rival_hacker_spawn_position() -> Vector2:
 	return grid_manager.grid_to_world(Vector2i(edge_x, edge_y))
 
 func spawn_rival_hacker(world_position: Vector2) -> bool:
+	if not grid_manager:
+		return false
+	
 	# Create RivalHacker instance
 	var rival_hacker = RIVAL_HACKER_SCENE.instantiate()
 	rival_hacker.global_position = world_position
@@ -395,7 +400,37 @@ func stop_all_activity():
 func _on_enemy_tower_destroyed(enemy_tower: EnemyTower):
 	# Remove from our tracking array
 	enemy_towers_placed.erase(enemy_tower)
-	print("RivalHacker: Enemy tower destroyed, ", enemy_towers_placed.size(), " towers remaining") 
+	print("RivalHacker: Enemy tower destroyed, ", enemy_towers_placed.size(), " towers remaining")
+	
+	# Clean up grid position
+	cleanup_enemy_tower_grid_position(enemy_tower)
+	
+	# Handle destruction effects (prepared for future ruined mechanic)
+	handle_tower_destruction_effects(enemy_tower)
+
+func cleanup_enemy_tower_grid_position(enemy_tower: EnemyTower):
+	"""Clean up the grid position when an enemy tower is destroyed"""
+	if not grid_manager:
+		return
+	
+	var grid_pos = enemy_tower.get_grid_position()
+	if grid_manager.is_valid_grid_position(grid_pos):
+		# Free the grid position so it can be used again
+		grid_manager.set_grid_occupied(grid_pos, false)
+		print("RivalHacker: Grid position ", grid_pos, " freed after enemy tower destruction")
+
+func handle_tower_destruction_effects(enemy_tower: EnemyTower):
+	"""Handle any effects that occur when a tower is destroyed (prepared for ruined mechanic)"""
+	var grid_pos = enemy_tower.get_grid_position()
+	print("RivalHacker: Tower destruction effects processed for position ", grid_pos)
+	
+	# NEW: 50% chance to ruin the spot permanently
+	var should_ruin = randf() < 0.5  # 50% chance
+	if should_ruin and grid_manager:
+		grid_manager.set_grid_ruined(grid_pos, true)
+		print("RivalHacker: Grid position ", grid_pos, " has been RUINED permanently!")
+	else:
+		print("RivalHacker: Grid position ", grid_pos, " was spared from ruination")
 
 func _on_alert_triggered(alert_type: String, severity: float):
 	# Respond to alerts from the alert system
@@ -570,9 +605,10 @@ func repair_path_after_block():
 	if connector.size() > 0:
 		var new_path = seg1 + connector + seg2
 		grid_manager.set_path_positions(new_path)
-		wave_manager.enemy_path = []
+		var enemy_path = wave_manager.get_enemy_path()
+		enemy_path.clear()
 		for grid_pos in new_path:
-			wave_manager.enemy_path.append(grid_manager.grid_to_world(grid_pos))
+			enemy_path.append(grid_manager.grid_to_world(grid_pos))
 		# Update packet path as well
 		if program_data_packet_manager:
 			program_data_packet_manager.create_packet_path()
@@ -582,6 +618,8 @@ func repair_path_after_block():
 
 # Helper: Get all grid cells within 'width' cells of any cell in the path
 func get_corridor_cells_around_path(path: Array[Vector2i], width: int) -> Array[Vector2i]:
+	if not grid_manager:
+		return [] as Array[Vector2i]
 	var corridor: Array[Vector2i] = []
 	var grid_size = grid_manager.get_grid_size()
 	var seen = {}
@@ -727,6 +765,8 @@ func _attempt_unblock_random():
 
 # Strategic versions of blocking functions for comprehensive grid action
 func _attempt_strategic_path_block() -> bool:
+	if not grid_manager:
+		return false
 	# More aggressive path blocking that ensures at least one path cell is blocked
 	var path_positions = grid_manager.path_grid_positions
 	if path_positions.size() <= 2:
@@ -751,6 +791,8 @@ func _attempt_strategic_path_block() -> bool:
 	return false
 
 func _attempt_strategic_non_path_block() -> bool:
+	if not grid_manager:
+		return false
 	# Block a non-path cell strategically
 	var grid_size = grid_manager.get_grid_size()
 	var candidates: Array[Vector2i] = []
@@ -803,9 +845,10 @@ func _force_path_recalculation():
 	if new_path.size() > 0:
 		# Update the path
 		grid_manager.set_path_positions(new_path)
-		wave_manager.enemy_path = []
+		var enemy_path = wave_manager.get_enemy_path()
+		enemy_path.clear()
 		for grid_pos in new_path:
-			wave_manager.enemy_path.append(grid_manager.grid_to_world(grid_pos))
+			enemy_path.append(grid_manager.grid_to_world(grid_pos))
 		
 		# Update packet path as well
 		if program_data_packet_manager:

@@ -1,9 +1,5 @@
-extends Node2D
+extends GameManagerInterface
 class_name GameManager
-
-# Signals for game state changes
-signal game_over_triggered()
-signal game_won_triggered()
 
 # Game state
 var player_health: int = 10
@@ -11,11 +7,7 @@ var enemies_killed: int = 0
 var game_over: bool = false
 var game_won: bool = false
 
-# Victory types
-enum VictoryType {
-	WAVE_SURVIVAL,
-	PROGRAM_DATA_PACKET
-}
+# Victory type
 var victory_type: VictoryType = VictoryType.WAVE_SURVIVAL
 
 # Timer system
@@ -24,7 +16,7 @@ var wave_countdown_time: float = 0.0
 var wave_countdown_active: bool = false
 
 # References to other managers
-var wave_manager: WaveManager
+var wave_manager: WaveManagerInterface
 var currency_manager: CurrencyManagerInterface
 var tower_manager: TowerManagerInterface
 
@@ -32,7 +24,7 @@ func _ready():
 	# Initialize timer system
 	game_session_start_time = Time.get_ticks_msec()
 
-func initialize(wave_mgr: WaveManager, currency_mgr: CurrencyManagerInterface, tower_mgr: TowerManagerInterface):
+func initialize(wave_mgr: WaveManagerInterface, currency_mgr: CurrencyManagerInterface, tower_mgr: TowerManagerInterface):
 	wave_manager = wave_mgr
 	currency_manager = currency_mgr
 	tower_manager = tower_mgr
@@ -153,22 +145,26 @@ func trigger_game_won_packet():
 func get_victory_data() -> Dictionary:
 	var max_waves = wave_manager.max_waves if wave_manager else 10
 	var current_wave = wave_manager.get_current_wave() if wave_manager else 1
-	var current_currency = currency_manager.get_currency() if currency_manager and currency_manager.has_method("get_currency") else 0
-	var final_time = format_time(get_session_time())
+	var current_currency = currency_manager.get_currency() if currency_manager else 0
+	var session_time = get_session_time()
+	var final_time = format_time(session_time)
 	
 	return {
-		"victory_type": victory_type,
+		"victory_type": victory_type,  # Return enum value directly, not string
 		"max_waves": max_waves,
 		"current_wave": current_wave,
+		"waves_survived": max_waves,  # For victory, they survived all waves
 		"enemies_killed": enemies_killed,
 		"currency": current_currency,
-		"time_played": final_time
+		"time_played": final_time,
+		"session_time": session_time
 	}
 
 func get_game_over_data() -> Dictionary:
 	var current_wave = wave_manager.current_wave if wave_manager else 1
-	var current_currency = currency_manager.get_currency() if currency_manager and currency_manager.has_method("get_currency") else 0
-	var final_time = format_time(get_session_time())
+	var current_currency = currency_manager.get_currency() if currency_manager else 0
+	var session_time = get_session_time()
+	var final_time = format_time(session_time)
 	
 	return {
 		"waves_survived": current_wave - 1,  # Since they failed on current wave
@@ -176,6 +172,7 @@ func get_game_over_data() -> Dictionary:
 		"enemies_killed": enemies_killed,
 		"currency": current_currency,
 		"time_played": final_time,
+		"session_time": session_time,
 		"player_health": player_health
 	}
 
@@ -191,8 +188,8 @@ func get_info_label_text() -> String:
 	timer_text += " | Time: %s" % [format_time(session_time)]
 	
 	var current_wave = wave_manager.get_current_wave() if wave_manager else 1
-	var current_currency = currency_manager.get_currency() if currency_manager and currency_manager.has_method("get_currency") else 0
-	var tower_cost = currency_manager.get_tower_cost() if currency_manager and currency_manager.has_method("get_tower_cost") else 50
+	var current_currency = currency_manager.get_currency() if currency_manager else 0
+	var tower_cost = currency_manager.get_basic_tower_cost() if currency_manager else 50
 	
 	return "Wave: %d | Health: %d | Currency: %d | Enemies Killed: %d%s\nClick on grid to place towers (Cost: %d)" % [current_wave, player_health, current_currency, enemies_killed, timer_text, tower_cost]
 

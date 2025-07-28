@@ -286,14 +286,34 @@ func _find_script_files_with_tests(directory: String, files_with_tests: Array, t
 func _should_skip_file_for_test_check(file_name: String) -> bool:
 	# Files that don't need direct tests because they use mocks
 	var skip_files = [
-		"TowerManagerInterface.gd"  # Uses mocks for DI testing
+		"TowerManagerInterface.gd",  # Uses mocks for DI testing
+		"GridManagerInterface.gd",   # Interface - tested through implementations and mocks
+		"MineManagerInterface.gd",   # Interface - tested through implementations and mocks
+		"WaveManagerInterface.gd",   # Interface - tested through implementations and mocks
+		"ProgramDataPacketManagerInterface.gd", # Interface - tested through implementations
+		"RivalHackerManagerInterface.gd", # Interface - tested through implementations
+		"CurrencyManagerInterface.gd", # Interface - tested through implementations
+		"GameManagerInterface.gd",   # Interface - tested through implementations
+		"Clickable.gd",              # Interface - tested through implementations
+		"Mine.gd",                   # Interface - tested through implementations
+		"TargetingUtil.gd"           # Interface - tested through implementations
 	]
 	return file_name in skip_files
 
 func _should_skip_file_for_coverage_display(file_name: String) -> bool:
 	# Files that should not be shown in coverage reports because they have special testing approaches
 	var skip_display_files = [
-		"TowerManagerInterface.gd"  # Uses mocks - no coverage expected
+		"TowerManagerInterface.gd",  # Uses mocks - no coverage expected
+		"GridManagerInterface.gd",   # Interface - no coverage expected
+		"MineManagerInterface.gd",   # Interface - no coverage expected
+		"WaveManagerInterface.gd",   # Interface - no coverage expected
+		"ProgramDataPacketManagerInterface.gd", # Interface - no coverage expected
+		"RivalHackerManagerInterface.gd", # Interface - no coverage expected
+		"CurrencyManagerInterface.gd", # Interface - no coverage expected
+		"GameManagerInterface.gd",   # Interface - no coverage expected
+		"Clickable.gd",              # Interface - no coverage expected
+		"Mine.gd",                   # Interface - no coverage expected
+		"TargetingUtil.gd"           # Interface - no coverage expected
 	]
 	return file_name in skip_display_files
 
@@ -301,11 +321,15 @@ func _should_skip_file_for_test_requirement(file_name: String) -> bool:
 	# Files that don't need tests at all (interfaces, special cases, etc.)
 	var skip_requirement_files = [
 		"TowerManagerInterface.gd",  # Interface - uses mocks for testing
+		"GridManagerInterface.gd",   # Interface - tested through implementations and mocks
+		"MineManagerInterface.gd",   # Interface - tested through implementations and mocks
 		"Clickable.gd",              # Interface - tested through implementations
 		"CurrencyManagerInterface.gd", # Interface - tested through implementations
-		"FreezeMineManagerInterface.gd", # Interface - tested through implementations
+		"GameManagerInterface.gd",   # Interface - tested through implementations
 		"ProgramDataPacketManagerInterface.gd", # Interface - tested through implementations
 		"RivalHackerManagerInterface.gd", # Interface - tested through implementations
+		"WaveManagerInterface.gd",   # Interface - tested through implementations and mocks
+		"Mine.gd",                   # Interface - tested through implementations
 		"TargetingUtil.gd"           # Interface - tested through implementations
 	]
 	return file_name in skip_requirement_files

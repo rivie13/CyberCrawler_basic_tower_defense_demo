@@ -24,7 +24,7 @@ enum AlertType {
 # State tracking
 var recent_tower_placements: Array = []  # Array of {position: Vector2i, timestamp: float, tower_stats: Dictionary}
 var honeypot_positions: Array[Vector2i] = []  # Predefined honeypot trap positions
-var grid_manager: GridManager
+var grid_manager: GridManagerInterface
 var is_monitoring: bool = false
 
 # Alert severity levels
@@ -35,7 +35,7 @@ func _ready():
 	# Initialize honeypot positions (strategic locations that would be obvious traps)
 	setup_honeypot_positions()
 
-func initialize(grid_mgr: GridManager):
+func initialize(grid_mgr: GridManagerInterface):
 	grid_manager = grid_mgr
 	setup_honeypot_positions()
 

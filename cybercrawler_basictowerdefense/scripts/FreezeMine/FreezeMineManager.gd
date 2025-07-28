@@ -5,7 +5,7 @@ class_name FreezeMineManager
 # All methods from MineManagerInterface are implemented below
 
 # Manager references
-var grid_manager: GridManager
+var grid_manager: GridManagerInterface
 var currency_manager: CurrencyManagerInterface
 
 # Mine tracking (using generic Mine type)
@@ -14,7 +14,7 @@ var mines: Array[Mine] = []
 # Freeze mine scene
 const FREEZE_MINE_SCENE = preload("res://scenes/FreezeMine.tscn")
 
-func initialize(grid_mgr: GridManager, currency_mgr: CurrencyManagerInterface):
+func initialize(grid_mgr: GridManagerInterface, currency_mgr: CurrencyManagerInterface):
 	grid_manager = grid_mgr
 	currency_manager = currency_mgr
 
@@ -25,6 +25,8 @@ func can_place_mine_at(grid_pos: Vector2i, mine_type: String = "freeze") -> bool
 	if grid_manager.is_grid_occupied(grid_pos):
 		return false
 	if grid_manager.is_on_enemy_path(grid_pos):
+		return false
+	if grid_manager.is_grid_ruined(grid_pos):
 		return false
 	return true
 

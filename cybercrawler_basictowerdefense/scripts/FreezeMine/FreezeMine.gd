@@ -136,7 +136,7 @@ func create_freeze_effect_visual():
 func get_main_controller():
 	return get_tree().get_first_node_in_group("main_controller")
 
-func can_be_placed_at(grid_pos: Vector2i, grid_manager: GridManager) -> bool:
+func can_be_placed_at(grid_pos: Vector2i, grid_manager: GridManagerInterface) -> bool:
 	# Check if position is valid and not occupied
 	if not grid_manager.is_valid_grid_position(grid_pos):
 		return false
