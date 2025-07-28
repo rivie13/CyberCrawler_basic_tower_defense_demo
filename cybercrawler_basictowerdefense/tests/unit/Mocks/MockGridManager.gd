@@ -6,6 +6,7 @@ class_name MockGridManager
 
 var _grid_data: Array = []
 var _blocked_grid_data: Array = []
+var _ruined_grid_data: Array = []
 var _path_positions: Array[Vector2i] = []
 var _grid_container: Node2D
 var _game_manager: Node
@@ -34,14 +35,18 @@ func _initialize_grid():
 	# Initialize grid data arrays
 	_grid_data = []
 	_blocked_grid_data = []
+	_ruined_grid_data = []
 	for y in range(GRID_HEIGHT):
 		var row = []
 		var blocked_row = []
+		var ruined_row = []
 		for x in range(GRID_WIDTH):
 			row.append(false)
 			blocked_row.append(false)
+			ruined_row.append(false)
 		_grid_data.append(row)
 		_blocked_grid_data.append(blocked_row)
+		_ruined_grid_data.append(ruined_row)
 
 func is_valid_grid_position(grid_pos: Vector2i) -> bool:
 	# Use mock property for test control
@@ -139,6 +144,24 @@ func set_grid_blocked(grid_pos: Vector2i, blocked: bool) -> void:
 				unblocked_positions.append(grid_pos)
 		else:
 			unblocked_positions.erase(grid_pos)
+
+# NEW: Ruined grid methods
+func is_grid_ruined(grid_pos: Vector2i) -> bool:
+	if not is_valid_grid_position(grid_pos):
+		return true
+	# Ensure arrays are initialized
+	if _ruined_grid_data.size() <= grid_pos.y or _ruined_grid_data[grid_pos.y].size() <= grid_pos.x:
+		return false
+	return _ruined_grid_data[grid_pos.y][grid_pos.x]
+
+func set_grid_ruined(grid_pos: Vector2i, ruined: bool) -> void:
+	if is_valid_grid_position(grid_pos):
+		# Ensure arrays are initialized
+		while _ruined_grid_data.size() <= grid_pos.y:
+			_ruined_grid_data.append([])
+		while _ruined_grid_data[grid_pos.y].size() <= grid_pos.x:
+			_ruined_grid_data[grid_pos.y].append(false)
+		_ruined_grid_data[grid_pos.y][grid_pos.x] = ruined
 
 # Helper methods for tests
 func set_grid_data(data: Array) -> void:

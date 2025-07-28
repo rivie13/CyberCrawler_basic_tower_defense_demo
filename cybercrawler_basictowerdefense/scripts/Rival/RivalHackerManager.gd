@@ -253,6 +253,10 @@ func is_valid_enemy_tower_position(grid_pos: Vector2i) -> bool:
 	if grid_manager.is_on_enemy_path(grid_pos):
 		return false
 	
+	# NEW: Check if position is ruined
+	if grid_manager.is_grid_ruined(grid_pos):
+		return false
+	
 	return true
 
 func place_enemy_tower(grid_pos: Vector2i) -> bool:
@@ -304,7 +308,7 @@ func find_rival_hacker_spawn_position() -> Vector2:
 		var grid_pos = Vector2i(spawn_x, spawn_y)
 		
 		# Check if position is valid (not occupied, not on path)
-		if grid_manager.is_valid_grid_position(grid_pos) and not grid_manager.is_grid_occupied(grid_pos) and not grid_manager.is_on_enemy_path(grid_pos):
+		if grid_manager.is_valid_grid_position(grid_pos) and not grid_manager.is_grid_occupied(grid_pos) and not grid_manager.is_on_enemy_path(grid_pos) and not grid_manager.is_grid_ruined(grid_pos):
 			return grid_manager.grid_to_world(grid_pos)
 	
 	# Fallback: spawn at edge if no good position found
@@ -417,15 +421,16 @@ func cleanup_enemy_tower_grid_position(enemy_tower: EnemyTower):
 
 func handle_tower_destruction_effects(enemy_tower: EnemyTower):
 	"""Handle any effects that occur when a tower is destroyed (prepared for ruined mechanic)"""
-	# This method is designed to be extended for the ruined mechanic
-	# For now, it just logs the destruction for future implementation
 	var grid_pos = enemy_tower.get_grid_position()
 	print("RivalHacker: Tower destruction effects processed for position ", grid_pos)
 	
-	# TODO: Future implementation will add ruined mechanic here
-	# - 50% chance to ruin the spot
-	# - Visual indicators for ruined spots
-	# - Permanent blocking of ruined positions
+	# NEW: 50% chance to ruin the spot permanently
+	var should_ruin = randf() < 0.5  # 50% chance
+	if should_ruin and grid_manager:
+		grid_manager.set_grid_ruined(grid_pos, true)
+		print("RivalHacker: Grid position ", grid_pos, " has been RUINED permanently!")
+	else:
+		print("RivalHacker: Grid position ", grid_pos, " was spared from ruination")
 
 func _on_alert_triggered(alert_type: String, severity: float):
 	# Respond to alerts from the alert system

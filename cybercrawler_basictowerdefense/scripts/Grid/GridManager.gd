@@ -11,6 +11,8 @@ const GRID_HEIGHT = 10  # Number of grid cells vertically
 var grid_data: Array = []
 # NEW: Blocked grid data - true means blocked, false means available
 var blocked_grid_data: Array = []
+# NEW: Ruined grid data - true means ruined, false means available
+var ruined_grid_data: Array = []
 var path_grid_positions: Array[Vector2i] = []  # Track which grid positions are on enemy path
 # NEW: Track previous path positions for visualization
 var previous_path_grid_positions: Array[Vector2i] = []
@@ -48,14 +50,18 @@ func initialize_grid():
 	# Initialize grid data array
 	grid_data = []
 	blocked_grid_data = [] # NEW: initialize blocked grid
+	ruined_grid_data = [] # NEW: initialize ruined grid
 	for y in range(GRID_HEIGHT):
 		var row = []
 		var blocked_row = [] # NEW: row for blocked cells
+		var ruined_row = [] # NEW: row for ruined cells
 		for x in range(GRID_WIDTH):
 			row.append(false)  # false = empty, true = occupied
 			blocked_row.append(false) # false = available, true = blocked
+			ruined_row.append(false) # false = available, true = ruined
 		grid_data.append(row)
 		blocked_grid_data.append(blocked_row) # NEW: add blocked row
+		ruined_grid_data.append(ruined_row) # NEW: add ruined row
 
 func draw_grid():
 	# Skip grid drawing if grid_container is not available (e.g., during unit testing)
@@ -217,6 +223,24 @@ func update_blocked_grid_data(grid_pos: Vector2i, blocked: bool):
 	blocked_grid_data[grid_pos.y][grid_pos.x] = blocked
 	# print("[DEBUG][update_blocked_grid_data] blocked_grid_data[%d][%d] = %s" % [grid_pos.y, grid_pos.x, str(blocked)])
 
+# NEW: Ruined grid methods
+func is_grid_ruined(grid_pos: Vector2i) -> bool:
+	if not is_valid_grid_position(grid_pos):
+		return true
+	return ruined_grid_data[grid_pos.y][grid_pos.x]
+
+func set_grid_ruined(grid_pos: Vector2i, ruined: bool):
+	if game_manager and game_manager.is_game_over():
+		return
+	if is_valid_grid_position(grid_pos):
+		# print("[DEBUG][set_grid_ruined] Ruining cell at %s: %s" % [str(grid_pos), str(ruined)])
+		update_ruined_grid_data(grid_pos, ruined)
+		queue_redraw() # Ensure redraw after ruining
+
+func update_ruined_grid_data(grid_pos: Vector2i, ruined: bool):
+	ruined_grid_data[grid_pos.y][grid_pos.x] = ruined
+	# print("[DEBUG][update_ruined_grid_data] ruined_grid_data[%d][%d] = %s" % [grid_pos.y, grid_pos.x, str(ruined)])
+
 func ensure_path_solvability(grid_pos: Vector2i, blocked: bool) -> bool:
 	# If no path is set up, allow the operation (no path to check)
 	if path_grid_positions.size() == 0:
@@ -253,7 +277,7 @@ func emit_grid_blocked_signal(grid_pos: Vector2i, blocked: bool):
 
 func _draw():
 	# Draw hover highlight
-	if is_valid_grid_position(hover_grid_pos) and not is_grid_occupied(hover_grid_pos) and not is_on_enemy_path(hover_grid_pos):
+	if is_valid_grid_position(hover_grid_pos) and not is_grid_occupied(hover_grid_pos) and not is_on_enemy_path(hover_grid_pos) and not is_grid_ruined(hover_grid_pos):
 		var world_pos = grid_to_world(hover_grid_pos)
 		var local_pos = world_pos - global_position
 		
@@ -300,12 +324,36 @@ func _draw():
 				draw_line(Vector2(x1, y1), Vector2(x2, y2), Color(1, 1, 1, 0.95), 4.0)
 				draw_line(Vector2(x1, y2), Vector2(x2, y1), Color(1, 1, 1, 0.95), 4.0)
 
+	# NEW: Draw ruined cell overlays (solid dark gray + skull symbol, always on top of grid but below entities)
+	for y in range(GRID_HEIGHT):
+		for x in range(GRID_WIDTH):
+			var grid_pos = Vector2i(x, y)
+			if is_grid_ruined(grid_pos):
+				var world_pos = grid_to_world(grid_pos)
+				var local_pos = world_pos - global_position
+				var rect = Rect2(
+					local_pos.x - GRID_SIZE / 2.0,
+					local_pos.y - GRID_SIZE / 2.0,
+					GRID_SIZE,
+					GRID_SIZE
+				)
+				draw_rect(rect, Color(0.3, 0.3, 0.3, 0.9))  # Solid, mostly opaque dark gray
+				# Draw a skull-like symbol (simplified)
+				var margin = GRID_SIZE * 0.25
+				var center_x = local_pos.x
+				var center_y = local_pos.y
+				# Draw eyes
+				draw_circle(Vector2(center_x - margin, center_y - margin), 3, Color(1, 1, 1, 0.95))
+				draw_circle(Vector2(center_x + margin, center_y - margin), 3, Color(1, 1, 1, 0.95))
+				# Draw mouth (simple line)
+				draw_line(Vector2(center_x - margin, center_y + margin), Vector2(center_x + margin, center_y + margin), Color(1, 1, 1, 0.95), 3.0)
+
 # NEW: A* pathfinding for dynamic rerouting
 func find_path_astar(start: Vector2i, end: Vector2i) -> Array[Vector2i]:
 	# Returns a list of grid positions from start to end, or [] if no path
 	if not is_valid_grid_position(start) or not is_valid_grid_position(end):
 		return [] as Array[Vector2i]
-	if is_grid_blocked(start) or is_grid_blocked(end):
+	if is_grid_blocked(start) or is_grid_blocked(end) or is_grid_ruined(start) or is_grid_ruined(end):
 		return [] as Array[Vector2i]
 
 	var open_set = [start]
@@ -329,7 +377,7 @@ func find_path_astar(start: Vector2i, end: Vector2i) -> Array[Vector2i]:
 
 		open_set.remove_at(0)
 		for neighbor in get_neighbors(current):
-			if is_grid_blocked(neighbor) or is_grid_occupied(neighbor):
+			if is_grid_blocked(neighbor) or is_grid_occupied(neighbor) or is_grid_ruined(neighbor):
 				continue
 			var tentative_g = g_score.get(current, INF) + 1
 			if tentative_g < g_score.get(neighbor, INF):
