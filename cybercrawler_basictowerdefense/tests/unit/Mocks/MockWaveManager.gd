@@ -12,6 +12,10 @@ var max_waves: int:
 	get: return mock_max_waves
 	set(value): mock_max_waves = value
 
+var enemy_path: Array[Vector2]:
+	get: return mock_enemy_path
+	set(value): mock_enemy_path = value
+
 # Mock state
 var mock_enemies: Array[Enemy] = []
 var mock_enemy_path: Array[Vector2] = []

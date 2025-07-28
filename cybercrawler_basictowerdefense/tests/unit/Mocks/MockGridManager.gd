@@ -4,6 +4,9 @@ class_name MockGridManager
 # Mock GridManager for unit testing
 # Implements GridManagerInterface contract
 
+# Signal for grid block changes (matches real GridManager)
+signal grid_blocked_changed(grid_pos: Vector2i, blocked: bool)
+
 var _grid_data: Array = []
 var _blocked_grid_data: Array = []
 var _ruined_grid_data: Array = []

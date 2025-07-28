@@ -37,7 +37,7 @@ func initialize(grid_mgr: GridManagerInterface, game_mgr: GameManagerInterface, 
 	create_packet_path()
 
 	# NEW: Listen for grid block changes
-	if grid_manager.has_signal("grid_blocked_changed"):
+	if grid_manager and grid_manager.has_signal("grid_blocked_changed"):
 		grid_manager.grid_blocked_changed.connect(_on_grid_blocked_changed)
 
 func create_packet_path():
