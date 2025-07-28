@@ -20,6 +20,10 @@ var world_position: Vector2 = Vector2.ZERO
 var unblocked_positions: Array = []
 var occupied_positions: Array = []
 
+# Mock function properties for testing
+var mock_set_grid_ruined_func: Callable
+var mock_is_grid_ruined_func: Callable
+
 # Mock grid constants
 const GRID_SIZE = 64
 const GRID_WIDTH = 15
@@ -115,6 +119,12 @@ func get_grid_container() -> Node2D:
 func get_grid_size() -> Vector2i:
 	return Vector2i(GRID_WIDTH, GRID_HEIGHT)
 
+func set_grid_size(size: Vector2i) -> void:
+	# Mock implementation - update the grid dimensions
+	# Note: This is for testing purposes only
+	# In a real implementation, this would require reinitializing the grid
+	pass
+
 func is_on_enemy_path(grid_pos: Vector2i) -> bool:
 	# Use mock property for test control
 	if is_on_path:
@@ -147,6 +157,10 @@ func set_grid_blocked(grid_pos: Vector2i, blocked: bool) -> void:
 
 # NEW: Ruined grid methods
 func is_grid_ruined(grid_pos: Vector2i) -> bool:
+	# Use mock function if available
+	if mock_is_grid_ruined_func.is_valid():
+		return mock_is_grid_ruined_func.call(grid_pos)
+	
 	if not is_valid_grid_position(grid_pos):
 		return true
 	# Ensure arrays are initialized
@@ -155,6 +169,11 @@ func is_grid_ruined(grid_pos: Vector2i) -> bool:
 	return _ruined_grid_data[grid_pos.y][grid_pos.x]
 
 func set_grid_ruined(grid_pos: Vector2i, ruined: bool) -> void:
+	# Use mock function if available
+	if mock_set_grid_ruined_func.is_valid():
+		mock_set_grid_ruined_func.call(grid_pos, ruined)
+		return
+	
 	if is_valid_grid_position(grid_pos):
 		# Ensure arrays are initialized
 		while _ruined_grid_data.size() <= grid_pos.y:

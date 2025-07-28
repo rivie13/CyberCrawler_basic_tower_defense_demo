@@ -252,7 +252,7 @@ func test_ruined_mechanic_on_enemy_tower_destruction():
 	
 	# Mock the set_grid_ruined method to track if it's called
 	var ruined_called = false
-	mock_grid_manager.set_grid_ruined = func(grid_pos: Vector2i, ruined: bool):
+	mock_grid_manager.mock_set_grid_ruined_func = func(grid_pos: Vector2i, ruined: bool):
 		if grid_pos == Vector2i(7, 7) and ruined:
 			ruined_called = true
 	
@@ -276,7 +276,7 @@ func test_ruined_spots_cannot_be_used_for_enemy_tower_placement():
 	mock_grid_manager.is_on_path = false
 	
 	# Mock the is_grid_ruined method to return true for this position
-	mock_grid_manager.is_grid_ruined = func(grid_pos: Vector2i) -> bool:
+	mock_grid_manager.mock_is_grid_ruined_func = func(grid_pos: Vector2i) -> bool:
 		return grid_pos == valid_pos
 	
 	# Should be invalid because it's ruined
@@ -284,7 +284,7 @@ func test_ruined_spots_cannot_be_used_for_enemy_tower_placement():
 	
 	# Test with a non-ruined position
 	var non_ruined_pos = Vector2i(4, 4)
-	mock_grid_manager.is_grid_ruined = func(grid_pos: Vector2i) -> bool:
+	mock_grid_manager.mock_is_grid_ruined_func = func(grid_pos: Vector2i) -> bool:
 		return false  # No positions are ruined
 	
 	assert_true(rival_hacker_manager.is_valid_enemy_tower_position(non_ruined_pos), "Should be valid if not ruined")
