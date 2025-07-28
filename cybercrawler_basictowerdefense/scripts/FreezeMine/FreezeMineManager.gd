@@ -26,6 +26,8 @@ func can_place_mine_at(grid_pos: Vector2i, mine_type: String = "freeze") -> bool
 		return false
 	if grid_manager.is_on_enemy_path(grid_pos):
 		return false
+	if grid_manager.is_grid_ruined(grid_pos):
+		return false
 	return true
 
 func place_mine(grid_pos: Vector2i, mine_type: String = "freeze") -> bool:

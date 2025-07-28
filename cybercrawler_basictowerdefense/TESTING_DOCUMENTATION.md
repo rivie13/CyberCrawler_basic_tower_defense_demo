@@ -335,26 +335,29 @@ print("DEBUG: Mock tower manager get_tower_count(): ", mock_tower_manager.get_to
 
 ## IMPORTANT: Coverage and Test Execution Guidance
 
-### GUT Coverage and Test Validation: Editor vs Command Line
+### GUT Coverage and Test Validation: Editor and Command Line
 
-**Code coverage and coverage validation will NOT work reliably when running GUT from the Godot editor.**
+**✅ UPDATE: Code coverage DOES work reliably in both the Godot editor and command line.**
 
-- The Godot editor (and the GUT plugin) may preload scripts before the pre-run hook runs, which prevents the coverage system from instrumenting scripts. This results in 0% coverage for most or all files, even if tests pass.
-- This is a known limitation of Godot and GUT. See the [GUT documentation](https://gut.readthedocs.io/en/v9.4.0/Quick-Start.html) for more details.
+Our coverage system with pre/post-run hooks works correctly in both environments:
 
-**To get accurate coverage and enforce coverage requirements, ALWAYS run tests from the command line:**
+BUTTTTT you may need to delete the .godot folder in the project directory (in the godot part of the directory in file explorer) and launch the project again to get the coverage to work properly. somehow that worked for me....
 
+### Running Tests in the Godot Editor
+- **Coverage tracking works** - The GUT panel shows accurate coverage results
+- **Use for development** - Quick feedback during test development and debugging
+- **Coverage validation works** - Pre/post-run hooks enforce coverage requirements
+- **Visual interface** - Easy to run individual tests or test groups
+
+### Running Tests from Command Line
 ```powershell
 cd "C:\Users\rivie\CursorProjects\CyberCrawler_basic_tower_defense_demo\cybercrawler_basictowerdefense";
 & "C:\Program Files\Godot\Godot_v4.4.1-stable_win64_console.exe" --headless --script addons/gut/gut_cmdln.gd -gtest=tests/unit/ -gexit
 ```
 
-- This ensures the pre-run hook instruments all scripts before any are loaded, so coverage is tracked correctly.
-- The CI pipeline is configured to use this command for all automated test and coverage validation.
-
-### Running Tests in the Editor
-- You can run tests in the Godot editor for quick feedback, but **ignore the coverage results** shown in the editor.
-- Use the command line for any test runs where coverage or coverage validation matters (e.g., before PRs, for CI, for release readiness).
+- **Use for CI/CD** - Automated testing and coverage validation
+- **Batch execution** - Run all tests without manual intervention
+- **Consistent environment** - Matches production CI environment
 
 ---
 
@@ -405,17 +408,16 @@ cybercrawler_basictowerdefense/
 
 ## CI and Coverage Validation
 
-- The CI workflow runs all tests and coverage validation from the command line, ensuring accurate results and enforcing coverage requirements.
+- The CI workflow runs all tests and coverage validation from the command line, ensuring consistent results and enforcing coverage requirements.
 - If coverage or tests fail, CI will fail the build.
-- Do not rely on coverage results from the Godot editor or GUT panel for PRs or releases.
+- Coverage results are reliable in both the Godot editor and command line environments.
 
 ---
 
 ## Troubleshooting: Coverage Issues
 
-- **If you see 0% coverage for all files in the editor, but correct coverage from the command line, this is expected.**
-- If you see coverage issues from the command line, check that:
-  - You are running the correct command (see above).
+- If you see coverage issues, check that:
+  - You are running tests with the proper GUT setup (pre/post-run hooks enabled).
   - No scripts are being loaded before the pre-run hook (avoid autoloads that reference scripts under test).
   - The test directory structure matches the organization described above.
 
@@ -426,7 +428,7 @@ cybercrawler_basictowerdefense/
 - **Tests are now organized into subdirectories by system/feature.**
 - **Coverage hooks and validation scripts have been updated to support recursive test discovery.**
 - **CI is configured to use the command line for all test and coverage validation.**
-- **Coverage is only accurate when running from the command line.**
+- **Coverage works reliably in both Godot editor and command line environments.**
 - **Signal tests have been replaced with state-based tests for better reliability.**
 
 ---

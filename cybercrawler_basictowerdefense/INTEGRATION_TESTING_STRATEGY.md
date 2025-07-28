@@ -103,40 +103,143 @@ Based on project memory: [[memory:4548427]]
 - **State Verification**: Confirm state changes propagate correctly across systems
 - **Dependency Injection**: Test that systems work together through real dependencies
 
-### ✅ **Test Structure Template**
+### ✅ **Integration Test Template (GUT Best Practices)**
+
+#### PATTERN 1: MainController-Based Integration (Recommended)
 ```gdscript
 extends GutTest
 
 # Integration tests for [System] interactions with other game systems
-# These tests verify [specific integration aspect]
+# These tests verify [specific integration aspect] using real managers and dependencies
 
+var main_controller: MainController
 var system_manager: SystemManager
 var dependency_manager_1: DependencyManager1
 var dependency_manager_2: DependencyManager2
 
 func before_each():
-    # Create real manager instances
-    system_manager = SystemManager.new()
-    dependency_manager_1 = DependencyManager1.new()
-    dependency_manager_2 = DependencyManager2.new()
+    # Create real MainController with all real managers for complete integration
+    main_controller = preload("res://scripts/MainController.gd").new()
+    add_child_autofree(main_controller)
     
-    # Add to scene tree for proper lifecycle
-    add_child_autofree(system_manager)
-    add_child_autofree(dependency_manager_1)
-    add_child_autofree(dependency_manager_2)
+    # Let MainController create and initialize all managers
+    await wait_frames(3)  # Wait for proper initialization
     
-    # Initialize with real dependencies
+    # Get references to all managers from MainController
+    system_manager = main_controller.system_manager
+    dependency_manager_1 = main_controller.dependency_manager_1
+    dependency_manager_2 = main_controller.dependency_manager_2
+    
+    # Verify all managers are properly initialized
+    assert_not_null(system_manager, "SystemManager should be initialized")
+    assert_not_null(dependency_manager_1, "DependencyManager1 should be initialized")
+    assert_not_null(dependency_manager_2, "DependencyManager2 should be initialized")
+    
+    # CRITICAL: Manually initialize systems since MainController.initialize_systems() 
+    # skips initialization in test environment due to missing GridContainer
+    dependency_manager_1.initialize(required_deps)
+    dependency_manager_2.initialize(required_deps)
     system_manager.initialize(dependency_manager_1, dependency_manager_2)
+    
+    # Add extra resources for testing if needed
+    if main_controller.currency_manager:
+        main_controller.currency_manager.add_currency(500)
 
 func test_complete_workflow_integration():
     # Integration test: [Description of complete workflow]
-    # This tests: [specific integration points]
+    # This tests: [specific integration points across multiple systems]
     
-    # Setup initial state
-    # Perform action that spans multiple systems
-    # Verify state changes across all affected systems
+    # Setup: Establish initial state across all systems
+    var initial_state = system_manager.get_current_state()
+    assert_not_null(initial_state, "System should have valid initial state")
+    
+    # Action: Perform action that spans multiple systems
+    var action_result = system_manager.perform_cross_system_action(test_params)
+    assert_true(action_result, "Cross-system action should succeed")
+    
+    # Verify: State changes propagated across all affected systems
+    await wait_frames(3)  # Allow for async state updates
+    
+    var final_system_state = system_manager.get_current_state()
+    var final_dep1_state = dependency_manager_1.get_current_state()
+    var final_dep2_state = dependency_manager_2.get_current_state()
+    
+    # Assertions: Verify integration between systems
+    assert_ne(final_system_state, initial_state, "System state should have changed")
+    assert_true(dependency_manager_1.reflects_system_changes(), "Dependency 1 should reflect system changes")
+    assert_true(dependency_manager_2.reflects_system_changes(), "Dependency 2 should reflect system changes")
+    
     # Test edge cases and error conditions
+    var error_result = system_manager.perform_invalid_action()
+    assert_false(error_result, "Invalid actions should fail gracefully")
 ```
+
+#### PATTERN 2: Manual Dependency Injection (Focused Integration)
+```gdscript
+extends GutTest
+
+# Integration tests for focused [System1] + [System2] interactions
+# These tests verify specific integration between limited systems
+
+var system_manager: SystemManager
+var dependency_manager: DependencyManager
+var currency_manager: CurrencyManager
+
+func before_each():
+    # Create managers manually with proper dependency injection
+    system_manager = SystemManager.new()
+    dependency_manager = DependencyManager.new()
+    currency_manager = CurrencyManager.new()
+    
+    # Add to scene tree with automatic cleanup (CRITICAL for GUT)
+    add_child_autofree(system_manager)
+    add_child_autofree(dependency_manager)
+    add_child_autofree(currency_manager)
+    
+    # Initialize with proper dependencies (this is the key!)
+    dependency_manager.initialize(currency_manager)
+    system_manager.initialize(dependency_manager, currency_manager)
+    
+    # Setup test data
+    currency_manager.add_currency(200)
+
+func test_focused_integration():
+    # Test specific integration between limited systems
+    var result = system_manager.interact_with_dependency(test_data)
+    assert_true(result, "System interaction should succeed")
+    
+    # Verify cross-system state changes
+    assert_true(dependency_manager.state_changed(), "Dependency should reflect interaction")
+    assert_eq(currency_manager.get_currency(), expected_amount, "Currency should be updated correctly")
+```
+
+### 🔧 **Integration Test Requirements**
+
+#### Memory Management (GUT Best Practices)
+- **Always use `add_child_autofree()`** for automatic Node cleanup
+- **Use `await wait_frames(3)`** for proper async initialization
+- **Never manually call `free()`** - let GUT handle cleanup
+- **Use `add_child_autoqfree()` for Resources** if needed
+
+#### Dependency Injection Rules
+- **Use real managers, never mocks** in integration tests
+- **Always call `manager.initialize()`** with proper dependencies
+- **MainController approach preferred** for full system integration
+- **Manual DI acceptable** for focused integration testing
+- **Test environment requires manual initialization** due to missing GridContainer
+
+#### Test Structure Standards
+- **Setup phase**: Initialize all systems with proper dependencies
+- **Action phase**: Perform cross-system workflows 
+- **Verification phase**: Assert state changes across all systems
+- **Cleanup phase**: Automatic via `add_child_autofree()`
+
+#### Common Pitfalls to Avoid
+- ❌ **Missing `manager.initialize()` calls** - leads to Nil dependency errors
+- ❌ **Using mocks instead of real managers** - not true integration testing
+- ❌ **Forgetting `add_child_autofree()`** - causes memory leaks and orphans
+- ❌ **Not waiting for async initialization** - causes timing-related failures
+- ❌ **Testing single systems in isolation** - should be unit tests instead
 
 ### 📋 **Essential Test Scenarios for Each System**
 

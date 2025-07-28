@@ -27,6 +27,13 @@ func before_each():
 	tower_manager = main_controller.tower_manager
 	wave_manager = main_controller.wave_manager
 	game_manager = main_controller.game_manager
+	
+	# CRITICAL FIX: Manually initialize systems since MainController.initialize_systems() 
+	# skips initialization in test environment due to missing GridContainer
+	wave_manager.initialize(grid_manager)
+	tower_manager.initialize(grid_manager, currency_manager, wave_manager)
+	game_manager.initialize(wave_manager, currency_manager, tower_manager)
+	rival_hacker_manager.initialize(grid_manager, currency_manager, tower_manager, wave_manager, game_manager)
 
 func test_rival_hacker_activates_when_player_places_towers_near_exit():
 	# Integration test: Player places towers near exit → Rival hacker activates

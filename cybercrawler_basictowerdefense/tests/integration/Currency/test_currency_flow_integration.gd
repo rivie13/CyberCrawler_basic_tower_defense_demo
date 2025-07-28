@@ -38,6 +38,14 @@ func before_each():
 	assert_not_null(wave_manager, "WaveManager should be initialized")
 	assert_not_null(grid_manager, "GridManager should be initialized")
 	assert_not_null(rival_hacker_manager, "RivalHackerManager should be initialized")
+	
+	# CRITICAL FIX: Manually initialize systems since MainController.initialize_systems() 
+	# skips initialization in test environment due to missing GridContainer
+	wave_manager.initialize(grid_manager)
+	tower_manager.initialize(grid_manager, currency_manager, wave_manager)
+	game_manager.initialize(wave_manager, currency_manager, tower_manager)
+	rival_hacker_manager.initialize(grid_manager, currency_manager, tower_manager, wave_manager, game_manager)
+	freeze_mine_manager.initialize(grid_manager, currency_manager)  # This was missing!
 
 func test_currency_earning_integration():
 	# Integration test: Currency earning through enemy death chain
