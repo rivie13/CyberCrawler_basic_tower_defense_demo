@@ -33,9 +33,8 @@ func test_initialize():
 func test_can_place_mine_at_valid_position():
 	# Test placement validation with valid position
 	freeze_mine_manager.initialize(mock_grid_manager, mock_currency_manager)
-	mock_grid_manager.is_valid_position = true
-	mock_grid_manager.is_occupied = false
-	mock_grid_manager.is_on_path = false
+	# MockGridManager defaults to valid positions, unoccupied, no path
+	# No need to set anything - defaults are correct
 	
 	var result = freeze_mine_manager.can_place_mine_at(Vector2i(2, 2), "freeze")
 	assert_true(result, "Should allow placement at valid position")
@@ -43,7 +42,7 @@ func test_can_place_mine_at_valid_position():
 func test_can_place_mine_at_invalid_position():
 	# Test placement validation with invalid position
 	freeze_mine_manager.initialize(mock_grid_manager, mock_currency_manager)
-	mock_grid_manager.is_valid_position = false
+	# MockGridManager will return false for invalid positions like (-1, -1)
 	
 	var result = freeze_mine_manager.can_place_mine_at(Vector2i(-1, -1), "freeze")
 	assert_false(result, "Should not allow placement at invalid position")
@@ -70,7 +69,7 @@ func test_can_place_mine_at_enemy_path():
 func test_place_mine_insufficient_currency():
 	# Test placement with insufficient currency
 	freeze_mine_manager.initialize(mock_grid_manager, mock_currency_manager)
-	mock_currency_manager.current_currency = 10  # Less than 15 cost
+	mock_currency_manager.set_currency(10)  # Less than 15 cost
 	watch_signals(freeze_mine_manager)
 	
 	var result = freeze_mine_manager.place_mine(Vector2i(2, 2), "freeze")
@@ -92,7 +91,7 @@ func test_place_mine_invalid_position():
 func test_place_mine_success():
 	# Test successful freeze mine placement
 	freeze_mine_manager.initialize(mock_grid_manager, mock_currency_manager)
-	mock_currency_manager.current_currency = 20
+	mock_currency_manager.set_currency(20)
 	mock_grid_manager.is_valid_position = true
 	mock_grid_manager.is_occupied = false
 	mock_grid_manager.is_on_path = false
@@ -101,11 +100,13 @@ func test_place_mine_success():
 	# Watch signals for assertions
 	watch_signals(freeze_mine_manager)
 	
+	var currency_before = mock_currency_manager.get_currency()
 	var result = freeze_mine_manager.place_mine(Vector2i(2, 2), "freeze")
+	var currency_after = mock_currency_manager.get_currency()
 	
 	assert_true(result, "Should succeed with valid placement")
 	assert_eq(freeze_mine_manager.mines.size(), 1, "Should track the placed mine")
-	assert_eq(mock_currency_manager.spent_amount, 15, "Should spend 15 currency")
+	assert_eq(currency_before - currency_after, 15, "Should spend 15 currency")
 	assert_signal_emitted(freeze_mine_manager, "mine_placed", "Should emit success signal")
 
 func test_create_mine_at_position():
@@ -206,7 +207,7 @@ func test_get_mine_cost():
 func test_signal_connections():
 	# Test that signals are properly connected when placing mines
 	freeze_mine_manager.initialize(mock_grid_manager, mock_currency_manager)
-	mock_currency_manager.current_currency = 20
+	mock_currency_manager.set_currency(20)
 	mock_grid_manager.is_valid_position = true
 	mock_grid_manager.is_occupied = false
 	mock_grid_manager.is_on_path = false
@@ -225,7 +226,7 @@ func test_signal_connections():
 func test_grid_occupation_management():
 	# Test that grid positions are properly managed
 	freeze_mine_manager.initialize(mock_grid_manager, mock_currency_manager)
-	mock_currency_manager.current_currency = 20
+	mock_currency_manager.set_currency(20)
 	mock_grid_manager.is_valid_position = true
 	mock_grid_manager.is_occupied = false
 	mock_grid_manager.is_on_path = false
@@ -237,49 +238,4 @@ func test_grid_occupation_management():
 	assert_eq(mock_grid_manager.occupied_positions.size(), 1, "Should mark position as occupied")
 	assert_eq(mock_grid_manager.occupied_positions[0], Vector2i(3, 4), "Should occupy correct position")
 
-# Mock classes for testing
-class MockGridManager extends GridManager:
-	var is_valid_position: bool = true
-	var is_occupied: bool = false
-	var is_on_path: bool = false
-	var world_position: Vector2 = Vector2.ZERO
-	var occupied_positions: Array[Vector2i] = []
-	var unblocked_positions: Array[Vector2i] = []
-	
-	func is_valid_grid_position(pos: Vector2i) -> bool:
-		return is_valid_position
-	
-	func is_grid_occupied(pos: Vector2i) -> bool:
-		return is_occupied
-	
-	func is_on_enemy_path(pos: Vector2i) -> bool:
-		return is_on_path
-	
-	func grid_to_world(pos: Vector2i) -> Vector2:
-		return world_position
-	
-	func set_grid_occupied(pos: Vector2i, occupied: bool):
-		if occupied:
-			occupied_positions.append(pos)
-		else:
-			occupied_positions.erase(pos)
-	
-	func set_grid_blocked(pos: Vector2i, blocked: bool):
-		if not blocked:
-			unblocked_positions.append(pos)
-		else:
-			unblocked_positions.erase(pos)
-
-class MockCurrencyManager extends CurrencyManager:
-	var current_currency: int = 100
-	var spent_amount: int = 0
-	
-	func get_currency() -> int:
-		return current_currency
-	
-	func spend_currency(amount: int) -> bool:
-		if current_currency >= amount:
-			current_currency -= amount
-			spent_amount = amount
-			return true
-		return false 
+# Mock classes for testing 

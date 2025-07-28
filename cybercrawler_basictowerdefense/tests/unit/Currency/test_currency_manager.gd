@@ -1,12 +1,12 @@
 extends GutTest
 
 # Unit tests for CurrencyManager class
-# These tests verify the currency system functionality
+# These tests verify the currency system functionality using the real CurrencyManager
 
-var currency_manager: CurrencyManagerInterface
+var currency_manager: CurrencyManager
 
 func before_each():
-	# Setup fresh CurrencyManager for each test (concrete implementation)
+	# Setup fresh CurrencyManager for each test (real implementation)
 	currency_manager = CurrencyManager.new()
 	add_child_autofree(currency_manager)
 

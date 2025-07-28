@@ -161,20 +161,7 @@ func test_different_config_radius_values():
 	assert_false(result_small, "Small radius should not detect distant click")
 	assert_true(result_large, "Large radius should detect distant click")
 
-# Mock entity for testing
-class MockClickableEntity extends Node2D:
-	var is_alive: bool = true
-	var damage_taken_amount: int = 0
-	var health: int = 10
-	
-	func take_damage(amount: int):
-		damage_taken_amount = amount
-		health -= amount
-		if health <= 0:
-			is_alive = false
-	
-	func get_health_info() -> String:
-		return " (Health: " + str(health) + ")"
+# Mock entity for testing - now using global MockClickableEntity
 
 # Mock entity without take_damage method
 class MockInvalidEntity extends Node2D:

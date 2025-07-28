@@ -11,11 +11,11 @@ const POWERFUL_TOWER_SCENE = preload("res://scenes/PowerfulTower.tscn")
 var towers_placed: Array[Tower] = []
 
 # References to other managers
-var grid_manager: Node
+var grid_manager: GridManagerInterface
 var currency_manager: CurrencyManagerInterface
-var wave_manager: WaveManager
+var wave_manager: WaveManagerInterface
 
-func initialize(grid_mgr: Node, currency_mgr: CurrencyManagerInterface, wave_mgr: Node) -> void:
+func initialize(grid_mgr: GridManagerInterface, currency_mgr: CurrencyManagerInterface, wave_mgr: WaveManagerInterface) -> void:
 	grid_manager = grid_mgr
 	currency_manager = currency_mgr
 	wave_manager = wave_mgr
@@ -39,6 +39,11 @@ func attempt_tower_placement(grid_pos: Vector2i, tower_type: String = BASIC_TOWE
 		tower_placement_failed.emit("Grid position is blocked")
 		return false
 	
+	# NEW: Prevent placement on ruined cells
+	if grid_manager.is_grid_ruined(grid_pos):
+		tower_placement_failed.emit("Grid position is ruined")
+		return false
+	
 	# Check if position is on enemy path
 	if grid_manager.is_on_enemy_path(grid_pos):
 		tower_placement_failed.emit("Cannot place tower on enemy path")
@@ -57,6 +62,8 @@ func attempt_basic_tower_placement(grid_pos: Vector2i) -> bool:
 	return attempt_tower_placement(grid_pos, BASIC_TOWER)
 
 func place_tower(grid_pos: Vector2i, tower_type: String = BASIC_TOWER) -> bool:
+	if not currency_manager:
+		return false
 	if not currency_manager.purchase_tower_type(tower_type):
 		return false
 	
@@ -103,6 +110,12 @@ func get_enemies_for_towers() -> Array[Enemy]:
 
 func get_towers() -> Array[Tower]:
 	return towers_placed
+
+func get_tower_at_position(grid_pos: Vector2i) -> Tower:
+	for tower in towers_placed:
+		if is_instance_valid(tower) and tower.get_grid_position() == grid_pos:
+			return tower
+	return null
 
 func stop_all_towers():
 	for tower in towers_placed:

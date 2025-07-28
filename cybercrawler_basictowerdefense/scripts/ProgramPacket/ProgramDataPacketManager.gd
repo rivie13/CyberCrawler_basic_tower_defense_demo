@@ -1,13 +1,7 @@
-extends Node2D
+extends ProgramDataPacketManagerInterface
 class_name ProgramDataPacketManager
 
-# Constants (addressing Copilot review)
-const AUTO_RELEASE_WAVE_NUMBER: int = 10
-
-# Signals for communication with other managers
-signal program_packet_ready()
-signal program_packet_destroyed(packet: ProgramDataPacket)
-signal program_packet_reached_end(packet: ProgramDataPacket)
+# Constants and signals are now inherited from ProgramDataPacketManagerInterface
 
 # Program data packet scene reference
 const PROGRAM_DATA_PACKET_SCENE = preload("res://scenes/ProgramDataPacket.tscn")
@@ -20,11 +14,11 @@ var is_packet_active: bool = false
 var can_release_packet: bool = false
 
 # References to other managers
-var grid_manager: GridManager
-var game_manager: GameManager
-var wave_manager: WaveManager
+var grid_manager: GridManagerInterface
+var game_manager: GameManagerInterface
+var wave_manager: WaveManagerInterface
 
-func initialize(grid_mgr: GridManager, game_mgr: GameManager, wave_mgr: WaveManager):
+func initialize(grid_mgr: GridManagerInterface, game_mgr: GameManagerInterface, wave_mgr: WaveManagerInterface):
 	grid_manager = grid_mgr
 	game_manager = game_mgr
 	wave_manager = wave_mgr
@@ -43,7 +37,7 @@ func initialize(grid_mgr: GridManager, game_mgr: GameManager, wave_mgr: WaveMana
 	create_packet_path()
 
 	# NEW: Listen for grid block changes
-	if grid_manager.has_signal("grid_blocked_changed"):
+	if grid_manager and grid_manager.has_signal("grid_blocked_changed"):
 		grid_manager.grid_blocked_changed.connect(_on_grid_blocked_changed)
 
 func create_packet_path():

@@ -14,7 +14,7 @@ signal mine_triggered(mine: Mine)
 signal mine_depleted(mine: Mine)
 
 # Abstract methods that mine managers must implement
-func initialize(grid_mgr: GridManager, currency_mgr: CurrencyManagerInterface):
+func initialize(grid_mgr: GridManagerInterface, currency_mgr: CurrencyManagerInterface):
 	push_error("initialize() must be implemented by subclass")
 
 func can_place_mine_at(grid_pos: Vector2i, mine_type: String = "freeze") -> bool:

@@ -10,7 +10,7 @@ signal tower_placed(grid_pos: Vector2i, tower_type: String)
 signal tower_placement_failed(reason: String)
 
 # Abstract methods that must be implemented
-func initialize(grid_mgr: Node, currency_mgr: CurrencyManagerInterface, wave_mgr: Node) -> void:
+func initialize(grid_mgr: GridManagerInterface, currency_mgr: CurrencyManagerInterface, wave_mgr: WaveManagerInterface) -> void:
 	push_error("TowerManagerInterface.initialize() must be overridden")
 
 func attempt_tower_placement(grid_pos: Vector2i, tower_type: String = BASIC_TOWER) -> bool:
@@ -25,11 +25,11 @@ func place_tower(grid_pos: Vector2i, tower_type: String = BASIC_TOWER) -> bool:
 	push_error("TowerManagerInterface.place_tower() must be overridden")
 	return false
 
-func get_enemies_for_towers() -> Array:
+func get_enemies_for_towers() -> Array[Enemy]:
 	push_error("TowerManagerInterface.get_enemies_for_towers() must be overridden")
 	return []
 
-func get_towers() -> Array:
+func get_towers() -> Array[Tower]:
 	push_error("TowerManagerInterface.get_towers() must be overridden")
 	return []
 

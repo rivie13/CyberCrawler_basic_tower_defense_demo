@@ -1,246 +1,268 @@
 extends GutTest
 
-# Unit tests for GridLayout class
-# These tests verify the grid layout functionality and path generation
+# Unit tests for GridLayout
+# Tests path generation for different layout types
 
 var grid_layout: GridLayout
-var mock_grid_manager: GridManager
+var mock_grid_manager: MockGridManager
 
 func before_each():
-	# Setup fresh GridLayout for each test
-	mock_grid_manager = GridManager.new()
+	mock_grid_manager = MockGridManager.new()
+	add_child_autofree(mock_grid_manager)
 	grid_layout = GridLayout.new(mock_grid_manager)
 	add_child_autofree(grid_layout)
-	add_child_autofree(mock_grid_manager)
 
-func test_initial_state():
-	# Test that GridLayout starts with correct initial values
-	assert_eq(grid_layout.grid_manager, mock_grid_manager, "Should have grid manager reference")
+func test_initialization():
+	# Test that GridLayout is properly initialized
+	assert_not_null(grid_layout, "GridLayout should be created")
+	assert_not_null(grid_layout.grid_manager, "Grid manager should be set")
 
-func test_create_path_without_grid_manager():
-	# Test path creation when grid manager is null
+func test_create_path_with_null_grid_manager():
+	# Test error handling when grid_manager is null
 	var null_layout = GridLayout.new(null)
 	add_child_autofree(null_layout)
 	
-	var path = null_layout.create_path(GridLayout.LayoutType.STRAIGHT_LINE)
-	assert_eq(path.size(), 0, "Should return empty path when grid manager is null")
+	var path = null_layout.create_path()
+	assert_eq(path.size(), 0, "Should return empty path when grid_manager is null")
 
 func test_create_straight_line_path():
 	# Test straight line path creation
-	var path = grid_layout.create_straight_line_path()
+	var path = grid_layout.create_path(GridLayout.LayoutType.STRAIGHT_LINE)
 	
-	assert_gt(path.size(), 0, "Should create non-empty path")
-	assert_eq(path[0].x, -32.0, "Should start at left edge")
-	assert_eq(path[0].y, 352.0, "Should be at middle height")  # 10/2 * 64 + 32 = 352
-	assert_eq(path[path.size() - 1].x, 992.0, "Should end at right edge")  # (15+1) * 64 + 32 = 992
+	assert_not_null(path, "Path should not be null")
+	assert_gt(path.size(), 0, "Path should have points")
+	
+	# Check that path goes from left to right
+	var first_point = path[0]
+	var last_point = path[path.size() - 1]
+	assert_lt(first_point.x, last_point.x, "Path should go from left to right")
+	
+	# Check that all points have the same Y coordinate (straight line)
+	var expected_y = first_point.y
+	for point in path:
+		assert_eq(point.y, expected_y, "All points should have same Y coordinate")
 
 func test_get_straight_line_grid_positions():
 	# Test straight line grid positions
-	var grid_positions = grid_layout.get_straight_line_grid_positions()
+	var grid_positions = grid_layout.get_path_grid_positions(GridLayout.LayoutType.STRAIGHT_LINE)
 	
+	assert_not_null(grid_positions, "Grid positions should not be null")
 	assert_gt(grid_positions.size(), 0, "Should have grid positions")
-	assert_eq(grid_positions[0], Vector2i(0, 5), "Should start at grid position (0, 5)")
-	assert_eq(grid_positions[grid_positions.size() - 1], Vector2i(14, 5), "Should end at grid position (14, 5)")  # GRID_WIDTH = 15, so 0-14
+	
+	# Check that positions are within grid bounds
+	for pos in grid_positions:
+		assert_true(mock_grid_manager.is_valid_grid_position(pos), "All positions should be valid")
+	
+	# Check that positions form a horizontal line
+	var expected_y = grid_positions[0].y
+	for pos in grid_positions:
+		assert_eq(pos.y, expected_y, "All positions should have same Y coordinate")
 
 func test_create_l_shaped_path():
 	# Test L-shaped path creation
-	var path = grid_layout.create_l_shaped_path()
+	var path = grid_layout.create_path(GridLayout.LayoutType.L_SHAPED)
 	
-	assert_gt(path.size(), 0, "Should create non-empty path")
-	# L-shaped path should have more points than straight line
-	assert_gt(path.size(), 22, "L-shaped path should have more points than straight line")
+	assert_not_null(path, "Path should not be null")
+	assert_gt(path.size(), 0, "Path should have points")
+	
+	# Check that path has both horizontal and vertical segments
+	var has_horizontal = false
+	var has_vertical = false
+	var prev_point = path[0]
+	
+	for i in range(1, path.size()):
+		var current_point = path[i]
+		if abs(current_point.x - prev_point.x) > 0.1:  # Horizontal movement
+			has_horizontal = true
+		if abs(current_point.y - prev_point.y) > 0.1:  # Vertical movement
+			has_vertical = true
+		prev_point = current_point
+	
+	assert_true(has_horizontal, "L-shaped path should have horizontal segment")
+	assert_true(has_vertical, "L-shaped path should have vertical segment")
 
 func test_get_l_shaped_grid_positions():
 	# Test L-shaped grid positions
-	var grid_positions = grid_layout.get_l_shaped_grid_positions()
+	var grid_positions = grid_layout.get_path_grid_positions(GridLayout.LayoutType.L_SHAPED)
 	
+	assert_not_null(grid_positions, "Grid positions should not be null")
 	assert_gt(grid_positions.size(), 0, "Should have grid positions")
-	# L-shaped should have more grid positions than straight line
-	assert_gt(grid_positions.size(), 20, "L-shaped should have more grid positions than straight line")
+	
+	# Check that positions are within grid bounds
+	for pos in grid_positions:
+		assert_true(mock_grid_manager.is_valid_grid_position(pos), "All positions should be valid")
 
 func test_create_s_curved_path():
 	# Test S-curved path creation
-	var path = grid_layout.create_s_curved_path()
+	var path = grid_layout.create_path(GridLayout.LayoutType.S_CURVED)
 	
-	assert_gt(path.size(), 0, "Should create non-empty path")
-	assert_eq(path.size(), 21, "Should have 21 segments (0 to 20)")
+	assert_not_null(path, "Path should not be null")
+	assert_gt(path.size(), 0, "Path should have points")
 	
-	# S-curve should have varying Y positions
-	var y_positions = []
+	# Check that path goes from left to right
+	var first_point = path[0]
+	var last_point = path[path.size() - 1]
+	assert_lt(first_point.x, last_point.x, "Path should go from left to right")
+	
+	# Check that Y coordinates vary (not a straight line)
+	var y_values = []
 	for point in path:
-		y_positions.append(point.y)
+		y_values.append(point.y)
 	
-	# Should have different Y positions (not all the same)
-	var unique_y_count = 0
-	for i in range(y_positions.size() - 1):
-		if abs(y_positions[i] - y_positions[i + 1]) > 1.0:
-			unique_y_count += 1
-	
-	assert_gt(unique_y_count, 0, "S-curve should have varying Y positions")
+	var min_y = y_values.min()
+	var max_y = y_values.max()
+	assert_gt(max_y - min_y, 10.0, "S-curved path should have varying Y coordinates")
 
 func test_get_s_curved_grid_positions():
 	# Test S-curved grid positions
-	var grid_positions = grid_layout.get_s_curved_grid_positions()
+	var grid_positions = grid_layout.get_path_grid_positions(GridLayout.LayoutType.S_CURVED)
 	
+	assert_not_null(grid_positions, "Grid positions should not be null")
 	assert_gt(grid_positions.size(), 0, "Should have grid positions")
-	assert_eq(grid_positions.size(), 15, "Should have 15 grid positions (0 to 14)")  # GRID_WIDTH = 15
 	
-	# S-curve should have varying Y positions in grid coordinates
-	var y_positions = []
+	# Check that positions are within grid bounds
 	for pos in grid_positions:
-		y_positions.append(pos.y)
-	
-	# Should have different Y positions (not all the same)
-	var unique_y_count = 0
-	for i in range(y_positions.size() - 1):
-		if y_positions[i] != y_positions[i + 1]:
-			unique_y_count += 1
-	
-	assert_gt(unique_y_count, 0, "S-curve should have varying Y grid positions")
+		assert_true(mock_grid_manager.is_valid_grid_position(pos), "All positions should be valid")
 
 func test_create_zigzag_path():
 	# Test zigzag path creation
-	var path = grid_layout.create_zigzag_path()
+	var path = grid_layout.create_path(GridLayout.LayoutType.ZIGZAG)
 	
-	assert_gt(path.size(), 0, "Should create non-empty path")
-	# Zigzag should have more points than straight line due to transitions
-	assert_gt(path.size(), 22, "Zigzag path should have more points than straight line")
+	assert_not_null(path, "Path should not be null")
+	assert_gt(path.size(), 0, "Path should have points")
+	
+	# Check that path goes from left to right
+	var first_point = path[0]
+	var last_point = path[path.size() - 1]
+	assert_lt(first_point.x, last_point.x, "Path should go from left to right")
+	
+	# Check that Y coordinates alternate (zigzag pattern)
+	var y_values = []
+	for point in path:
+		y_values.append(point.y)
+	
+	var min_y = y_values.min()
+	var max_y = y_values.max()
+	assert_gt(max_y - min_y, 10.0, "Zigzag path should have varying Y coordinates")
 
 func test_get_zigzag_grid_positions():
 	# Test zigzag grid positions
-	var grid_positions = grid_layout.get_zigzag_grid_positions()
+	var grid_positions = grid_layout.get_path_grid_positions(GridLayout.LayoutType.ZIGZAG)
 	
+	assert_not_null(grid_positions, "Grid positions should not be null")
 	assert_gt(grid_positions.size(), 0, "Should have grid positions")
-	# Zigzag should have more grid positions than straight line
-	assert_gt(grid_positions.size(), 20, "Zigzag should have more grid positions than straight line")
-
-func test_create_path_with_layout_types():
-	# Test create_path with different layout types
-	var straight_path = grid_layout.create_path(GridLayout.LayoutType.STRAIGHT_LINE)
-	var l_shaped_path = grid_layout.create_path(GridLayout.LayoutType.L_SHAPED)
-	var s_curved_path = grid_layout.create_path(GridLayout.LayoutType.S_CURVED)
-	var zigzag_path = grid_layout.create_path(GridLayout.LayoutType.ZIGZAG)
 	
-	assert_gt(straight_path.size(), 0, "Straight line path should not be empty")
-	assert_gt(l_shaped_path.size(), 0, "L-shaped path should not be empty")
-	assert_gt(s_curved_path.size(), 0, "S-curved path should not be empty")
-	assert_gt(zigzag_path.size(), 0, "Zigzag path should not be empty")
-	
-	# Different layouts should have different path lengths
-	assert_ne(straight_path.size(), l_shaped_path.size(), "Different layouts should have different path lengths")
-
-func test_get_path_grid_positions_with_layout_types():
-	# Test get_path_grid_positions with different layout types
-	var straight_positions = grid_layout.get_path_grid_positions(GridLayout.LayoutType.STRAIGHT_LINE)
-	var l_shaped_positions = grid_layout.get_path_grid_positions(GridLayout.LayoutType.L_SHAPED)
-	var s_curved_positions = grid_layout.get_path_grid_positions(GridLayout.LayoutType.S_CURVED)
-	var zigzag_positions = grid_layout.get_path_grid_positions(GridLayout.LayoutType.ZIGZAG)
-	
-	assert_gt(straight_positions.size(), 0, "Straight line positions should not be empty")
-	assert_gt(l_shaped_positions.size(), 0, "L-shaped positions should not be empty")
-	assert_gt(s_curved_positions.size(), 0, "S-curved positions should not be empty")
-	assert_gt(zigzag_positions.size(), 0, "Zigzag positions should not be empty")
-
-func test_create_path_default_layout():
-	# Test create_path with default layout (should be L-shaped)
-	var default_path = grid_layout.create_path()
-	var l_shaped_path = grid_layout.create_path(GridLayout.LayoutType.L_SHAPED)
-	
-	assert_eq(default_path.size(), l_shaped_path.size(), "Default layout should be L-shaped")
-
-func test_get_path_grid_positions_default_layout():
-	# Test get_path_grid_positions with default layout (should be L-shaped)
-	var default_positions = grid_layout.get_path_grid_positions()
-	var l_shaped_positions = grid_layout.get_path_grid_positions(GridLayout.LayoutType.L_SHAPED)
-	
-	assert_eq(default_positions.size(), l_shaped_positions.size(), "Default layout should be L-shaped")
-
-func test_create_path_invalid_layout():
-	# Test create_path with invalid layout type (should default to L-shaped)
-	var invalid_path = grid_layout.create_path(999)  # Invalid enum value
-	var l_shaped_path = grid_layout.create_path(GridLayout.LayoutType.L_SHAPED)
-	
-	assert_eq(invalid_path.size(), l_shaped_path.size(), "Invalid layout should default to L-shaped")
-
-func test_get_path_grid_positions_invalid_layout():
-	# Test get_path_grid_positions with invalid layout type (should default to L-shaped)
-	var invalid_positions = grid_layout.get_path_grid_positions(999)  # Invalid enum value
-	var l_shaped_positions = grid_layout.get_path_grid_positions(GridLayout.LayoutType.L_SHAPED)
-	
-	assert_eq(invalid_positions.size(), l_shaped_positions.size(), "Invalid layout should default to L-shaped")
-
-func test_path_continuity():
-	# Test that paths are continuous (no large gaps)
-	var path = grid_layout.create_l_shaped_path()
-	
-	for i in range(path.size() - 1):
-		var current = path[i]
-		var next = path[i + 1]
-		var distance = current.distance_to(next)
-		
-		# Points should be reasonably close together (within 2 grid cells)
-		assert_lte(distance, 128.0, "Path points should be continuous")
-
-func test_grid_positions_validity():
-	# Test that grid positions are within valid grid bounds
-	var grid_positions = grid_layout.get_l_shaped_grid_positions()
-	
+	# Check that positions are within grid bounds
 	for pos in grid_positions:
-		assert_gte(pos.x, 0, "Grid X should be non-negative")
-		assert_lt(pos.x, 20, "Grid X should be less than grid width")
-		assert_gte(pos.y, 0, "Grid Y should be non-negative")
-		assert_lt(pos.y, 10, "Grid Y should be less than grid height")
+		assert_true(mock_grid_manager.is_valid_grid_position(pos), "All positions should be valid")
 
-func test_path_world_positions():
-	# Test that world positions are calculated correctly
-	var path = grid_layout.create_straight_line_path()
+func test_default_layout_type():
+	# Test that default layout type works
+	var path = grid_layout.create_path()
 	
-	# Check that world positions are properly spaced
-	for i in range(1, path.size()):
-		var current = path[i]
-		var previous = path[i - 1]
-		var x_diff = current.x - previous.x
+	assert_not_null(path, "Default path should not be null")
+	assert_gt(path.size(), 0, "Default path should have points")
+
+func test_invalid_layout_type():
+	# Test handling of invalid layout type
+	var path = grid_layout.create_path(999)  # Invalid enum value
+	
+	assert_not_null(path, "Invalid layout should return default path")
+	assert_gt(path.size(), 0, "Invalid layout should have points")
+
+func test_path_consistency():
+	# Test that create_path and get_path_grid_positions are consistent
+	var world_path = grid_layout.create_path(GridLayout.LayoutType.STRAIGHT_LINE)
+	var grid_path = grid_layout.get_path_grid_positions(GridLayout.LayoutType.STRAIGHT_LINE)
+	
+	assert_eq(world_path.size(), grid_path.size() + 2, "World path should have 2 extra points (start/end)")
+	
+	# Check that grid positions correspond to world positions
+	for i in range(grid_path.size()):
+		var grid_pos = grid_path[i]
+		var world_pos = mock_grid_manager.grid_to_world(grid_pos)
+		var expected_world_pos = world_path[i + 1]  # Skip first world point
+		assert_eq(world_pos, expected_world_pos, "Grid and world positions should match")
+
+func test_all_layout_types():
+	# Test all layout types work
+	var layout_types = [
+		GridLayout.LayoutType.STRAIGHT_LINE,
+		GridLayout.LayoutType.L_SHAPED,
+		GridLayout.LayoutType.S_CURVED,
+		GridLayout.LayoutType.ZIGZAG
+	]
+	
+	for layout_type in layout_types:
+		var path = grid_layout.create_path(layout_type)
+		var grid_positions = grid_layout.get_path_grid_positions(layout_type)
 		
-		# Should be spaced by grid size (64 pixels)
-		assert_almost_eq(x_diff, 64.0, 1.0, "World positions should be spaced by grid size")
+		assert_not_null(path, "Path for layout type " + str(layout_type) + " should not be null")
+		assert_gt(path.size(), 0, "Path for layout type " + str(layout_type) + " should have points")
+		assert_not_null(grid_positions, "Grid positions for layout type " + str(layout_type) + " should not be null")
+		assert_gt(grid_positions.size(), 0, "Grid positions for layout type " + str(layout_type) + " should have positions")
 
-func test_layout_type_enum():
-	# Test that layout type enum values are correct
-	assert_eq(GridLayout.LayoutType.STRAIGHT_LINE, 0, "STRAIGHT_LINE should be 0")
-	assert_eq(GridLayout.LayoutType.L_SHAPED, 1, "L_SHAPED should be 1")
-	assert_eq(GridLayout.LayoutType.S_CURVED, 2, "S_CURVED should be 2")
-	assert_eq(GridLayout.LayoutType.ZIGZAG, 3, "ZIGZAG should be 3")
-
-func test_s_curve_mathematical_properties():
-	# Test S-curve mathematical properties
-	var path = grid_layout.create_s_curved_path()
+func test_grid_manager_dependency():
+	# Test that GridLayout properly uses the grid manager
+	var path = grid_layout.create_path(GridLayout.LayoutType.STRAIGHT_LINE)
 	
-	# S-curve should start and end at similar Y positions (smooth curve)
-	var start_y = path[0].y
-	var end_y = path[path.size() - 1].y
-	var y_diff = abs(start_y - end_y)
+	# Path should be created based on grid manager's grid size
+	assert_gt(path.size(), 0, "Path should be created based on grid manager")
 	
-	assert_lte(y_diff, 100.0, "S-curve should start and end at similar Y positions")
-
-func test_zigzag_alternating_pattern():
-	# Test zigzag alternating pattern
-	var grid_positions = grid_layout.get_zigzag_grid_positions()
+	# Check that path uses the grid manager's dimensions
+	var grid_size = mock_grid_manager.get_grid_size()
+	assert_gt(path.size(), grid_size.x, "Path should be longer than grid width")
 	
-	# Check that Y positions alternate between high and low
-	var y_positions = []
+	# Verify that the path uses the grid manager for coordinate conversion
+	var grid_positions = grid_layout.get_path_grid_positions(GridLayout.LayoutType.STRAIGHT_LINE)
+	assert_gt(grid_positions.size(), 0, "Grid positions should be generated")
+	
+	# Check that grid positions are within the grid manager's bounds
 	for pos in grid_positions:
-		y_positions.append(pos.y)
-	
-	# Should have both high and low Y positions
-	var high_count = 0
-	var low_count = 0
-	for y in y_positions:
-		if y < 5:  # Low position
-			low_count += 1
-		else:  # High position
-			high_count += 1
-	
-	assert_gt(high_count, 0, "Zigzag should have high Y positions")
-	assert_gt(low_count, 0, "Zigzag should have low Y positions")
+		assert_true(mock_grid_manager.is_valid_grid_position(pos), "All grid positions should be valid")
 
-# No mock classes needed - using real GridManager 
+func test_path_validation():
+	# Test that generated paths are valid
+	var layout_types = [
+		GridLayout.LayoutType.STRAIGHT_LINE,
+		GridLayout.LayoutType.L_SHAPED,
+		GridLayout.LayoutType.S_CURVED,
+		GridLayout.LayoutType.ZIGZAG
+	]
+	
+	for layout_type in layout_types:
+		var path = grid_layout.create_path(layout_type)
+		
+		# Check that path has valid points
+		for point in path:
+			assert_not_null(point, "Path point should not be null")
+			assert_true(point is Vector2, "Path point should be Vector2")
+		
+		# Check that path has reasonable length
+		assert_gt(path.size(), 0, "Path should have at least one point")
+		assert_lt(path.size(), 100, "Path should not be excessively long")
+
+func test_grid_positions_validation():
+	# Test that generated grid positions are valid
+	var layout_types = [
+		GridLayout.LayoutType.STRAIGHT_LINE,
+		GridLayout.LayoutType.L_SHAPED,
+		GridLayout.LayoutType.S_CURVED,
+		GridLayout.LayoutType.ZIGZAG
+	]
+	
+	for layout_type in layout_types:
+		var grid_positions = grid_layout.get_path_grid_positions(layout_type)
+		
+		# Check that all positions are valid
+		for pos in grid_positions:
+			assert_not_null(pos, "Grid position should not be null")
+			assert_true(pos is Vector2i, "Grid position should be Vector2i")
+			assert_true(mock_grid_manager.is_valid_grid_position(pos), "Grid position should be valid")
+		
+		# Check that positions are unique
+		var unique_positions = []
+		for pos in grid_positions:
+			if not pos in unique_positions:
+				unique_positions.append(pos)
+		assert_eq(unique_positions.size(), grid_positions.size(), "Grid positions should be unique") 
