@@ -40,8 +40,8 @@ func before_each():
 	# Note: FreezeMineManager not used in combat tests, but added for completeness
 	# freeze_mine_manager.initialize(grid_manager, currency_manager)
 	
-	# Wait for proper initialization
-	await wait_idle_frames(3)
+	# Wait for proper physics initialization
+	await wait_physics_frames(3)
 
 func test_player_tower_attacks_enemy_tower_integration():
 	# Integration test: Player tower targets and damages enemy tower
@@ -56,34 +56,54 @@ func test_player_tower_attacks_enemy_tower_integration():
 	assert_eq(player_towers.size(), 1, "Should have 1 player tower")
 	var player_tower = player_towers[0]
 	
-	# Place enemy tower within range
-	var enemy_grid_pos = Vector2i(4, 3)  # Adjacent position, definitely within range
+	# Place enemy tower within range (adjacent position = 64 pixels apart)
+	var enemy_grid_pos = Vector2i(4, 3)
 	rival_hacker_manager.place_enemy_tower(enemy_grid_pos)
 	
 	var enemy_towers = rival_hacker_manager.get_enemy_towers()
 	assert_gt(enemy_towers.size(), 0, "Should have at least 1 enemy tower")
 	var enemy_tower = enemy_towers[0]
 	
-	# Verify initial health states
+	# Verify towers are in range before testing combat
+	var player_world_pos = grid_manager.grid_to_world(player_grid_pos)
+	var enemy_world_pos = grid_manager.grid_to_world(enemy_grid_pos)
+	var distance = player_world_pos.distance_to(enemy_world_pos)
+	assert_lte(distance, player_tower.tower_range, "Enemy tower must be within player tower range")
+	print("Tower distance: ", distance, " pixels, Player range: ", player_tower.tower_range)
+	
+	# Verify initial health states (Enemy tower has 5 health)
 	var initial_enemy_health = enemy_tower.health
-	assert_gt(initial_enemy_health, 0, "Enemy tower should have positive initial health")
+	assert_eq(initial_enemy_health, 5, "Enemy tower should start with 5 health")
 	
-	# Wait for targeting and attack cycles
-	await wait_seconds(2.0)
+	# Wait for physics and targeting initialization
+	await wait_physics_frames(5)
 	
-	# Player tower should find enemy tower as target (if player tower still exists)
+	# Wait until player tower finds the enemy tower as target
+	await wait_until(func(): 
+		if not is_instance_valid(player_tower):
+			return true  # Player tower destroyed - valid outcome
+		return player_tower.current_target == enemy_tower  # Specific target acquired
+	, 5.0)
+	
+	# Verify targeting behavior if player tower still exists
 	if is_instance_valid(player_tower):
-		assert_not_null(player_tower.current_target, "Player tower should have found a target")
-	else:
-		# Player tower was destroyed quickly - this is valid combat behavior
-		print("Player tower was destroyed during initial combat - proceeding with test")
+		assert_eq(player_tower.current_target, enemy_tower, "Player tower should target the enemy tower")
+		print("Player tower successfully targeted enemy tower")
 	
-	# Let combat run for a few attack cycles
-	await wait_seconds(3.0)
+	# Wait for actual combat damage (Player tower attacks at 1.0 rate = 1 attack per second)
+	# Allow 3 attack cycles for reliable damage delivery
+	await wait_until(func():
+		# Combat resolved if either tower is destroyed
+		if not is_instance_valid(player_tower) or not is_instance_valid(enemy_tower):
+			return true
+		# Combat successful if enemy took damage (health < 5)
+		return enemy_tower.health < initial_enemy_health
+	, 4.0)  # 4 seconds = up to 4 attack opportunities
 	
-	# Enemy tower should have taken damage from player tower
+	# Verify combat results
 	if is_instance_valid(enemy_tower):
 		assert_lt(enemy_tower.health, initial_enemy_health, "Enemy tower should have taken damage from player tower")
+		print("Enemy tower health after combat: ", enemy_tower.health, "/", enemy_tower.max_health)
 	else:
 		# Enemy tower was destroyed - this is also a valid combat outcome
 		assert_true(true, "Enemy tower was destroyed by player tower - combat successful")
@@ -100,32 +120,54 @@ func test_enemy_tower_attacks_player_tower_integration():
 	assert_gt(enemy_towers.size(), 0, "Should have at least 1 enemy tower")
 	var enemy_tower = enemy_towers[0]
 	
-	# Place player tower within enemy tower range
-	var player_grid_pos = Vector2i(3, 2)  # Adjacent position, within enemy tower range
+	# Place player tower within enemy tower range (adjacent = 64 pixels apart)
+	var player_grid_pos = Vector2i(3, 2)
 	var player_tower_placed = tower_manager.place_tower(player_grid_pos, "basic")
 	assert_true(player_tower_placed, "Player tower should be placed successfully")
 	
 	var player_towers = tower_manager.get_towers()
 	var player_tower = player_towers[0]
+	
+	# Verify towers are in range before testing combat
+	var enemy_world_pos = grid_manager.grid_to_world(enemy_grid_pos)
+	var player_world_pos = grid_manager.grid_to_world(player_grid_pos)
+	var distance = enemy_world_pos.distance_to(player_world_pos)
+	assert_lte(distance, enemy_tower.tower_range, "Player tower must be within enemy tower range")
+	print("Tower distance: ", distance, " pixels, Enemy range: ", enemy_tower.tower_range)
+	
+	# Verify initial health states (Player tower has 4 health)
 	var initial_player_health = player_tower.health
+	assert_eq(initial_player_health, 4, "Player tower should start with 4 health")
 	
-	# Wait for enemy tower to start attacking
-	await wait_seconds(2.0)
+	# Wait for physics and targeting initialization
+	await wait_physics_frames(5)
 	
-	# Enemy tower should find player tower as target (if both towers still alive)
-	if is_instance_valid(enemy_tower) and is_instance_valid(player_tower):
-		assert_not_null(enemy_tower.current_target, "Enemy tower should have found player tower as target")
+	# Enemy tower should find player tower as target
+	await wait_until(func():
+		if not is_instance_valid(enemy_tower):
+			return true  # Enemy tower destroyed - valid outcome
+		return enemy_tower.current_target == player_tower  # Specific target acquired
+	, 5.0)
+	
+	# Verify targeting behavior if enemy tower still exists
+	if is_instance_valid(enemy_tower):
 		assert_eq(enemy_tower.current_target, player_tower, "Enemy tower should target the player tower")
-	else:
-		# One tower was destroyed quickly - this is valid combat behavior
-		assert_true(true, "Combat resolved quickly with tower destruction")
+		print("Enemy tower successfully targeted player tower")
 	
-	# Let combat run for several attack cycles
-	await wait_seconds(4.0)
+	# Wait for actual combat damage (Enemy tower attacks at 2.0 rate = 2 attacks per second)
+	# Allow 2 seconds = up to 4 attack opportunities
+	await wait_until(func():
+		# Combat resolved if either tower is destroyed
+		if not is_instance_valid(enemy_tower) or not is_instance_valid(player_tower):
+			return true
+		# Combat successful if player took damage (health < 4)
+		return player_tower.health < initial_player_health
+	, 3.0)  # 3 seconds = up to 6 attack opportunities
 	
 	# Player tower should have taken damage from enemy tower
 	if is_instance_valid(player_tower):
 		assert_lt(player_tower.health, initial_player_health, "Player tower should have taken damage from enemy tower")
+		print("Player tower health after combat: ", player_tower.health, "/", player_tower.max_health)
 	else:
 		# Player tower was destroyed - this is also a valid combat outcome
 		assert_true(true, "Player tower was destroyed by enemy tower - combat successful")
@@ -157,12 +199,33 @@ func test_bidirectional_tower_combat_integration():
 	var initial_player_health = player_tower.health
 	var initial_enemy_health = enemy_tower.health
 	
+	# Verify towers are in range for bidirectional combat
+	var player_world_pos = grid_manager.grid_to_world(player_grid_pos)
+	var enemy_world_pos = grid_manager.grid_to_world(enemy_grid_pos)
+	var distance = player_world_pos.distance_to(enemy_world_pos)
+	assert_lte(distance, player_tower.tower_range, "Towers must be within range for bidirectional combat")
+	assert_lte(distance, enemy_tower.tower_range, "Towers must be within enemy tower range too")
+	
 	# Verify grid positions are occupied
 	assert_true(grid_manager.is_grid_occupied(player_grid_pos), "Player tower grid position should be occupied")
 	assert_true(grid_manager.is_grid_occupied(enemy_grid_pos), "Enemy tower grid position should be occupied")
 	
-	# Let bidirectional combat run
-	await wait_seconds(5.0)
+	# Wait for physics and targeting initialization
+	await wait_physics_frames(5)
+	
+	# Wait for bidirectional targeting to establish
+	await wait_until(func():
+		var player_has_target = is_instance_valid(player_tower) and player_tower.current_target == enemy_tower
+		var enemy_has_target = is_instance_valid(enemy_tower) and enemy_tower.current_target == player_tower
+		return player_has_target or enemy_has_target or not is_instance_valid(player_tower) or not is_instance_valid(enemy_tower)
+	, 5.0)
+	
+	# Let bidirectional combat run until damage occurs
+	await wait_until(func():
+		var player_took_damage = not is_instance_valid(player_tower) or player_tower.health < initial_player_health
+		var enemy_took_damage = not is_instance_valid(enemy_tower) or enemy_tower.health < initial_enemy_health
+		return player_took_damage or enemy_took_damage
+	, 5.0)
 	
 	# Verify both towers engaged in combat
 	var player_took_damage = not is_instance_valid(player_tower) or player_tower.health < initial_player_health
@@ -195,14 +258,18 @@ func test_rival_hacker_attacks_player_tower_integration():
 	rival_hacker_manager.spawn_rival_hacker(spawn_position)
 	
 	# Wait for rival hacker to spawn and initialize
-	await wait_seconds(1.0)
+	await wait_physics_frames(5)
 	
 	var rival_hackers = rival_hacker_manager.get_rival_hackers()
 	assert_gt(rival_hackers.size(), 0, "Should have at least 1 rival hacker")
 	var rival_hacker = rival_hackers[0]
 	
-	# Wait for rival hacker to find target and move/attack
-	await wait_seconds(4.0)
+	# Wait for rival hacker to find target and position for attack
+	await wait_until(func():
+		if not is_instance_valid(rival_hacker):
+			return true  # Rival hacker destroyed
+		return rival_hacker.current_target != null  # Target found
+	, 5.0)
 	
 	# Rival hacker should have found player tower as target (if both still exist)
 	if is_instance_valid(rival_hacker):
@@ -210,12 +277,23 @@ func test_rival_hacker_attacks_player_tower_integration():
 		var has_target = rival_hacker.current_target != null
 		if has_target:
 			assert_not_null(rival_hacker.current_target, "Rival hacker should have found a target")
+			print("Rival hacker found target: ", rival_hacker.current_target)
 		else:
 			# Rival hacker may not have found target yet due to distance/timing
 			print("Rival hacker has not found target yet - continuing combat test")
 	
-	# Let combat continue
-	await wait_seconds(3.0)
+	# Wait for combat interaction to occur
+	await wait_until(func():
+		# Combat successful if player tower took damage or was destroyed
+		if not is_instance_valid(player_tower):
+			return true  # Player tower destroyed
+		if player_tower.health < initial_player_health:
+			return true  # Player tower damaged
+		# Also check if rival hacker was destroyed (combat occurred)
+		if not is_instance_valid(rival_hacker):
+			return true  # Rival hacker destroyed by player tower
+		return false
+	, 6.0)
 	
 	# Player tower should have taken damage or been destroyed, OR rival hacker should have engaged
 	if is_instance_valid(player_tower):
@@ -259,8 +337,28 @@ func test_combat_affects_multiple_systems_integration():
 	# Verify currency was spent for player towers
 	assert_lt(currency_manager.get_currency(), initial_currency, "Currency should have been spent on player towers")
 	
-	# Let complex combat run
-	await wait_seconds(6.0)
+	# Wait for physics initialization
+	await wait_physics_frames(5)
+	
+	# Let complex combat run until damage occurs across the battlefield
+	await wait_until(func():
+		var player_towers = tower_manager.get_towers()
+		var enemy_towers = rival_hacker_manager.get_enemy_towers()
+		
+		# Check if any towers were destroyed
+		if player_towers.size() < 2 or enemy_towers.size() < 2:
+			return true  # Some towers destroyed
+		
+		# Check if any towers took damage
+		for tower in player_towers:
+			if tower.health < tower.max_health:
+				return true
+		for tower in enemy_towers:
+			if tower.health < tower.max_health:
+				return true
+		
+		return false  # No damage yet
+	, 8.0)
 	
 	# Verify game state is still consistent
 	assert_false(game_manager.game_over, "Game should not be over from tower combat alone")
@@ -311,10 +409,10 @@ func test_combat_targeting_priorities_integration():
 	var rival_hackers = rival_hacker_manager.get_rival_hackers()
 	assert_gt(rival_hackers.size(), 0, "Should have spawned at least 1 rival hacker")
 	
-	# Brief wait for targeting to initialize
-	await wait_seconds(0.5)
+	# Wait for physics and targeting initialization
+	await wait_physics_frames(5)
 	
-	# Test targeting priorities with shorter combat exposure
+	# Test targeting priorities with proper range verification
 	if is_instance_valid(player_tower) and rival_hackers.size() > 0:
 		var rival_hacker = rival_hackers[0]
 		if is_instance_valid(rival_hacker):
@@ -322,17 +420,32 @@ func test_combat_targeting_priorities_integration():
 			
 			# Test 1: Verify rival hacker is in range and should be prioritized
 			if distance_to_hacker <= player_tower.tower_range:
-				# Allow brief targeting time
-				await wait_seconds(0.5)
+				print("Rival hacker is in range (", distance_to_hacker, " <= ", player_tower.tower_range, ")")
+				
+				# Wait for targeting to establish
+				await wait_until(func():
+					if not is_instance_valid(player_tower) or not is_instance_valid(rival_hacker):
+						return true  # One destroyed
+					return player_tower.current_target == rival_hacker  # Correct target
+				, 3.0)
+				
 				if is_instance_valid(player_tower) and is_instance_valid(rival_hacker):
 					assert_eq(player_tower.current_target, rival_hacker, "Player tower should prioritize RivalHacker over EnemyTower when both in range")
 				else:
 					# Objects destroyed during combat - verify combat actually occurred
 					assert_true(true, "Combat occurred - objects were destroyed as expected")
 			else:
+				print("Rival hacker is out of range (", distance_to_hacker, " > ", player_tower.tower_range, ")")
+				
 				# Test 2: If rival hacker out of range, should target enemy tower
 				if is_instance_valid(enemy_tower) and player_tower.is_target_in_range(enemy_tower):
-					await wait_seconds(0.5)
+					# Wait for targeting to establish  
+					await wait_until(func():
+						if not is_instance_valid(player_tower):
+							return true  # Player tower destroyed
+						return player_tower.current_target == enemy_tower  # Correct fallback target
+					, 3.0)
+					
 					if is_instance_valid(player_tower):
 						assert_eq(player_tower.current_target, enemy_tower, "Player tower should target EnemyTower when RivalHacker out of range")
 					else:
@@ -377,8 +490,8 @@ func test_game_over_stops_combat_integration():
 	# Spawn rival hacker for additional combat activity
 	rival_hacker_manager.spawn_rival_hacker(Vector2(600, 600))
 	
-	# Let combat start
-	await wait_seconds(2.0)
+	# Wait for combat to initialize
+	await wait_physics_frames(10)
 	
 	# Verify combat is active
 	var player_towers = tower_manager.get_towers()
@@ -391,14 +504,14 @@ func test_game_over_stops_combat_integration():
 	game_manager.trigger_game_over()
 	assert_true(game_manager.game_over, "Game should be over after trigger")
 	
-	# Wait a moment for systems to respond to game over
-	await wait_idle_frames(5)
+	# Wait for systems to respond to game over
+	await wait_physics_frames(5)
 	
 	# Verify all combat activity stops
 	# Note: This test verifies that game over integration works
 	# The specific stopping mechanisms depend on each system's implementation
 	assert_true(game_manager.is_game_over(), "Game should remain in game over state")
 	
-	# Combat systems should handle game over gracefully without crashes
-	await wait_seconds(1.0)
+	# Wait and verify combat systems handle game over gracefully without crashes
+	await wait_physics_frames(10)  # Additional frames to verify no crashes
 	assert_true(true, "Combat systems should handle game over without errors") 

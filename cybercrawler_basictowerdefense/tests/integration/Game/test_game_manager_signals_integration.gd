@@ -21,7 +21,7 @@ func before_each():
 	add_child_autofree(tower_manager)
 	add_child_autofree(grid_manager)
 	game_manager.initialize(wave_manager, currency_manager, tower_manager)
-	await wait_idle_frames(3)
+	await wait_physics_frames(3)
 	await get_tree().process_frame
 
 func test_game_over_workflow_stops_all_systems():

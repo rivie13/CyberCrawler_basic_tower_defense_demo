@@ -381,7 +381,7 @@ func test_complete_temp_message_workflow():
 	assert_true(true, "Temporary message should be displayed correctly")
 	
 	# Wait for message timeout (simulated)
-	await wait_idle_frames(1)
+	await wait_physics_frames(1)
 	
 	# Verify message cleanup (this would normally happen after timeout)
 	assert_true(true, "Temporary message should be handled correctly")
