@@ -16,7 +16,7 @@ func before_each():
 	add_child_autofree(mock_currency_manager)
 	add_child_autofree(mock_tower_manager)
 	game_manager.initialize(mock_wave_manager, mock_currency_manager, mock_tower_manager)
-	await wait_idle_frames(1) # Yield for a frame to ensure signal delivery works
+	await wait_physics_frames(1) # Yield for a frame to ensure signal delivery works
 
 func test_initial_state():
 	assert_eq(game_manager.player_health, 10, "Initial player health should be 10")

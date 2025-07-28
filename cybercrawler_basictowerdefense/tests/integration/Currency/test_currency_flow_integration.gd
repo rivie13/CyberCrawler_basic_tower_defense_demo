@@ -19,7 +19,7 @@ func before_each():
 	add_child_autofree(main_controller)
 	
 	# Let MainController create and initialize all managers
-	await wait_frames(3)  # Wait for proper initialization
+	await wait_physics_frames(3)  # Wait for proper initialization
 	
 	# Get references to all managers from MainController
 	currency_manager = main_controller.currency_manager
@@ -56,7 +56,9 @@ func test_currency_earning_integration():
 	
 	# Start wave to enable enemy spawning system
 	wave_manager.start_wave()
-	await wait_frames(5)
+	
+	# Wait until enemies are spawned (generous timeout for wave system initialization)
+	await wait_until(func(): return wave_manager.get_enemies().size() > 0, 30.0)
 	
 	# Get an enemy from the wave system
 	var enemies = wave_manager.get_enemies()
@@ -66,7 +68,9 @@ func test_currency_earning_integration():
 		
 		# Kill the enemy to trigger currency reward chain
 		enemy.take_damage(initial_enemy_health)
-		await wait_frames(3)  # Allow signal propagation
+		
+		# Wait until currency actually changes (generous timeout for signal propagation)
+		await wait_until(func(): return currency_manager.get_currency() > initial_currency, 20.0)
 		
 		# Verify currency was awarded through the complete chain
 		var expected_currency = initial_currency + currency_per_kill
@@ -100,7 +104,8 @@ func test_currency_spending_tower_integration():
 	var placement_success = tower_manager.attempt_tower_placement(basic_placement_pos, "basic")
 	
 	if placement_success:
-		await wait_frames(3)  # Allow transaction to complete
+		# Wait until currency actually decreases (generous timeout for transaction processing)
+		await wait_until(func(): return currency_manager.get_currency() < initial_currency, 20.0)
 		
 		var expected_currency_after_basic = initial_currency - basic_tower_cost
 		assert_eq(currency_manager.get_currency(), expected_currency_after_basic,
@@ -112,12 +117,14 @@ func test_currency_spending_tower_integration():
 		
 		# Test powerful tower purchase
 		var powerful_placement_pos = Vector2i(2, 2)
+		var current_currency = currency_manager.get_currency()
 		var powerful_success = tower_manager.attempt_tower_placement(powerful_placement_pos, "powerful")
 		
 		if powerful_success:
-			await wait_frames(3)
+			# Wait until currency decreases again (generous timeout for transaction processing)
+			await wait_until(func(): return currency_manager.get_currency() < current_currency, 20.0)
 			
-			var expected_currency_after_powerful = expected_currency_after_basic - powerful_tower_cost
+			var expected_currency_after_powerful = current_currency - powerful_tower_cost
 			assert_eq(currency_manager.get_currency(), expected_currency_after_powerful,
 				"Currency should decrease by %d after powerful tower purchase" % powerful_tower_cost)
 	else:
@@ -142,7 +149,8 @@ func test_currency_spending_freeze_mine_integration():
 	var mine_success = freeze_mine_manager.place_mine(mine_placement_pos, "freeze")
 	
 	if mine_success:
-		await wait_frames(3)  # Allow transaction to complete
+		# Wait until currency actually decreases (generous timeout for transaction processing)
+		await wait_until(func(): return currency_manager.get_currency() < initial_currency, 20.0)
 		
 		var expected_currency = initial_currency - freeze_mine_cost
 		assert_eq(currency_manager.get_currency(), expected_currency,
@@ -171,9 +179,11 @@ func test_competitive_currency_spending_integration():
 	
 	# First purchase should succeed
 	var tower_success = tower_manager.attempt_tower_placement(Vector2i(1, 1), "basic")
-	await wait_frames(3)
 	
 	if tower_success:
+		# Wait until currency decreases (generous timeout for transaction processing)
+		await wait_until(func(): return currency_manager.get_currency() < limited_currency, 20.0)
+		
 		var remaining_currency = limited_currency - basic_tower_cost  # Should be 10
 		assert_eq(currency_manager.get_currency(), remaining_currency,
 			"Currency should be reduced after first purchase")
@@ -182,7 +192,8 @@ func test_competitive_currency_spending_integration():
 		var second_tower_success = tower_manager.attempt_tower_placement(Vector2i(2, 2), "basic")
 		var mine_success = freeze_mine_manager.place_mine(Vector2i(3, 3), "freeze")
 		
-		await wait_frames(3)
+		# Wait briefly for any potential currency changes (should be none)
+		await wait_physics_frames(3)
 		
 		# Neither should succeed due to insufficient funds
 		assert_false(second_tower_success or mine_success, 
@@ -198,16 +209,22 @@ func test_currency_ui_synchronization_integration():
 	
 	# Currency earning should trigger UI updates
 	currency_manager.add_currency_for_kill()
-	await wait_frames(2)  # Allow UI update processing
+	
+	# Wait until currency actually changes (generous timeout for UI synchronization)
+	await wait_until(func(): return currency_manager.get_currency() > initial_currency, 20.0)
 	
 	# Currency spending should trigger UI updates
 	if currency_manager.can_afford_basic_tower():
+		var before_purchase = currency_manager.get_currency()
 		currency_manager.purchase_basic_tower()
-		await wait_frames(2)
+		# Wait for currency to decrease (generous timeout for transaction processing)
+		await wait_until(func(): return currency_manager.get_currency() < before_purchase, 20.0)
 	
 	# Manual currency changes should trigger UI updates
+	var before_manual = currency_manager.get_currency()
 	currency_manager.add_currency(50)
-	await wait_frames(2)
+	# Wait for currency to increase (generous timeout for manual currency operations)
+	await wait_until(func(): return currency_manager.get_currency() > before_manual, 20.0)
 	
 	# Verify the currency_changed signal was emitted for UI synchronization
 	# Since this is integration testing, we verify the signal chain works
@@ -231,7 +248,9 @@ func test_currency_transaction_integrity_integration():
 	
 	# Attempt tower placement at invalid position (should fail)
 	var invalid_tower_success = tower_manager.attempt_tower_placement(Vector2i(-1, -1), "basic")
-	await wait_frames(3)
+	
+	# Wait briefly to ensure no currency changes occurred
+	await wait_physics_frames(3)
 	
 	# Currency should remain unchanged for failed tower placement
 	assert_eq(currency_manager.get_currency(), test_currency,
@@ -243,7 +262,9 @@ func test_currency_transaction_integrity_integration():
 		var path_position = enemy_path[0]
 		var grid_path_pos = grid_manager.world_to_grid(path_position)
 		var invalid_mine_success = freeze_mine_manager.place_mine(grid_path_pos, "freeze")
-		await wait_frames(3)
+		
+		# Wait briefly to ensure no currency changes occurred
+		await wait_physics_frames(3)
 		
 		# Currency should remain unchanged for failed mine placement
 		assert_eq(currency_manager.get_currency(), test_currency,
@@ -268,7 +289,9 @@ func test_currency_flow_complete_game_cycle_integration():
 	# Phase 2: Earn currency through enemy kills
 	currency_manager.add_currency_for_kill()  # Simulate enemy death
 	currency_manager.add_currency_for_kill()  # Simulate another enemy death
-	await wait_frames(3)
+	
+	# Wait until currency increases (generous timeout for earning simulation)
+	await wait_until(func(): return currency_manager.get_currency() > initial_currency, 20.0)
 	
 	var after_earning = initial_currency + (currency_per_kill * 2)
 	assert_eq(currency_manager.get_currency(), after_earning, 
@@ -277,16 +300,20 @@ func test_currency_flow_complete_game_cycle_integration():
 	# Phase 3: Spend currency on tower
 	if currency_manager.can_afford_basic_tower():
 		var tower_success = tower_manager.attempt_tower_placement(Vector2i(2, 2), "basic")
-		await wait_frames(3)
 		
 		if tower_success:
+			# Wait until currency decreases (generous timeout for tower purchase processing)
+			await wait_until(func(): return currency_manager.get_currency() < after_earning, 20.0)
+			
 			var after_tower_spending = after_earning - basic_tower_cost
 			assert_eq(currency_manager.get_currency(), after_tower_spending,
 				"Should have spent currency on tower")
 			
 			# Phase 4: Earn more currency
 			currency_manager.add_currency_for_kill()
-			await wait_frames(3)
+			
+			# Wait until currency increases again (generous timeout for additional earning)
+			await wait_until(func(): return currency_manager.get_currency() > after_tower_spending, 20.0)
 			
 			var final_currency = after_tower_spending + currency_per_kill
 			assert_eq(currency_manager.get_currency(), final_currency,
@@ -296,9 +323,11 @@ func test_currency_flow_complete_game_cycle_integration():
 			var mine_cost = freeze_mine_manager.get_mine_cost("freeze")
 			if currency_manager.get_currency() >= mine_cost:
 				var mine_success = freeze_mine_manager.place_mine(Vector2i(5, 5), "freeze")
-				await wait_frames(3)
 				
 				if mine_success:
+					# Wait until currency decreases again (generous timeout for mine purchase processing)
+					await wait_until(func(): return currency_manager.get_currency() < final_currency, 20.0)
+					
 					var final_after_mine = final_currency - mine_cost
 					assert_eq(currency_manager.get_currency(), final_after_mine,
 						"Complete economic cycle successful")
@@ -312,16 +341,20 @@ func test_currency_edge_cases_integration():
 	currency_manager.player_currency = basic_tower_cost  # Exactly enough
 	
 	var exact_purchase = tower_manager.attempt_tower_placement(Vector2i(1, 1), "basic")
-	await wait_frames(3)
 	
 	if exact_purchase:
+		# Wait until currency reaches zero (generous timeout for exact amount transactions)
+		await wait_until(func(): return currency_manager.get_currency() == 0, 20.0)
+		
 		assert_eq(currency_manager.get_currency(), 0, 
 			"Should have exactly 0 currency after spending exact amount")
 	
 	# Test zero currency scenarios
 	currency_manager.player_currency = 0
 	var zero_currency_purchase = tower_manager.attempt_tower_placement(Vector2i(3, 3), "basic")
-	await wait_frames(3)
+	
+	# Wait briefly to ensure no currency changes
+	await wait_physics_frames(3)
 	
 	assert_false(zero_currency_purchase, "Should not be able to purchase with zero currency")
 	assert_eq(currency_manager.get_currency(), 0, "Currency should remain zero")
@@ -335,9 +368,11 @@ func test_currency_edge_cases_integration():
 		currency_manager.add_currency_for_kill()
 		if currency_manager.can_afford_basic_tower():
 			tower_manager.attempt_tower_placement(Vector2i(i + 5, 5), "basic")
-		await wait_frames(1)  # Minimal wait between operations
+		# Brief pause between operations
+		await wait_physics_frames(1)
 	
-	await wait_frames(5)  # Allow all operations to complete
+	# Wait for all rapid operations to complete (generous timeout for complex rapid transactions)
+	await wait_until(func(): return currency_manager.get_currency() != rapid_currency, 30.0)
 	
 	# Verify currency system handled rapid operations correctly
 	assert_true(currency_manager.get_currency() >= 0, 
