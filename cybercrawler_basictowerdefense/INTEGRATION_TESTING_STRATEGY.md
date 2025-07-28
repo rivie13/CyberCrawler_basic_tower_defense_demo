@@ -82,12 +82,12 @@ Based on project memory: [[memory:4548427]]
 5. **EnemyTower/test_enemy_tower_shooting_integration.gd** - Combat system integration
 6. **Rival/test_rival_hacker_integration.gd** - AI system integration
 
-### ✅ **Completed Integration Tests** (2 systems)
+### ✅ **Completed Integration Tests** (3 systems)
 1. **Combat/test_combat_system_integration.gd** - Bidirectional tower combat integration ✅
 2. **ProgramPacket/test_program_packet_integration.gd** - Win condition system integration ✅
+3. **Currency/test_currency_flow_integration.gd** - Economic system integration ✅
 
-### 🔍 **Missing Integration Tests** (6 systems - currently only .uid files exist)  
-3. **Currency/** - Currency flow between all systems
+### 🔍 **Missing Integration Tests** (5 systems - currently only .uid files exist)  
 4. **Enemy/** - Enemy movement and interaction with towers
 5. **FreezeMine/** - FreezeMine system integration with grid and currency
 6. **Grid/** - Grid management affecting all systems
@@ -180,12 +180,35 @@ func test_complete_workflow_integration():
 - **Wave-triggered events**: Currency rewards, rival AI activation, strategic changes
 - **Wave completion**: Victory conditions, system state updates
 
+## Test Execution Commands
+
+### Run All Integration Tests
+```powershell
+# Navigate to project directory first
+cd "C:\Users\rivie\CursorProjects\CyberCrawler_basic_tower_defense_demo\cybercrawler_basictowerdefense"
+
+# Run all integration tests
+& "C:\Program Files\Godot\Godot_v4.4.1-stable_win64_console.exe" --headless --script addons/gut/gut_cmdln.gd -gtest=tests/integration/ -gexit
+```
+
+### Run Specific Integration Test Systems
+```powershell
+# Combat System Integration Tests
+& "C:\Program Files\Godot\Godot_v4.4.1-stable_win64_console.exe" --headless --script addons/gut/gut_cmdln.gd -gtest=tests/integration/Combat/ -gexit
+
+# ProgramPacket Integration Tests  
+& "C:\Program Files\Godot\Godot_v4.4.1-stable_win64_console.exe" --headless --script addons/gut/gut_cmdln.gd -gtest=tests/integration/ProgramPacket/ -gexit
+
+# Currency Flow Integration Tests
+& "C:\Program Files\Godot\Godot_v4.4.1-stable_win64_console.exe" --headless --script addons/gut/gut_cmdln.gd -gtest=tests/integration/Currency/ -gexit
+```
+
 ## Implementation Priority
 
-### Phase 1: Critical Missing Tests (High Impact)
+### Phase 1: Critical Missing Tests (High Impact) ✅ **ALL COMPLETED**
 1. **Combat System Integration** - Core bidirectional tower combat ✅ **COMPLETED**
 2. **ProgramDataPacket Integration** - Main win condition system ✅ **COMPLETED**
-3. **Currency Flow Integration** - Economic system foundation
+3. **Currency Flow Integration** - Economic system foundation ✅ **COMPLETED**
 
 ### Phase 2: Core System Tests (Medium Impact)
 4. **Grid Management Integration** - Foundation for all positioning
@@ -222,10 +245,10 @@ func test_complete_workflow_integration():
 ## Success Metrics
 
 ### Coverage Goals
-- **8 missing integration test files** created (**2/8 completed** ✅)
-- **Complete workflow coverage** for each system (**Combat + ProgramPacket systems complete** ✅)
-- **Cross-system interaction verification** for all integration points (**Combat + ProgramPacket integrations verified** ✅)
-- **Error scenario coverage** for critical paths (**Combat + ProgramPacket error scenarios covered** ✅)
+- **8 missing integration test files** created (**3/8 completed** ✅)
+- **Complete workflow coverage** for each system (**Combat + ProgramPacket + Currency systems complete** ✅)
+- **Cross-system interaction verification** for all integration points (**Combat + ProgramPacket + Currency integrations verified** ✅)
+- **Error scenario coverage** for critical paths (**Combat + ProgramPacket + Currency error scenarios covered** ✅)
 
 ### Quality Goals
 - **All integration tests use real managers** (no mocks)
