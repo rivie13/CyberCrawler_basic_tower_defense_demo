@@ -36,6 +36,15 @@ func before_each():
 	assert_not_null(freeze_mine_manager, "FreezeMineManager should be initialized")
 	assert_not_null(program_data_packet_manager, "ProgramDataPacketManager should be initialized")
 	
+	# CRITICAL: Manually initialize systems since MainController.initialize_systems() 
+	# skips initialization in test environment due to missing GridContainer
+	main_controller.wave_manager.initialize(main_controller.grid_manager)
+	main_controller.tower_manager.initialize(main_controller.grid_manager, main_controller.currency_manager, main_controller.wave_manager)
+	main_controller.game_manager.initialize(main_controller.wave_manager, main_controller.currency_manager, main_controller.tower_manager)
+	main_controller.rival_hacker_manager.initialize(main_controller.grid_manager, main_controller.currency_manager, main_controller.tower_manager, main_controller.wave_manager, main_controller.game_manager)
+	main_controller.program_data_packet_manager.initialize(main_controller.grid_manager, main_controller.game_manager, main_controller.wave_manager)
+	main_controller.freeze_mine_manager.initialize(main_controller.grid_manager, main_controller.currency_manager)
+	
 	# Add extra currency for testing
 	currency_manager.add_currency(500)
 
@@ -64,7 +73,7 @@ func test_tower_selection_ui_update_integration():
 	assert_true(true, "Powerful tower selection UI update should complete")
 	
 	# Test tower selection with insufficient funds
-	currency_manager.remove_currency(currency_manager.get_currency())  # Remove all currency
+	currency_manager.spend_currency(currency_manager.get_currency())  # Remove all currency
 	assert_eq(currency_manager.get_currency(), 0, "Should have no currency")
 	
 	# Try to select tower with no funds
@@ -193,8 +202,11 @@ func test_freeze_mine_system_integration():
 	if freeze_mine_manager.has_method("place_mine"):
 		var placement_result = freeze_mine_manager.place_mine(mine_placement_pos)
 		if placement_result:
-			# Test placement success handling
-			main_controller._on_freeze_mine_placed(freeze_mine_manager.get_mine_at_position(mine_placement_pos))
+			# Test placement success handling - create mock mine for testing
+			var test_placed_mine = FreezeMine.new()
+			test_placed_mine.set_grid_position(mine_placement_pos)
+			add_child_autofree(test_placed_mine)
+			main_controller._on_freeze_mine_placed(test_placed_mine)
 			assert_true(true, "Freeze mine placement success should be handled")
 	
 	# Test freeze mine placement failure handling

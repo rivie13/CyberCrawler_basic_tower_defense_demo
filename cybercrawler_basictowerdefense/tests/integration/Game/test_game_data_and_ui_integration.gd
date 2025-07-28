@@ -102,7 +102,7 @@ func test_info_label_text_integration():
 	game_manager.player_health = 7
 	game_manager.enemies_killed = 12
 	wave_manager.current_wave = 4
-	currency_manager.add_currency(150)  # Total should be 350
+	currency_manager.add_currency(150)  # Total should be 450 (100 initial + 200 from before_each + 150 here)
 	
 	# Test info label text generation
 	var info_text = game_manager.get_info_label_text()
@@ -115,7 +115,7 @@ func test_info_label_text_integration():
 	assert_true(info_text.contains("7"), "Should contain player health")
 	assert_true(info_text.contains("12"), "Should contain enemies killed")
 	assert_true(info_text.contains("4"), "Should contain current wave")
-	assert_true(info_text.contains("350"), "Should contain current currency")
+	assert_true(info_text.contains("450"), "Should contain current currency")
 	
 	# Test dynamic updates
 	game_manager.player_health = 5

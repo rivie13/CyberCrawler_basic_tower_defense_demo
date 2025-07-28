@@ -103,6 +103,11 @@ func _remove_enemies(enemies_to_recycle: Array):
 
 # RESTORED: Spawn replacement enemies at the back of the queue
 func _spawn_replacement_enemies(num_to_spawn: int):
+	# CRITICAL: Validate enemy_path before spawning replacement enemies
+	if enemy_path.size() == 0:
+		push_error("WaveManager: Cannot spawn replacement enemies - enemy_path is empty!")
+		return
+	
 	var spacing = 80.0  # Improved spacing to match spawn_enemy
 	if enemy_path.size() > 1:
 		var start = enemy_path[0]
@@ -126,6 +131,11 @@ func _spawn_replacement_enemies(num_to_spawn: int):
 
 # RESTORED: Reposition remaining enemies to maintain proper formation
 func _reposition_remaining_enemies():
+	# CRITICAL: Validate enemy_path before repositioning enemies
+	if enemy_path.size() == 0:
+		push_error("WaveManager: Cannot reposition enemies - enemy_path is empty!")
+		return
+	
 	var enemies_count = enemies_alive.size()
 	var spacing = 80.0  # Improved spacing to match spawn_enemy
 	if enemy_path.size() > 1:
@@ -179,6 +189,9 @@ func setup_enemy_spawning():
 func create_enemy_path():
 	if not grid_layout or not grid_manager:
 		push_error("WaveManager: grid_layout or grid_manager not set!")
+		# CRITICAL: Stop any active wave spawning if path creation fails
+		if enemy_spawn_timer and enemy_spawn_timer.timeout.is_connected(_on_enemy_spawn_timer_timeout):
+			enemy_spawn_timer.stop()
 		return
 
 	var grid_path = []
@@ -188,6 +201,9 @@ func create_enemy_path():
 	
 	if grid_path.size() == 0:
 		push_error("WaveManager: No grid path available for layout type: ", selected_layout_type)
+		# CRITICAL: Stop any active wave spawning if path creation fails
+		if enemy_spawn_timer and enemy_spawn_timer.timeout.is_connected(_on_enemy_spawn_timer_timeout):
+			enemy_spawn_timer.stop()
 		return
 		
 	# Store start and end for potential A* fallback
@@ -211,6 +227,9 @@ func create_enemy_path():
 		grid_path = grid_manager.find_path_astar(path_start, path_end)
 		if grid_path.size() == 0:
 			push_error("WaveManager: No valid A* path available!")
+			# CRITICAL: Stop any active wave spawning if path creation fails
+			if enemy_spawn_timer and enemy_spawn_timer.timeout.is_connected(_on_enemy_spawn_timer_timeout):
+				enemy_spawn_timer.stop()
 			return
 
 	# Convert grid path to world positions for enemy movement
@@ -220,6 +239,8 @@ func create_enemy_path():
 
 	# Update grid visualization to match the actual path
 	grid_manager.set_path_positions(grid_path)
+	
+	print("WaveManager: Successfully created enemy path with ", enemy_path.size(), " points")
 
 func get_path_grid_positions() -> Array[Vector2i]:
 	if not grid_layout:
@@ -279,6 +300,11 @@ func _on_wave_timer_timeout():
 	start_wave()
 
 func spawn_enemy():
+	# CRITICAL: Validate enemy_path before spawning
+	if enemy_path.size() == 0:
+		push_error("WaveManager: Cannot spawn enemy - enemy_path is empty!")
+		return
+	
 	var enemy = ENEMY_SCENE.instantiate()
 	enemy.set_path(enemy_path)
 	

@@ -76,7 +76,7 @@ func test_grid_blocking_and_path_solvability():
 	# This tests: GridManager blocking → path solvability → system coordination
 	
 	# Set up a path for solvability testing
-	var path_positions = [
+	var path_positions: Array[Vector2i] = [
 		Vector2i(1, 1), Vector2i(2, 1), Vector2i(3, 1), Vector2i(4, 1),
 		Vector2i(4, 2), Vector2i(4, 3), Vector2i(4, 4), Vector2i(5, 4)
 	]
