@@ -396,7 +396,36 @@ func stop_all_activity():
 func _on_enemy_tower_destroyed(enemy_tower: EnemyTower):
 	# Remove from our tracking array
 	enemy_towers_placed.erase(enemy_tower)
-	print("RivalHacker: Enemy tower destroyed, ", enemy_towers_placed.size(), " towers remaining") 
+	print("RivalHacker: Enemy tower destroyed, ", enemy_towers_placed.size(), " towers remaining")
+	
+	# Clean up grid position
+	cleanup_enemy_tower_grid_position(enemy_tower)
+	
+	# Handle destruction effects (prepared for future ruined mechanic)
+	handle_tower_destruction_effects(enemy_tower)
+
+func cleanup_enemy_tower_grid_position(enemy_tower: EnemyTower):
+	"""Clean up the grid position when an enemy tower is destroyed"""
+	if not grid_manager:
+		return
+	
+	var grid_pos = enemy_tower.get_grid_position()
+	if grid_manager.is_valid_grid_position(grid_pos):
+		# Free the grid position so it can be used again
+		grid_manager.set_grid_occupied(grid_pos, false)
+		print("RivalHacker: Grid position ", grid_pos, " freed after enemy tower destruction")
+
+func handle_tower_destruction_effects(enemy_tower: EnemyTower):
+	"""Handle any effects that occur when a tower is destroyed (prepared for ruined mechanic)"""
+	# This method is designed to be extended for the ruined mechanic
+	# For now, it just logs the destruction for future implementation
+	var grid_pos = enemy_tower.get_grid_position()
+	print("RivalHacker: Tower destruction effects processed for position ", grid_pos)
+	
+	# TODO: Future implementation will add ruined mechanic here
+	# - 50% chance to ruin the spot
+	# - Visual indicators for ruined spots
+	# - Permanent blocking of ruined positions
 
 func _on_alert_triggered(alert_type: String, severity: float):
 	# Respond to alerts from the alert system

@@ -226,11 +226,16 @@ func test_on_enemy_tower_destroyed():
 	# Create a proper enemy tower instance
 	var enemy_tower_scene = preload("res://scenes/EnemyTower.tscn")
 	var mock_tower = enemy_tower_scene.instantiate()
+	mock_tower.set_grid_position(Vector2i(5, 5))  # Set a specific grid position
 	rival_hacker_manager.enemy_towers_placed.append(mock_tower)
+	
+	# Set up the grid position as occupied initially
+	mock_grid_manager.set_grid_occupied(Vector2i(5, 5), true)
 	
 	rival_hacker_manager._on_enemy_tower_destroyed(mock_tower)
 	
 	assert_eq(rival_hacker_manager.enemy_towers_placed.size(), 0, "Should remove destroyed tower from tracking")
+	assert_false(mock_grid_manager.is_grid_occupied(Vector2i(5, 5)), "Should free grid position when enemy tower is destroyed")
 
 func test_on_rival_hacker_destroyed():
 	# Test rival hacker destruction handling
