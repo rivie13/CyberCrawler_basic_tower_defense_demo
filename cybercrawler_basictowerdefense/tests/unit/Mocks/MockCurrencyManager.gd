@@ -9,6 +9,10 @@ var _basic_tower_cost: int = 50
 var _powerful_tower_cost: int = 75
 var _currency_per_kill: int = 10
 
+# ADDED: Parent Integration Mock State
+var set_currency_called: bool = false
+var last_set_currency_value: int = 0
+
 func _ready():
 	# Emit initial currency amount (same as real CurrencyManager)
 	currency_changed.emit(_currency)
@@ -66,6 +70,18 @@ func add_currency(amount: int):
 		_currency += amount
 		currency_changed.emit(_currency)
 
+# ADDED: Parent Integration Mock Methods
+func set_currency(amount: int):
+	"""Set currency amount - for parent integration"""
+	set_currency_called = true
+	last_set_currency_value = amount
+	_currency = amount
+	currency_changed.emit(_currency)
+
+func set_mock_currency(amount: int):
+	"""Set mock currency for testing without triggering tracking"""
+	_currency = amount
+
 func spend_currency(amount: int) -> bool:
 	if _currency >= amount:
 		_currency -= amount
@@ -97,10 +113,6 @@ func reset_currency():
 	currency_changed.emit(_currency)
 
 # Helper methods for tests
-func set_currency(amount: int) -> void:
-	_currency = amount
-	currency_changed.emit(_currency)
-
 func get_purchase_history() -> Array:
 	return _purchase_history
 

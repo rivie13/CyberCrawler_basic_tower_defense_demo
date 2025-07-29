@@ -1,6 +1,12 @@
 extends Node2D
 class_name MainController
 
+# Parent Integration Signals - ADDED FOR PARENT REPO COMMUNICATION
+signal td_session_completed(results: Dictionary)
+signal rival_hacker_activated(context: Dictionary)
+signal td_alert_generated(alert_type: String, context: Dictionary)
+signal stealth_alert_received(alert_data: Dictionary)
+
 # Accessible color scheme for UI feedback
 const VICTORY_COLOR = Color(0.2, 0.8, 0.2)  # Accessible green for victory
 const DEFEAT_COLOR = Color(0.8, 0.2, 0.2)   # Accessible red for defeat
@@ -37,6 +43,11 @@ var selected_tower_type: String = BASIC_TOWER  # Default to basic tower
 # Click mode system
 var current_click_mode: String = MODE_BUILD_TOWERS  # Default to tower building mode
 
+# Parent Integration Features - ADDED FOR PARENT REPO INTEGRATION
+enum ExecutionMode { FOREGROUND, BACKGROUND }
+var execution_mode: ExecutionMode = ExecutionMode.FOREGROUND
+var parent_interface: Node = null
+
 func _ready():
 	# Initialize debug logger first
 	DebugLogger.initialize()
@@ -59,8 +70,10 @@ func _ready():
 func initialize(grid_mgr: GridManagerInterface, wave_mgr: WaveManagerInterface, 
 				tower_mgr: TowerManagerInterface, currency_mgr: CurrencyManagerInterface,
 				game_mgr: GameManagerInterface, rival_mgr: RivalHackerManagerInterface,
-				packet_mgr: ProgramDataPacketManagerInterface, mine_mgr: MineManagerInterface):
-	"""Initialize MainController with injected dependencies"""
+				packet_mgr: ProgramDataPacketManagerInterface, mine_mgr: MineManagerInterface,
+				parent_comm: Node = null, mission_context = null):
+	"""Initialize MainController with injected dependencies and optional parent integration"""
+	# Existing manager initialization
 	grid_manager = grid_mgr
 	wave_manager = wave_mgr
 	tower_manager = tower_mgr
@@ -69,6 +82,14 @@ func initialize(grid_mgr: GridManagerInterface, wave_mgr: WaveManagerInterface,
 	rival_hacker_manager = rival_mgr
 	program_data_packet_manager = packet_mgr
 	freeze_mine_manager = mine_mgr
+	
+	# ADDED: Parent integration setup
+	parent_interface = parent_comm
+	if mission_context:
+		apply_mission_context(mission_context)
+	
+	# Set up parent signal connections immediately after managers are assigned
+	setup_parent_integration_signals()
 	
 	# Add them as children if they aren't already
 	if not grid_manager.get_parent():
@@ -87,6 +108,56 @@ func initialize(grid_mgr: GridManagerInterface, wave_mgr: WaveManagerInterface,
 		add_child(program_data_packet_manager)
 	if not freeze_mine_manager.get_parent():
 		add_child(freeze_mine_manager)
+
+# ADDED: Parent Integration Methods
+func set_background_mode(enabled: bool):
+	"""Switch between foreground (player control) and background (simplified) execution"""
+	execution_mode = ExecutionMode.BACKGROUND if enabled else ExecutionMode.FOREGROUND
+	
+	# In background mode, reduce update frequency and simplify operations
+	if execution_mode == ExecutionMode.BACKGROUND:
+		if ui_update_timer:
+			ui_update_timer.wait_time = 5.0  # Slower updates in background
+		DebugLogger.info("MainController switched to BACKGROUND mode", "PARENT_INTEGRATION")
+	else:
+		if ui_update_timer:
+			ui_update_timer.wait_time = 1.0  # Normal updates in foreground
+		DebugLogger.info("MainController switched to FOREGROUND mode", "PARENT_INTEGRATION")
+
+func apply_mission_context(mission_context):
+	"""Apply mission context parameters to configure the TD system"""
+	DebugLogger.info("Applying mission context to TD system", "PARENT_INTEGRATION")
+	
+	# Simple mission context application - can be expanded later
+	if mission_context and currency_manager:
+		currency_manager.set_currency(mission_context.starting_currency)
+		DebugLogger.info("Set starting currency to: " + str(mission_context.starting_currency), "PARENT_INTEGRATION")
+	
+	if mission_context and wave_manager:
+		# Apply difficulty modifier if wave manager supports it
+		if wave_manager.has_method("set_difficulty_modifier"):
+			wave_manager.set_difficulty_modifier(mission_context.difficulty_modifier)
+			DebugLogger.info("Set difficulty modifier to: " + str(mission_context.difficulty_modifier), "PARENT_INTEGRATION")
+
+func get_session_state() -> Dictionary:
+	"""Get current TD session state for parent repository coordination"""
+	var session_state = {
+		"execution_mode": execution_mode,
+		"current_wave": 1,
+		"currency": 0,
+		"enemies_killed": 0,
+		"game_active": true
+	}
+	
+	if game_manager:
+		session_state.current_wave = game_manager.get_current_wave() if game_manager.has_method("get_current_wave") else 1
+		session_state.enemies_killed = game_manager.get_enemies_killed() if game_manager.has_method("get_enemies_killed") else 0
+		session_state.game_active = not game_manager.is_game_over()
+	
+	if currency_manager:
+		session_state.currency = currency_manager.get_currency()
+	
+	return session_state
 
 func setup_managers():
 	# Create all manager instances (for backwards compatibility)
@@ -156,6 +227,48 @@ func initialize_systems():
 	freeze_mine_manager.mine_placement_failed.connect(_on_freeze_mine_placement_failed)
 	freeze_mine_manager.mine_triggered.connect(_on_freeze_mine_triggered)
 	freeze_mine_manager.mine_depleted.connect(_on_freeze_mine_depleted)
+	
+	# ADDED: Parent Integration Signal Connections
+	setup_parent_integration_signals()
+
+# ADDED: Parent Integration Signal Setup
+func setup_parent_integration_signals():
+	"""Connect existing manager signals to parent integration signals"""
+	if not parent_interface:
+		return  # No parent interface, skip parent signal setup
+	
+	# Connect rival hacker activation to parent signal
+	if rival_hacker_manager and not rival_hacker_manager.rival_hacker_activated.is_connected(_emit_rival_hacker_activated):
+		rival_hacker_manager.rival_hacker_activated.connect(_emit_rival_hacker_activated)
+	
+	# Connect game completion events to parent signal
+	if game_manager:
+		if not game_manager.game_over_triggered.is_connected(_emit_td_session_completed):
+			game_manager.game_over_triggered.connect(_emit_td_session_completed)
+		if not game_manager.game_won_triggered.is_connected(_emit_td_session_completed):
+			game_manager.game_won_triggered.connect(_emit_td_session_completed)
+
+# ADDED: Parent Integration Signal Emission Methods
+func _emit_rival_hacker_activated():
+	"""Emit parent signal when rival hacker is activated"""
+	var context = {
+		"source": "rival_hacker",
+		"session_state": get_session_state(),
+		"timestamp": Time.get_ticks_msec()
+	}
+	rival_hacker_activated.emit(context)
+	td_alert_generated.emit("rival_activated", context)
+	DebugLogger.info("Emitted rival_hacker_activated signal to parent", "PARENT_INTEGRATION")
+
+func _emit_td_session_completed():
+	"""Emit parent signal when TD session completes (win or lose)"""
+	var results = {
+		"session_state": get_session_state(),
+		"completion_reason": "game_ended",
+		"timestamp": Time.get_ticks_msec()
+	}
+	td_session_completed.emit(results)
+	DebugLogger.info("Emitted td_session_completed signal to parent", "PARENT_INTEGRATION")
 
 func setup_ui():
 	# Skip UI setup if we're in a test environment or UI nodes don't exist
