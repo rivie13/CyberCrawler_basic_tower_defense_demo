@@ -1,8 +1,8 @@
 # CyberCrawler Tower Defense Parent Integration Plan - REVISED
 
-**Version**: 1.1  
+**Version**: 1.2  
 **Date**: July 2025  
-**Purpose**: **SIMPLIFIED** plan for integrating the tower defense repository with the CyberCrawler parent repository coordination architecture
+**Purpose**: **SIMPLIFIED** plan for integrating the tower defense repository with the CyberCrawler parent repository coordination architecture, including **TERMINAL MODE** requirements for stealth-action integration
 
 ---
 
@@ -15,6 +15,7 @@ After reviewing the Godot documentation, current TD code structure, and best pra
 - ✅ **Main.tscn is the Ideal Entry Point**: No wrapper scene needed
 - ✅ **Interface Architecture Exists**: Just need to add parent communication
 - ✅ **Scene-Based Integration**: Follow Godot's recommended patterns
+- ✅ **Click Mode System Exists**: Perfect foundation for terminal mode restrictions
 
 ### **SIMPLIFIED Integration Goals:**
 - ✅ **Keep Existing Architecture**: MainController and Main.tscn are excellent as-is
@@ -22,6 +23,7 @@ After reviewing the Godot documentation, current TD code structure, and best pra
 - ✅ **Enable Background Mode**: Add as a mode to existing MainController
 - ✅ **Support Mission Context**: Extend existing initialization pattern
 - ✅ **Implement Alert System**: Add to existing signal architecture
+- ✅ **Add Terminal Mode System**: Restrict functionality based on terminal type
 - ✅ **Maintain Testing Coverage**: Build on existing comprehensive tests
 
 ---
@@ -48,6 +50,9 @@ func initialize(grid_mgr: GridManagerInterface, wave_mgr: WaveManagerInterface,
 - ✅ **Interface-Driven Design**: All managers properly interfaced
 - ✅ **Signal Architecture**: Already using signals for communication
 - ✅ **Comprehensive Testing**: 455 tests with 83.2% coverage
+- ✅ **Click Mode System**: Already separates functions logically
+- ✅ **UI Button System**: Already separates functions by terminal type
+- ✅ **Attack Mode**: Already allows clicking enemies in any mode
 
 ---
 
@@ -144,7 +149,87 @@ func initialize(grid_mgr: GridManagerInterface, wave_mgr: WaveManagerInterface,
 - Connections to existing manager signals
 - **NO separate alert system classes**
 
-### **Phase 4: Integration Testing & Validation**
+### **Phase 4: Terminal Mode System Integration** ⭐ **NEW**
+**Duration**: 2 days  
+**Goal**: Add terminal mode restrictions for stealth-action integration
+
+#### **Tasks:**
+1. **Add Terminal Mode Constants and Variables**
+   ```gdscript
+   # Add to existing MainController.gd
+   const TERMINAL_TOWER_PLACEMENT = "tower_terminal"
+   const TERMINAL_MINE_PLACEMENT = "mine_terminal"  
+   const TERMINAL_DATA_PACKET = "packet_terminal"
+   const TERMINAL_UPGRADES = "upgrade_terminal"  # Future
+   const TERMINAL_MAIN_ACCESS = "main_terminal"  # Full access with packet release
+   const TERMINAL_ALL_ACCESS = "full_access"     # Current standalone mode
+   
+   var current_terminal_mode: String = TERMINAL_ALL_ACCESS
+   var allowed_click_modes: Array[String] = []
+   var allowed_buttons: Array[String] = []
+   ```
+
+2. **Implement Terminal Mode Restrictions**
+   ```gdscript
+   func set_terminal_mode(terminal_type: String):
+       current_terminal_mode = terminal_type
+       match terminal_type:
+           TERMINAL_TOWER_PLACEMENT:
+               allowed_click_modes = [MODE_BUILD_TOWERS, MODE_ATTACK_ENEMIES]
+               allowed_buttons = ["BasicTowerButton", "PowerfulTowerButton"]
+           TERMINAL_MINE_PLACEMENT:
+               allowed_click_modes = [MODE_PLACE_FREEZE_MINE, MODE_ATTACK_ENEMIES]
+               allowed_buttons = ["FreezeMineButton"]
+           TERMINAL_DATA_PACKET:
+               allowed_click_modes = [MODE_BUILD_TOWERS, MODE_ATTACK_ENEMIES]
+               allowed_buttons = ["ProgramDataPacketButton"]
+           TERMINAL_MAIN_ACCESS:
+               allowed_click_modes = [MODE_BUILD_TOWERS, MODE_ATTACK_ENEMIES, MODE_PLACE_FREEZE_MINE]
+               allowed_buttons = ["BasicTowerButton", "PowerfulTowerButton", "FreezeMineButton", "ProgramDataPacketButton"]
+           TERMINAL_ALL_ACCESS:
+               allowed_click_modes = [MODE_BUILD_TOWERS, MODE_ATTACK_ENEMIES, MODE_PLACE_FREEZE_MINE]
+               allowed_buttons = ["BasicTowerButton", "PowerfulTowerButton", "FreezeMineButton", "ProgramDataPacketButton"]
+       
+       update_terminal_ui()
+   ```
+
+3. **Enhanced UI Feedback System**
+   ```gdscript
+   func update_terminal_ui():
+       # Disable/enable buttons based on terminal mode
+       var all_buttons = ["BasicTowerButton", "PowerfulTowerButton", "FreezeMineButton", "ProgramDataPacketButton"]
+       for button_name in all_buttons:
+           var button = get_node_or_null("UI/TowerSelectionPanel/" + button_name)
+           if button:
+               button.disabled = not allowed_buttons.has(button_name)
+       
+       # Update info messages
+       match current_terminal_mode:
+           TERMINAL_TOWER_PLACEMENT:
+               show_terminal_message("TOWER TERMINAL: Place and upgrade towers")
+           TERMINAL_MINE_PLACEMENT:
+               show_terminal_message("MINE TERMINAL: Deploy freeze mines")
+           TERMINAL_DATA_PACKET:
+               show_terminal_message("PACKET TERMINAL: Monitor data packet")
+           TERMINAL_MAIN_ACCESS:
+               show_terminal_message("MAIN TERMINAL: Full access with packet release")
+   ```
+
+4. **Extend Mission Context for Terminal Configuration**
+   ```gdscript
+   # In MissionContext.gd
+   @export var terminal_mode: String = "full_access"
+   @export var available_functions: Array[String] = []
+   @export var allow_attack_mode: bool = true  # Always allow attack mode
+   ```
+
+#### **Deliverables:**
+- Terminal mode system with restrictions
+- Enhanced UI feedback for terminal context
+- Mission context integration with terminal configuration
+- **Attack mode always available** for all terminals
+
+### **Phase 5: Integration Testing & Validation**
 **Duration**: 1 day  
 **Goal**: Test integration with existing test framework
 
@@ -167,10 +252,19 @@ func initialize(grid_mgr: GridManagerInterface, wave_mgr: WaveManagerInterface,
        # Test mission context application
    ```
 
+3. **Add Terminal Mode Tests**
+   ```gdscript
+   func test_terminal_mode_restrictions():
+       var main_controller = MainController.new()
+       main_controller.set_terminal_mode(MainController.TERMINAL_TOWER_PLACEMENT)
+       # Test button restrictions and mode limitations
+   ```
+
 #### **Deliverables:**
 - Integration tests using existing test framework
 - Mission context validation tests
 - Alert system communication tests
+- Terminal mode restriction tests
 
 ---
 
@@ -188,6 +282,17 @@ enum ExecutionMode { FOREGROUND, BACKGROUND }
 var execution_mode: ExecutionMode = ExecutionMode.FOREGROUND
 var parent_interface: Node = null
 
+# ADD terminal mode system
+const TERMINAL_TOWER_PLACEMENT = "tower_terminal"
+const TERMINAL_MINE_PLACEMENT = "mine_terminal"  
+const TERMINAL_DATA_PACKET = "packet_terminal"
+const TERMINAL_MAIN_ACCESS = "main_terminal"
+const TERMINAL_ALL_ACCESS = "full_access"
+
+var current_terminal_mode: String = TERMINAL_ALL_ACCESS
+var allowed_click_modes: Array[String] = []
+var allowed_buttons: Array[String] = []
+
 # EXTEND existing initialize method signature
 func initialize(grid_mgr: GridManagerInterface, wave_mgr: WaveManagerInterface, 
                 tower_mgr: TowerManagerInterface, currency_mgr: CurrencyManagerInterface,
@@ -203,22 +308,44 @@ func initialize(grid_mgr: GridManagerInterface, wave_mgr: WaveManagerInterface,
     parent_interface = parent_comm
     if mission_context:
         apply_mission_context(mission_context)
+        if mission_context.terminal_mode != "":
+            set_terminal_mode(mission_context.terminal_mode)
 
-# ADD background mode support
-func set_background_mode(enabled: bool):
-    execution_mode = ExecutionMode.BACKGROUND if enabled else ExecutionMode.FOREGROUND
-    # Reduce update frequency in background mode
-    if execution_mode == ExecutionMode.BACKGROUND:
-        ui_update_timer.wait_time = 5.0  # Slower updates
-    else:
-        ui_update_timer.wait_time = 1.0  # Normal updates
+# ADD terminal mode system
+func set_terminal_mode(terminal_type: String):
+    current_terminal_mode = terminal_type
+    match terminal_type:
+        TERMINAL_TOWER_PLACEMENT:
+            allowed_click_modes = [MODE_BUILD_TOWERS, MODE_ATTACK_ENEMIES]
+            allowed_buttons = ["BasicTowerButton", "PowerfulTowerButton"]
+        TERMINAL_MINE_PLACEMENT:
+            allowed_click_modes = [MODE_PLACE_FREEZE_MINE, MODE_ATTACK_ENEMIES]
+            allowed_buttons = ["FreezeMineButton"]
+        TERMINAL_DATA_PACKET:
+            allowed_click_modes = [MODE_BUILD_TOWERS, MODE_ATTACK_ENEMIES]
+            allowed_buttons = ["ProgramDataPacketButton"]
+        TERMINAL_MAIN_ACCESS:
+            allowed_click_modes = [MODE_BUILD_TOWERS, MODE_ATTACK_ENEMIES, MODE_PLACE_FREEZE_MINE]
+            allowed_buttons = ["BasicTowerButton", "PowerfulTowerButton", "FreezeMineButton", "ProgramDataPacketButton"]
+        TERMINAL_ALL_ACCESS:
+            allowed_click_modes = [MODE_BUILD_TOWERS, MODE_ATTACK_ENEMIES, MODE_PLACE_FREEZE_MINE]
+            allowed_buttons = ["BasicTowerButton", "PowerfulTowerButton", "FreezeMineButton", "ProgramDataPacketButton"]
+    
+    update_terminal_ui()
 
-# ADD mission context application
-func apply_mission_context(context: MissionContext):
-    if currency_manager:
-        currency_manager.set_starting_currency(context.starting_currency)
-    if wave_manager:
-        wave_manager.set_difficulty_modifier(context.difficulty_modifier)
+# ENHANCE existing handle_grid_click to respect terminal restrictions
+func handle_grid_click(global_pos: Vector2):
+    # Always allow attack mode if in allowed click modes
+    if current_click_mode == MODE_ATTACK_ENEMIES and allowed_click_modes.has(MODE_ATTACK_ENEMIES):
+        try_click_damage_enemy(global_pos)
+    elif current_click_mode == MODE_PLACE_FREEZE_MINE and allowed_click_modes.has(MODE_PLACE_FREEZE_MINE):
+        var grid_pos = grid_manager.world_to_grid(global_pos)
+        if grid_manager.is_valid_grid_position(grid_pos):
+            freeze_mine_manager.place_mine(grid_pos, "freeze")
+    elif current_click_mode == MODE_BUILD_TOWERS and allowed_click_modes.has(MODE_BUILD_TOWERS):
+        var grid_pos = grid_manager.world_to_grid(global_pos)
+        if grid_manager.is_valid_grid_position(grid_pos):
+            tower_manager.attempt_tower_placement(grid_pos, selected_tower_type)
 ```
 
 ### **2. Parent Repository Integration Pattern**
@@ -237,7 +364,7 @@ func start_td_session(mission_context: MissionContext):
     var wave_manager = WaveManager.new()
     # ... create other managers ...
     
-    # Initialize using existing pattern + parent communication
+    # Initialize using existing pattern + parent communication + terminal mode
     td_instance.initialize(grid_manager, wave_manager, tower_manager, 
                           currency_manager, game_manager, rival_hacker_manager,
                           packet_manager, mine_manager, 
@@ -258,12 +385,12 @@ func start_td_session(mission_context: MissionContext):
 cybercrawler_basictowerdefense/
 ├── scripts/
 │   ├── Data/
-│   │   └── MissionContext.gd          # Simple mission data
+│   │   └── MissionContext.gd          # Simple mission data (already exists)
 │   └── (all existing directories unchanged)
 ├── tests/
 │   ├── unit/
 │   │   └── MainController/
-│   │       └── test_parent_integration.gd  # New integration tests
+│   │       └── test_parent_integration.gd  # New integration tests (already exists)
 │   └── (all existing test structure unchanged)
 └── (all existing structure preserved)
 ```
@@ -276,6 +403,11 @@ Main.tscn (Node2D) - Keep existing scene exactly as-is
 ├── UI (CanvasLayer) - Unchanged
 │   ├── InfoLabel (Label) - Unchanged
 │   ├── TowerSelectionPanel (Panel) - Unchanged
+│   │   ├── BasicTowerButton (Button) - Unchanged
+│   │   ├── PowerfulTowerButton (Button) - Unchanged
+│   │   ├── FreezeMineButton (Button) - Unchanged
+│   │   ├── ProgramDataPacketButton (Button) - Unchanged
+│   │   └── ModeToggleButton (Button) - Unchanged
 │   └── (all existing UI unchanged)
 ```
 
@@ -298,6 +430,7 @@ Main.tscn (Node2D) - Keep existing scene exactly as-is
 - **Extend existing initialize() method**
 - **Add to existing signal architecture**
 - **Build on existing test framework**
+- **Add terminal mode layer to existing click mode system**
 
 ---
 
@@ -320,14 +453,25 @@ Main.tscn (Node2D) - Keep existing scene exactly as-is
 - [ ] No new alert system classes needed
 
 ### **Phase 4 Success:**
+- [ ] Terminal mode system restricts functionality correctly
+- [ ] Attack mode always available in all terminals
+- [ ] Main terminal has full access with packet release
+- [ ] UI feedback shows terminal context clearly
+- [ ] Button enable/disable works based on terminal mode
+
+### **Phase 5 Success:**
 - [ ] Integration tests pass using existing framework
 - [ ] Parent-TD communication validated
+- [ ] Terminal mode restrictions tested
 - [ ] All tests pass (existing + new integration tests)
 
 ### **Overall Success:**
 - [ ] Parent repo can instantiate Main.tscn successfully
 - [ ] TD system works standalone (preserved)
 - [ ] TD system works as submodule (enhanced)
+- [ ] **Terminal mode system provides stealth-action integration**
+- [ ] **Attack mode always available for player engagement**
+- [ ] **Main terminal provides full access with packet release capability**
 - [ ] **NO wrapper classes or scenes created**
 - [ ] Existing architecture enhanced, not replaced
 
@@ -339,12 +483,16 @@ Main.tscn (Node2D) - Keep existing scene exactly as-is
 1. **Enhance MainController directly** - Add parent communication to existing class
 2. **Test existing functionality** - Ensure no regressions
 3. **Add simple mission context** - Extend existing initialization pattern
+4. **Implement terminal mode system** - Add restrictions layer to existing click modes
+5. **Ensure attack mode always available** - Critical for player engagement
 
 ### **Key Principles for Implementation:**
 - **Respect the existing excellent architecture**
 - **Follow Godot scene-based patterns**  
 - **Enhance, don't replace or wrap**
 - **Keep it simple and maintainable**
+- **Always allow attack mode for player engagement**
+- **Main terminal provides full access with packet release**
 
 ---
 
@@ -361,7 +509,10 @@ Main.tscn (Node2D) - Keep existing scene exactly as-is
 - **Interface architecture is solid** - Just extend it
 - **Testing framework is comprehensive** - Build on it
 - **Signal architecture works well** - Enhance it
+- **Click mode system is perfect** - Add terminal restrictions on top
+- **Attack mode is critical** - Always available for player engagement
+- **Packet release is main terminal feature** - Full access with release capability
 
 ---
 
-**REVISED CONCLUSION: The tower defense system needs minimal changes for parent integration. The current architecture is excellent and should be enhanced, not replaced with wrapper patterns. This simpler approach will be more maintainable, follow Godot best practices, and preserve the comprehensive testing already in place.**
+**REVISED CONCLUSION: The tower defense system needs minimal changes for parent integration. The current architecture is excellent and should be enhanced, not replaced with wrapper patterns. The terminal mode system will provide the stealth-action integration while maintaining the excellent existing click mode system. Attack mode must always be available for player engagement, and the main terminal must provide full access with packet release capability.**
