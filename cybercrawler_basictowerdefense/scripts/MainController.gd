@@ -130,8 +130,9 @@ func apply_mission_context(mission_context):
 	
 	# Simple mission context application - can be expanded later
 	if mission_context and currency_manager:
-		currency_manager.set_currency(mission_context.starting_currency)
-		DebugLogger.info("Set starting currency to: " + str(mission_context.starting_currency), "PARENT_INTEGRATION")
+		if currency_manager.has_method("set_currency"):
+			currency_manager.set_currency(mission_context.starting_currency)
+			DebugLogger.info("Set starting currency to: " + str(mission_context.starting_currency), "PARENT_INTEGRATION")
 	
 	if mission_context and wave_manager:
 		# Apply difficulty modifier if wave manager supports it
