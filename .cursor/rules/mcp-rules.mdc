@@ -1,7 +1,7 @@
 ---
 alwaysApply: true
 ---
-Always try to look for tools with the retrieve_tools call first before using the tools directly. You need to look for the proper tool for the job. You need to look by mcp server which I have a few of. We are using a mcp proxy to run the tools.
+When the user asks you to use MCP tools, always try to look for tools with the retrieve_tools call first before using the tools directly. You need to look for the proper tool for the job. You need to look by mcp server which I have a few of. We are using a mcp proxy to run the tools.
 
 make sure to use correct project path and project name when using the tools.
 example: for godot, the project path is C:/Users/rivie/CursorProjects/CyberCrawler_basic_tower_defense_demo/cybercrawler_basictowerdefense and the project name is cybercrawler_basictowerdefense
