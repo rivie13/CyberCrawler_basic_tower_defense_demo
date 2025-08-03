@@ -22,7 +22,7 @@ var tower_manager: TowerManagerInterface
 
 func _ready():
 	# Initialize timer system
-	game_session_start_time = OS.get_ticks_msec()
+	game_session_start_time = Time.get_ticks_msec()
 
 func initialize(wave_mgr: WaveManagerInterface, currency_mgr: CurrencyManagerInterface, tower_mgr: TowerManagerInterface):
 	wave_manager = wave_mgr
@@ -194,7 +194,7 @@ func get_info_label_text() -> String:
 	return "Wave: %d | Health: %d | Currency: %d | Enemies Killed: %d%s\nClick on grid to place towers (Cost: %d)" % [current_wave, player_health, current_currency, enemies_killed, timer_text, tower_cost]
 
 func get_session_time() -> float:
-	var current_time = OS.get_ticks_msec()
+	var current_time = Time.get_ticks_msec()
 	return (current_time - game_session_start_time) / 1000.0  # Convert milliseconds to seconds
 
 func format_time(seconds: float) -> String:

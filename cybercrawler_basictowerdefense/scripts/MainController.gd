@@ -254,7 +254,7 @@ func _emit_rival_hacker_activated():
 	var context = {
 		"source": "rival_hacker",
 		"session_state": get_session_state(),
-		"timestamp": OS.get_ticks_msec()
+		"timestamp": Time.get_ticks_msec()
 	}
 	rival_hacker_activated.emit(context)
 	td_alert_generated.emit("rival_activated", context)
@@ -265,7 +265,7 @@ func _emit_td_session_completed():
 	var results = {
 		"session_state": get_session_state(),
 		"completion_reason": "game_ended",
-		"timestamp": OS.get_ticks_msec()
+		"timestamp": Time.get_ticks_msec()
 	}
 	td_session_completed.emit(results)
 	DebugLogger.info("Emitted td_session_completed signal to parent", "PARENT_INTEGRATION")
